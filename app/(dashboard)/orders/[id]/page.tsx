@@ -22,7 +22,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   if (!order) notFound()
 
-  const client = order.clients as { full_name: string; phone: string | null; telegram_username: string | null } | null
+  const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+    passport_id: 'Паспорт ID',
+    passport_green: 'Паспорт зелёный',
+    zagranpassport: 'Загранпаспорт',
+    drivers_license: 'Водительские права',
+  }
+  const client = order.clients as { full_name: string; phone: string | null; telegram_username: string | null; document_type: string | null; passport_series: string | null; passport_number: string | null } | null
   const items = (order.order_items as { id: string; equipment: { name: string; serial_number: string | null } | null; daily_rate: number; days: number; subtotal: number; condition_on_issue: string | null; condition_on_return: string | null }[]) ?? []
   const payments = (order.payments as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null }[]) ?? []
 
