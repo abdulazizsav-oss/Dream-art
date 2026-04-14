@@ -80,12 +80,12 @@ export function StepDates({
       )}
 
       <div className="space-y-1.5 mb-4">
-        <Label>Депозит</Label>
+        <Label>Депозит <span className="text-gray-400 font-normal">(необязательно)</span></Label>
         <Input
           type="number"
-          value={deposit}
+          value={deposit || ''}
           onChange={e => setDeposit(Number(e.target.value))}
-          placeholder="0"
+          placeholder="0 — депозит не берётся"
         />
       </div>
 
