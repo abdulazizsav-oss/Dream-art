@@ -30,6 +30,13 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
 
   const rating = watch('reliability_rating') ?? 3
 
+  const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+    passport_id: 'Паспорт ID (биометрический)',
+    passport_green: 'Паспорт зелёный',
+    zagranpassport: 'Загранпаспорт',
+    drivers_license: 'Водительские права',
+  }
+
   async function onSubmit(data: ClientFormValues) {
     const url = clientId ? `/api/clients/${clientId}` : '/api/clients'
     const method = clientId ? 'PUT' : 'POST'
