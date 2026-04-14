@@ -90,6 +90,22 @@ export default function ReturnPage() {
     <div className="max-w-xl">
       <PageHeader title="Оформление возврата" />
       <div className="bg-white rounded-xl border p-6 space-y-4">
+        {/* Actual return date */}
+        <div className="pb-4 border-b space-y-1.5">
+          <Label>Фактическая дата возврата</Label>
+          <Input
+            type="date"
+            value={actualReturnDate}
+            max={orderEndDate || undefined}
+            onChange={e => setActualReturnDate(e.target.value)}
+          />
+          {isEarlyReturn && recalcTotal !== null && (
+            <p className="text-xs text-amber-600 font-medium">
+              ⚡ Досрочный возврат — сумма пересчитается: {recalcTotal.toLocaleString('ru-RU')} сум
+            </p>
+          )}
+        </div>
+
         {items.map(item => (
           <div key={item.id} className="border-b pb-4 last:border-0">
             <div className="flex justify-between items-start mb-2">
