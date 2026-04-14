@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
@@ -12,6 +13,8 @@ import { formatCurrency } from '@/lib/utils'
 interface OrderItem {
   id: string
   subtotal: number
+  daily_rate: number
+  days: number
   condition_on_issue: string | null
   equipment: { name: string } | null
 }
@@ -22,6 +25,9 @@ export default function ReturnPage() {
   const id = params.id as string
   const [items, setItems] = useState<OrderItem[]>([])
   const [returns, setReturns] = useState<Record<string, string>>({})
+  const [actualReturnDate, setActualReturnDate] = useState('')
+  const [orderEndDate, setOrderEndDate] = useState('')
+  const [orderStartDate, setOrderStartDate] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -31,12 +37,26 @@ export default function ReturnPage() {
       .then(order => {
         const oi = order.order_items ?? []
         setItems(oi)
+        setOrderEndDate(order.end_date ?? '')
+        setOrderStartDate(order.start_date ?? '')
+        setActualReturnDate(order.end_date ?? '')
         const initial: Record<string, string> = {}
         oi.forEach((i: OrderItem) => { initial[i.id] = 'Хорошее' })
         setReturns(initial)
         setLoading(false)
       })
   }, [id])
+
+  // Calculate expected new total if actual_return_date differs from end_date
+  const isEarlyReturn = actualReturnDate && orderEndDate && actualReturnDate < orderEndDate
+  const recalcTotal = isEarlyReturn && orderStartDate
+    ? (() => {
+        const start = new Date(orderStartDate)
+        const ret = new Date(actualReturnDate)
+        const actualDays = Math.max(1, Math.round((ret.getTime() - start.getTime()) / 86400000) + 1)
+        return items.reduce((sum, i) => sum + i.daily_rate * actualDays, 0)
+      })()
+    : null
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -45,10 +65,14 @@ export default function ReturnPage() {
       condition_on_return: returns[i.id] ?? 'Хорошее',
       return_photo_urls: [],
     }))
+    const body: Record<string, unknown> = { items: payload }
+    if (actualReturnDate && actualReturnDate !== orderEndDate) {
+      body.actual_return_date = actualReturnDate
+    }
     const res = await fetch(`/api/orders/${id}/return`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: payload }),
+      body: JSON.stringify(body),
     })
     if (!res.ok) {
       toast.error('Ошибка при оформлении возврата')
