@@ -94,6 +94,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {client?.phone && <span>{client.phone}</span>}
           {client?.telegram_username && <span>@{client.telegram_username}</span>}
         </div>
+        {client?.document_type && (
+          <p className="text-sm mt-2 text-gray-600">
+            📄 {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}
+            {(client.passport_series || client.passport_number) && (
+              <span className="ml-2 text-gray-400">{client.passport_series} {client.passport_number}</span>
+            )}
+          </p>
+        )}
         {order.deposit_amount > 0 && (
           <p className="text-sm mt-2 text-amber-600">
             Депозит: {formatCurrency(order.deposit_amount)}
