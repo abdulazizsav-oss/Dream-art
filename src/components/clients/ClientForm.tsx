@@ -100,7 +100,21 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
       </div>
 
       <div className="border-t pt-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Паспортные данные</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Документ</h3>
+        <div className="space-y-1.5 mb-4">
+          <Label>Вид документа</Label>
+          <Select
+            defaultValue={defaultValues?.document_type ?? 'passport_id'}
+            onValueChange={v => setValue('document_type', v as ClientFormValues['document_type'])}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Серия</Label>
