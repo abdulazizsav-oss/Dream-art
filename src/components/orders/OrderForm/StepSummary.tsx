@@ -41,6 +41,9 @@ export function StepSummary({ values, clients, equipment, onBack, onSubmit, subm
           <p className="text-xs text-gray-500 mb-1">Клиент</p>
           <p className="font-medium">{client?.full_name}</p>
           {client?.phone && <p className="text-sm text-gray-600">{client.phone}</p>}
+          {client?.document_type && (
+            <p className="text-sm text-gray-500">📄 {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}</p>
+          )}
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4">
