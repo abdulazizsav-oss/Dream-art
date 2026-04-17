@@ -131,6 +131,7 @@ export type Database = {
         Update: {
           id?: string
           category_id?: string | null
+          brand_id?: string | null
           name?: string
           serial_number?: string | null
           photo_url?: string | null
