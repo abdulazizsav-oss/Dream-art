@@ -64,7 +64,7 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
   return (
     <Link
       href={`/orders/${order.id}`}
-      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+      className="flex items-center justify-between px-4 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[64px]"
     >
       <div>
         <p className="font-medium text-sm">{order.order_number}</p>
