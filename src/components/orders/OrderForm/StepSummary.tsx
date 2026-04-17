@@ -41,13 +41,19 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         </div>
 
         <div className="bg-blue-50 rounded-lg p-4">
-          <p className="text-xs text-blue-500 mb-1 flex items-center gap-1.5">
+          <p className="text-xs text-blue-500 mb-1.5 flex items-center gap-1.5">
             <UserCheck className="w-3.5 h-3.5" />
             Доверенное лицо
           </p>
           <p className="font-medium text-gray-900">{trustedPerson.name}</p>
+          {trustedPerson.relation && (
+            <p className="text-xs text-gray-500 mt-0.5">{trustedPerson.relation}</p>
+          )}
+          {trustedPerson.phone && (
+            <p className="text-sm text-gray-600 mt-0.5">{trustedPerson.phone}</p>
+          )}
           {trustedPerson.doc_type && (
-            <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5">
+            <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-1">
               <FileText className="w-3.5 h-3.5" />
               {DOCUMENT_TYPE_LABELS[trustedPerson.doc_type] ?? trustedPerson.doc_type}
             </p>
