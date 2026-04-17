@@ -38,10 +38,18 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           <p className="text-xs text-gray-500 mb-1">Клиент</p>
           <p className="font-medium">{client?.full_name}</p>
           {client?.phone && <p className="text-sm text-gray-600">{client.phone}</p>}
-          {client?.document_type && (
-            <p className="text-sm text-gray-500 flex items-center gap-1.5">
-              <FileText className="w-4 h-4" />
-              {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}
+        </div>
+
+        <div className="bg-blue-50 rounded-lg p-4">
+          <p className="text-xs text-blue-500 mb-1 flex items-center gap-1.5">
+            <UserCheck className="w-3.5 h-3.5" />
+            Доверенное лицо
+          </p>
+          <p className="font-medium text-gray-900">{trustedPerson.name}</p>
+          {trustedPerson.doc_type && (
+            <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5">
+              <FileText className="w-3.5 h-3.5" />
+              {DOCUMENT_TYPE_LABELS[trustedPerson.doc_type] ?? trustedPerson.doc_type}
             </p>
           )}
         </div>
