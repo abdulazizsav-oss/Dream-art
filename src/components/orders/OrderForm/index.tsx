@@ -45,9 +45,16 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
     const days = values.start_date && values.end_date
       ? calcDays(values.start_date, values.end_date)
       : 1
+    // Формируем строку: "Иван Иванов (Брат) +998901234567"
+    const tpParts = [
+      trustedPerson.name,
+      trustedPerson.relation ? `(${trustedPerson.relation})` : null,
+      trustedPerson.phone || null,
+    ].filter(Boolean).join(' ')
+
     const payload = {
       ...values,
-      trusted_person: trustedPerson.name || null,
+      trusted_person: tpParts || null,
       trusted_person_doc_type: trustedPerson.doc_type || null,
       items: (values.items ?? []).map(item => ({
         ...item,
