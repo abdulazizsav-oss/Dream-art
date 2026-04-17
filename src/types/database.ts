@@ -219,6 +219,9 @@ export type Database = {
           document_type: DocumentType
           notes: string | null
           birth_date: string | null
+          trusted_person_name: string | null
+          trusted_person_phone: string | null
+          trusted_person_relation: string | null
           created_at: string
           updated_at: string
         }
@@ -238,6 +241,9 @@ export type Database = {
           document_type?: DocumentType
           notes?: string | null
           birth_date?: string | null
+          trusted_person_name?: string | null
+          trusted_person_phone?: string | null
+          trusted_person_relation?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -257,6 +263,9 @@ export type Database = {
           document_type?: DocumentType
           notes?: string | null
           birth_date?: string | null
+          trusted_person_name?: string | null
+          trusted_person_phone?: string | null
+          trusted_person_relation?: string | null
           created_at?: string
           updated_at?: string
         }
