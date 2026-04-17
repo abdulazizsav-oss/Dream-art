@@ -1,14 +1,20 @@
 import { Sidebar } from '@/components/layout/Sidebar'
+import { MobileNav } from '@/components/layout/MobileNav'
+import { getMyProfile } from '@/lib/supabase/getRole'
 
 export const dynamic = 'force-dynamic'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const profile = await getMyProfile()
+
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 min-w-0 p-6 lg:p-8">
+      <Sidebar role={profile?.role ?? 'admin'} userName={profile?.full_name ?? ''} />
+      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
         {children}
       </main>
+      {/* Mobile bottom navigation */}
+      <MobileNav role={profile?.role ?? 'admin'} />
     </div>
   )
 }
