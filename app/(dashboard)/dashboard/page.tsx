@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isSuperAdmin } from '@/lib/supabase/getRole'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatCurrency, formatDate, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
