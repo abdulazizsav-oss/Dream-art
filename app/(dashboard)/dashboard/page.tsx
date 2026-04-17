@@ -70,8 +70,8 @@ export default async function DashboardPage() {
           color={s?.overdue_count ? 'red' : 'gray'}
         />
         <KpiCard
-          title="Доход за месяц"
-          value={formatCurrency(s?.revenue_this_month ?? 0)}
+          title={superAdmin ? 'Доход за месяц' : 'Доход сегодня'}
+          value={formatCurrency(superAdmin ? (s?.revenue_this_month ?? 0) : (s?.revenue_today ?? 0))}
           icon={<TrendingUp className="w-5 h-5 text-green-500" />}
           href="/finance"
           color="green"
