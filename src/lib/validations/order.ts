@@ -14,6 +14,8 @@ export const orderSchema = z.object({
   end_date: z.string().min(1, 'Укажите дату окончания'),
   deposit_amount: z.coerce.number().min(0).default(0),
   notes: z.string().nullable().optional(),
+  trusted_person: z.string().nullable().optional(),
+  trusted_person_doc_type: z.string().nullable().optional(),
   items: z.array(orderItemSchema).min(1, 'Добавьте хотя бы одну единицу техники'),
 })
 
