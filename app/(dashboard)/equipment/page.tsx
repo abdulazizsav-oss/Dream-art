@@ -56,36 +56,39 @@ export default async function EquipmentPage({
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
             {countsByCategory.map((cat, i) => (
-              <Link
+              <div
                 key={cat.id}
-                href={`/equipment?category=${cat.id}`}
-                className="group bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
+                className="group relative bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
               >
-                <div className="h-32 bg-gray-50 relative overflow-hidden flex items-center justify-center">
-                  {(cat as any).photo_url ? (
-                    <img src={(cat as any).photo_url} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <Boxes className="w-10 h-10 text-gray-200 group-hover:text-gray-300 transition-colors" />
-                  )}
-                  <span className="absolute top-2 right-2 text-[10px] font-mono text-gray-300 bg-white/80 px-1.5 rounded">
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <Link
-                    href="/admin/categories"
-                    onClick={e => e.stopPropagation()}
-                    className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-gray-500" />
-                  </Link>
-                </div>
-                <div className="p-4">
-                  <p className="font-semibold text-gray-900 truncate">{cat.name}</p>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <p className="text-sm text-gray-400">{cat.total} ед.</p>
-                    <span className="text-xs text-green-600 font-medium">{cat.free} своб.</span>
+                {/* Edit pencil — sibling link, not nested */}
+                <Link
+                  href="/admin/categories"
+                  className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                </Link>
+
+                {/* Main card link */}
+                <Link href={`/equipment?category=${cat.id}`} className="block">
+                  <div className="h-32 bg-gray-50 relative overflow-hidden flex items-center justify-center">
+                    {(cat as any).photo_url ? (
+                      <img src={(cat as any).photo_url} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <Boxes className="w-10 h-10 text-gray-200 group-hover:text-gray-300 transition-colors" />
+                    )}
+                    <span className="absolute top-2 right-2 text-[10px] font-mono text-gray-300 bg-white/80 px-1.5 rounded">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
                   </div>
-                </div>
-              </Link>
+                  <div className="p-4">
+                    <p className="font-semibold text-gray-900 truncate">{cat.name}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-sm text-gray-400">{cat.total} ед.</p>
+                      <span className="text-xs text-green-600 font-medium">{cat.free} своб.</span>
+                    </div>
+                  </div>
+                </Link>
+              </div>
             ))}
           </div>
         )}
@@ -166,44 +169,47 @@ export default async function EquipmentPage({
           {equipment!.map(item => {
             const brand = (item as any).brands as { name: string; logo_url: string | null } | null
             return (
-              <Link
+              <div
                 key={item.id}
-                href={`/equipment/${item.id}`}
-                className="group bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
+                className="group relative bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
               >
-                <div className="h-44 bg-gray-50 flex items-center justify-center overflow-hidden relative">
-                  {item.photo_url ? (
-                    <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <Camera className="w-12 h-12 text-gray-200" />
-                  )}
-                  {brand?.logo_url && (
-                    <img src={brand.logo_url} alt={brand.name} className="absolute top-2 left-2 w-8 h-8 object-contain bg-white/90 rounded-lg p-1 shadow-sm" />
-                  )}
-                  <Link
-                    href={`/equipment/${item.id}`}
-                    onClick={e => e.stopPropagation()}
-                    className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
-                  >
-                    <Pencil className="w-3.5 h-3.5 text-gray-500" />
-                  </Link>
-                </div>
-                <div className="p-4">
-                  {brand && !brand.logo_url && (
-                    <p className="text-xs text-gray-400 mb-1 font-semibold uppercase tracking-wide">{brand.name}</p>
-                  )}
-                  <p className="font-semibold text-gray-900 leading-snug">{item.name}</p>
-                  {(item as any).specs && (
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-1">{(item as any).specs}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                    <span className="text-sm font-medium text-gray-800">
-                      {formatCurrency(item.daily_rate)}<span className="text-gray-400 font-normal">/день</span>
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                {/* Edit pencil — sibling, absolutely positioned */}
+                <Link
+                  href={`/equipment/${item.id}`}
+                  className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                </Link>
+
+                {/* Main card link */}
+                <Link href={`/equipment/${item.id}`} className="block">
+                  <div className="h-44 bg-gray-50 flex items-center justify-center overflow-hidden relative">
+                    {item.photo_url ? (
+                      <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <Camera className="w-12 h-12 text-gray-200" />
+                    )}
+                    {brand?.logo_url && (
+                      <img src={brand.logo_url} alt={brand.name} className="absolute top-2 left-2 w-8 h-8 object-contain bg-white/90 rounded-lg p-1 shadow-sm" />
+                    )}
                   </div>
-                </div>
-              </Link>
+                  <div className="p-4">
+                    {brand && !brand.logo_url && (
+                      <p className="text-xs text-gray-400 mb-1 font-semibold uppercase tracking-wide">{brand.name}</p>
+                    )}
+                    <p className="font-semibold text-gray-900 leading-snug">{item.name}</p>
+                    {(item as any).specs && (
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{(item as any).specs}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                      <span className="text-sm font-medium text-gray-800">
+                        {formatCurrency(item.daily_rate)}<span className="text-gray-400 font-normal">/день</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
             )
           })}
         </div>
