@@ -126,5 +126,28 @@
   }
   html {
     @apply font-sans;
+    /* Improve tap responsiveness on touch devices */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
+
+  /* Tablet-first touch targets: all interactive elements ≥ 44px */
+  button, [role="button"], a, input, select, textarea {
+    min-height: 44px;
+  }
+  /* But don't force height on icons and small inline elements */
+  svg, span, p, h1, h2, h3, h4, h5, h6, label, div {
+    min-height: unset;
+  }
+}
+
+/* Safe area for iOS bottom nav */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Smooth scrolling for calendar */
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
