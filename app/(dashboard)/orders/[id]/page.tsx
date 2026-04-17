@@ -5,10 +5,10 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import {
   formatCurrency, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
-  PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS
+  PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { FileText, RotateCcw } from 'lucide-react'
+import { FileText, RotateCcw, UserCheck } from 'lucide-react'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,7 +16,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { data: order } = await supabase
     .from('orders')
-    .select('*, clients(*), order_items(*, equipment(name, serial_number)), payments(*)')
+    .select('*, clients(*), order_items(*, equipment(name, currency)), payments(*)')
     .eq('id', id)
     .single()
 
@@ -29,7 +29,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     drivers_license: 'Водительские права',
   }
   const client = order.clients as { full_name: string; phone: string | null; telegram_username: string | null; document_type: string | null; passport_series: string | null; passport_number: string | null } | null
-  const items = (order.order_items as { id: string; equipment: { name: string; serial_number: string | null } | null; daily_rate: number; days: number; subtotal: number; condition_on_issue: string | null; condition_on_return: string | null }[]) ?? []
+  const items = (order.order_items as { id: string; equipment: { name: string; currency: 'UZS' | 'USD' } | null; daily_rate: number; days: number; subtotal: number; condition_on_issue: string | null; condition_on_return: string | null }[]) ?? []
   const payments = (order.payments as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null }[]) ?? []
 
   const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
@@ -95,8 +95,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {client?.telegram_username && <span>@{client.telegram_username}</span>}
         </div>
         {client?.document_type && (
-          <p className="text-sm mt-2 text-gray-600">
-            📄 {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}
+          <p className="text-sm mt-2 text-gray-600 flex items-center gap-1.5">
+            <FileText className="w-4 h-4" />
+            {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}
             {(client.passport_series || client.passport_number) && (
               <span className="ml-2 text-gray-400">{client.passport_series} {client.passport_number}</span>
             )}
@@ -119,13 +120,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <div>
                 <p className="font-medium">{item.equipment?.name}</p>
                 <p className="text-xs text-gray-400">
-                  {item.equipment?.serial_number && `S/N: ${item.equipment.serial_number} · `}
                   {item.condition_on_issue && `Состояние при выдаче: ${item.condition_on_issue}`}
                   {item.condition_on_return && ` · При возврате: ${item.condition_on_return}`}
                 </p>
               </div>
               <span className="text-gray-700">
-                {formatCurrency(item.daily_rate)} × {item.days}д = {formatCurrency(item.subtotal)}
+                {formatCurrency(item.daily_rate, item.equipment?.currency)} × {item.days}д = {formatCurrency(item.subtotal, item.equipment?.currency)}
               </span>
             </div>
           ))}
