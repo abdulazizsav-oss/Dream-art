@@ -155,6 +155,13 @@ export type Database = {
             referencedRelation: 'equipment_categories'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'equipment_brand_id_fkey'
+            columns: ['brand_id']
+            isOneToOne: false
+            referencedRelation: 'brands'
+            referencedColumns: ['id']
+          },
         ]
       }
       equipment_maintenance: {
