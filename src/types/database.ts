@@ -82,6 +82,7 @@ export type Database = {
           name?: string
           slug?: string
           cover_url?: string | null
+          photo_url?: string | null
           is_active?: boolean
           sort_order?: number
           created_at?: string
