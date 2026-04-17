@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { orderSchema } from '@/lib/validations/order'
 import { sendOrderConfirmation } from '@/lib/bot/notifications'
+import type { OrderStatus } from '@/types/database'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     .select('*, clients(full_name, phone, telegram_chat_id)')
     .order('created_at', { ascending: false })
 
-  if (status) query = query.eq('status', status)
+  if (status) query = query.eq('status', status as OrderStatus)
   if (clientId) query = query.eq('client_id', clientId)
   if (search) query = query.ilike('order_number', `%${search}%`)
 
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   const parsed = orderSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { client_id, start_date, end_date, deposit_amount, notes, items } = parsed.data
+  const { client_id, start_date, end_date, deposit_amount, notes, items, trusted_person, trusted_person_doc_type } = parsed.data
 
   const { data: orderId, error } = await supabase.rpc('create_order_atomic', {
     p_client_id: client_id,
@@ -47,6 +48,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Сохраняем доверенное лицо (не входит в RPC)
+  if (trusted_person || trusted_person_doc_type) {
+    await supabase.from('orders').update({
+      trusted_person: trusted_person ?? null,
+      trusted_person_doc_type: trusted_person_doc_type ?? null,
+    }).eq('id', orderId as string)
+  }
+
   // Fetch created order for response + notifications
   const { data: order } = await supabase
     .from('orders')
@@ -56,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   // Fire Telegram notification (non-blocking)
   if (order) {
-    sendOrderConfirmation(order as Parameters<typeof sendOrderConfirmation>[0]).catch(console.error)
+    sendOrderConfirmation(order as unknown as Parameters<typeof sendOrderConfirmation>[0]).catch(console.error)
   }
 
   return NextResponse.json(order, { status: 201 })
