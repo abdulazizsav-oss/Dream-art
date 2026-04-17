@@ -47,7 +47,11 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             Категория
           </div>
           <p className="font-semibold mt-1">{(item.equipment_categories as { name: string } | null)?.name ?? 'Без категории'}</p>
-          {item.brand && <p className="text-xs text-zinc-400 mt-1">{item.brand}</p>}
+          {((item.brands as { name: string } | null)?.name ?? item.brand) && (
+            <p className="text-xs text-zinc-400 mt-1">
+              {(item.brands as { name: string } | null)?.name ?? item.brand}
+            </p>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center gap-2 text-xs text-gray-500">
