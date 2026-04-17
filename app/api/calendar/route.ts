@@ -26,5 +26,8 @@ export async function GET(req: NextRequest) {
     return order.start_date <= to && order.end_date >= from
   })
 
-  return NextResponse.json({ equipment, bookings: filteredBookings, blocked })
+  // Build a lookup map: user_id → full_name
+  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p.full_name]))
+
+  return NextResponse.json({ equipment, bookings: filteredBookings, blocked, profiles: profileMap })
 }
