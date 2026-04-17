@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { clientSchema, ClientFormValues } from '@/lib/validations/client'
+import { clientSchema, ClientFormInput, ClientFormValues } from '@/lib/validations/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,12 +23,14 @@ interface ClientFormProps {
 export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   const router = useRouter()
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } =
-    useForm<ClientFormValues>({
+    useForm<ClientFormInput, unknown, ClientFormValues>({
       resolver: zodResolver(clientSchema),
       defaultValues: defaultValues ?? { reliability_rating: 3, segment: 'other', deposit_held: 0 },
     })
 
-  const rating = watch('reliability_rating') ?? 3
+  const rating = Number(watch('reliability_rating') ?? 3)
+  const segment = (watch('segment') as string | undefined) ?? 'other'
+  const docType = (watch('document_type') as string | undefined) ?? 'passport_id'
 
   const DOCUMENT_TYPE_LABELS: Record<string, string> = {
     passport_id: 'Паспорт ID (биометрический)',
