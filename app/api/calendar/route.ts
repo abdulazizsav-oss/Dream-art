@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const [{ data: bookings }, { data: blocked }, { data: equipment }] = await Promise.all([
     supabase
       .from('order_items')
-      .select('equipment_id, orders(id, order_number, start_date, end_date, status, clients(full_name))')
+      .select('equipment_id, orders(id, order_number, start_date, end_date, status, created_by, clients(full_name))')
       .not('orders', 'is', null),
     supabase.from('blocked_dates').select('*').lte('start_date', to).gte('end_date', from),
     supabase.from('equipment').select('id, name, status, equipment_categories(name)').order('name'),
