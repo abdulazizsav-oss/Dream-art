@@ -31,11 +31,18 @@ export default async function EquipmentPage({
           title="Каталог техники"
           description={`${equipment?.length ?? 0} позиций`}
           action={
-            <Link href="/equipment/new">
-              <Button className="min-h-[44px] px-5">
-                <Plus className="w-4 h-4 mr-2" />Добавить
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/admin/categories">
+                <Button variant="outline" className="min-h-[44px]">
+                  <Settings className="w-4 h-4 mr-1.5" />Категории
+                </Button>
+              </Link>
+              <Link href="/equipment/new">
+                <Button className="min-h-[44px] px-5">
+                  <Plus className="w-4 h-4 mr-2" />Добавить
+                </Button>
+              </Link>
+            </div>
           }
         />
         {countsByCategory.length === 0 ? (
