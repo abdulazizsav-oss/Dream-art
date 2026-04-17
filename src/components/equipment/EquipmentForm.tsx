@@ -108,11 +108,13 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
         <div className="space-y-1.5">
           <Label>Бренд</Label>
           <Select
-            defaultValue={defaultValues?.brand_id ?? undefined}
+            value={brandIdVal ?? '__none'}
             onValueChange={v => setValue('brand_id', v === '__none' ? undefined : v)}
           >
             <SelectTrigger className="min-h-[44px]">
-              <SelectValue placeholder="Выберите бренд" />
+              <SelectValue placeholder="Выберите бренд">
+                {brandIdVal ? (brands.find(b => b.id === brandIdVal)?.name ?? '—') : '— Без бренда —'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none">— Без бренда —</SelectItem>
