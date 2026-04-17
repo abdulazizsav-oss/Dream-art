@@ -7,10 +7,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, currency: 'UZS' | 'USD' = 'UZS'): string {
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
-    currency: 'UZS',
+    currency,
     maximumFractionDigits: 0,
   }).format(amount)
 }
@@ -75,6 +75,14 @@ export const PAYMENT_TYPE_LABELS: Record<string, string> = {
   deposit_return: 'Возврат депозита',
   extra: 'Доп. оплата',
   fine: 'Штраф',
+}
+
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  passport_id: 'Паспорт ID (биометрический)',
+  passport_green: 'Паспорт зелёный',
+  zagranpassport: 'Загранпаспорт',
+  passport_cover: 'Паспорт с чехлом',
+  drivers_license: 'Водительские права',
 }
 
 export const CLIENT_SEGMENT_LABELS: Record<string, string> = {
