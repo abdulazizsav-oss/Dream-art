@@ -79,10 +79,10 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
       <div className="space-y-1.5">
         <Label>Сегмент</Label>
         <Select
-          defaultValue={defaultValues?.segment ?? 'other'}
+          value={segment}
           onValueChange={v => setValue('segment', v as ClientFormValues['segment'])}
         >
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue>{CLIENT_SEGMENT_LABELS[segment]}</SelectValue></SelectTrigger>
           <SelectContent>
             {Object.entries(CLIENT_SEGMENT_LABELS).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v}</SelectItem>
