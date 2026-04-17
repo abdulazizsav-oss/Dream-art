@@ -82,28 +82,37 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      {/* Client info */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold mb-3">Клиент</h2>
-        <p className="font-medium">{client?.full_name}</p>
-        <div className="flex gap-4 mt-1 text-sm text-gray-500">
-          {client?.phone && <span>{client.phone}</span>}
-          {client?.telegram_username && <span>@{client.telegram_username}</span>}
+      {/* Client + trusted person */}
+      <div className="bg-white rounded-xl border p-6 space-y-4">
+        <div>
+          <h2 className="font-semibold mb-2">Клиент</h2>
+          <p className="font-medium">{client?.full_name}</p>
+          <div className="flex gap-4 mt-1 text-sm text-gray-500">
+            {client?.phone && <span>{client.phone}</span>}
+            {client?.telegram_username && <span>@{client.telegram_username}</span>}
+          </div>
+          {order.deposit_amount > 0 && (
+            <p className="text-sm mt-2 text-amber-600">
+              Депозит: {formatCurrency(order.deposit_amount)}
+              {order.deposit_returned ? ' (возвращён)' : ' (удерживается)'}
+            </p>
+          )}
         </div>
-        {client?.document_type && (
-          <p className="text-sm mt-2 text-gray-600 flex items-center gap-1.5">
-            <FileText className="w-4 h-4" />
-            {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}
-            {(client.passport_series || client.passport_number) && (
-              <span className="ml-2 text-gray-400">{client.passport_series} {client.passport_number}</span>
+
+        {trustedPerson && (
+          <div className="border-t pt-4">
+            <p className="text-xs text-gray-500 mb-1.5 flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5" />
+              Доверенное лицо
+            </p>
+            <p className="font-medium text-gray-900">{trustedPerson}</p>
+            {trustedDocType && (
+              <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                <FileText className="w-3.5 h-3.5" />
+                {DOCUMENT_TYPE_LABELS[trustedDocType] ?? trustedDocType}
+              </p>
             )}
-          </p>
-        )}
-        {order.deposit_amount > 0 && (
-          <p className="text-sm mt-2 text-amber-600">
-            Депозит: {formatCurrency(order.deposit_amount)}
-            {order.deposit_returned ? ' (возвращён)' : ' (удерживается)'}
-          </p>
+          </div>
         )}
       </div>
 
