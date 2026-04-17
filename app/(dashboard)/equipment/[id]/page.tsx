@@ -80,14 +80,18 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
         <h2 className="font-semibold mb-4">Редактировать</h2>
         <EquipmentForm
           categories={categories ?? []}
+          brands={brands ?? []}
           equipmentId={id}
           defaultValues={{
             name: item.name,
             category_id: item.category_id ?? undefined,
+            brand_id: (item as any).brand_id ?? undefined,
             daily_rate: item.daily_rate,
             currency: item.currency,
             brand: item.brand ?? undefined,
             specs: item.specs ?? undefined,
+            serial_number: item.serial_number ?? undefined,
+            purchase_cost: item.purchase_cost ?? undefined,
             photo_url: item.photo_url ?? undefined,
             notes: item.notes ?? undefined,
             source: item.source ?? undefined,
