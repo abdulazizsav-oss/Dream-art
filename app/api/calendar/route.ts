@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient()
 
-  const [{ data: bookings }, { data: blocked }, { data: equipment }] = await Promise.all([
+  const [{ data: bookings }, { data: blocked }, { data: equipment }, { data: profiles }] = await Promise.all([
     supabase
       .from('order_items')
       .select('equipment_id, orders(id, order_number, start_date, end_date, status, created_by, clients(full_name))')
