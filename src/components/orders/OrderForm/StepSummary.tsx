@@ -17,14 +17,8 @@ interface StepSummaryProps {
   submitting: boolean
 }
 
-export function StepSummary({ values, clients, equipment, onBack, onSubmit, submitting }: StepSummaryProps) {
-  const client = clients.find(c => c.id === values.client_id) as (typeof clients[0] & { document_type?: string }) | undefined
-  const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-    passport_id: 'Паспорт ID',
-    passport_green: 'Паспорт зелёный',
-    zagranpassport: 'Загранпаспорт',
-    drivers_license: 'Водительские права',
-  }
+export function StepSummary({ values, clients, equipment, trustedPerson, onBack, onSubmit, submitting }: StepSummaryProps) {
+  const client = clients.find(c => c.id === values.client_id)
   const days = values.start_date && values.end_date ? calcDays(values.start_date, values.end_date) : 1
 
   const itemsWithDetails = values.items.map(item => ({
