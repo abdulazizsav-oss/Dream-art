@@ -180,6 +180,13 @@ export default async function EquipmentPage({
                   {brand?.logo_url && (
                     <img src={brand.logo_url} alt={brand.name} className="absolute top-2 left-2 w-8 h-8 object-contain bg-white/90 rounded-lg p-1 shadow-sm" />
                   )}
+                  <Link
+                    href={`/equipment/${item.id}`}
+                    onClick={e => e.stopPropagation()}
+                    className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                  </Link>
                 </div>
                 <div className="p-4">
                   {brand && !brand.logo_url && (
