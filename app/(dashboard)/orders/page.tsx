@@ -24,7 +24,7 @@ export default async function OrdersPage() {
         description={`${active.length} активных · ${orders?.length ?? 0} всего`}
         action={
           <Link href="/orders/new">
-            <Button><Plus className="w-4 h-4 mr-2" />Новый заказ</Button>
+            <Button className="min-h-[48px] px-5 text-base"><Plus className="w-4 h-4 mr-2" />Новый заказ</Button>
           </Link>
         }
       />
