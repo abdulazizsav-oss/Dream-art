@@ -9,6 +9,7 @@ import { AlertTriangle, TrendingUp, Camera, Users, ClipboardList, Plus } from 'l
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const superAdmin = await isSuperAdmin()
 
   const [
     { data: stats },
