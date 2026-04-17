@@ -70,6 +70,13 @@ export default async function EquipmentPage({
                   <span className="absolute top-2 right-2 text-[10px] font-mono text-gray-300 bg-white/80 px-1.5 rounded">
                     {String(i + 1).padStart(2, '0')}
                   </span>
+                  <Link
+                    href="/admin/categories"
+                    onClick={e => e.stopPropagation()}
+                    className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                  </Link>
                 </div>
                 <div className="p-4">
                   <p className="font-semibold text-gray-900 truncate">{cat.name}</p>
