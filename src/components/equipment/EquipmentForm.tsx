@@ -89,11 +89,13 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
         <div className="space-y-1.5">
           <Label>Категория</Label>
           <Select
-            defaultValue={defaultValues?.category_id ?? undefined}
+            value={categoryId ?? undefined}
             onValueChange={v => setValue('category_id', v)}
           >
             <SelectTrigger className="min-h-[44px]">
-              <SelectValue placeholder="Выберите категорию" />
+              <SelectValue placeholder="Выберите категорию">
+                {categoryId ? categories.find(c => c.id === categoryId)?.name : null}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categories.map(c => (
