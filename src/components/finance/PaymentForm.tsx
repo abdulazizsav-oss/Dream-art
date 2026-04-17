@@ -70,7 +70,7 @@ export function PaymentForm({ orders, defaultOrderId }: PaymentFormProps) {
         <div className="space-y-1.5">
           <Label>Способ</Label>
           <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Способ">{PAYMENT_METHOD_LABELS[method]}</SelectValue></SelectTrigger>
             <SelectContent>
               {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
