@@ -106,10 +106,10 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         <div className="space-y-1.5 mb-4">
           <Label>Вид документа</Label>
           <Select
-            defaultValue={defaultValues?.document_type ?? 'passport_id'}
+            value={docType}
             onValueChange={v => setValue('document_type', v as ClientFormValues['document_type'])}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger><SelectValue>{DOCUMENT_TYPE_LABELS[docType]}</SelectValue></SelectTrigger>
             <SelectContent>
               {Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
