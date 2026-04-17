@@ -1,181 +1,569 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type EquipmentStatus = 'free' | 'rented' | 'maintenance' | 'lost'
+export type OrderStatus = 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
+export type PaymentMethod = 'cash' | 'transfer' | 'card'
+export type PaymentType = 'rental' | 'deposit' | 'deposit_return' | 'extra' | 'fine'
+export type ClientSegment = 'photographer' | 'videographer' | 'studio' | 'agency' | 'one_time' | 'other'
+export type DocumentType = 'passport_id' | 'passport_green' | 'zagranpassport' | 'drivers_license'
+export type UserRole = 'admin' | 'super_admin'
+export type CurrencyCode = 'UZS' | 'USD'
 
 export type Database = {
   public: {
     Tables: {
+      user_profiles: {
+        Row: {
+          id: string
+          full_name: string
+          role: UserRole
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          full_name: string
+          role?: UserRole
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string
+          role?: UserRole
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_profiles_id_fkey'
+            columns: ['id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      brands: {
+        Row: { id: string; name: string; logo_url: string | null; sort_order: number; created_at: string }
+        Insert: { id?: string; name: string; logo_url?: string | null; sort_order?: number }
+        Update: { name?: string; logo_url?: string | null; sort_order?: number }
+        Relationships: []
+      }
       equipment_categories: {
-        Row: { id: string; name: string; slug: string; created_at: string }
-        Insert: { id?: string; name: string; slug: string; created_at?: string }
-        Update: { id?: string; name?: string; slug?: string; created_at?: string }
+        Row: {
+          id: string
+          name: string
+          slug: string
+          cover_url: string | null
+          is_active: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          cover_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          cover_url?: string | null
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
       }
       equipment: {
         Row: {
-          id: string; category_id: string | null; name: string; serial_number: string | null
-          photo_url: string | null; purchase_cost: number | null; daily_rate: number
-          status: 'free' | 'rented' | 'maintenance' | 'lost'; notes: string | null
-          created_at: string; updated_at: string
+          id: string
+          category_id: string | null
+          name: string
+          serial_number: string | null
+          photo_url: string | null
+          purchase_cost: number | null
+          daily_rate: number
+          currency: CurrencyCode
+          brand: string | null
+          specs: string | null
+          status: EquipmentStatus
+          notes: string | null
+          source: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string; category_id?: string | null; name: string; serial_number?: string | null
-          photo_url?: string | null; purchase_cost?: number | null; daily_rate: number
-          status?: 'free' | 'rented' | 'maintenance' | 'lost'; notes?: string | null
-          created_at?: string; updated_at?: string
-        }
-        Update: {
-          id?: string; category_id?: string | null; name?: string; serial_number?: string | null
-          photo_url?: string | null; purchase_cost?: number | null; daily_rate?: number
-          status?: 'free' | 'rented' | 'maintenance' | 'lost'; notes?: string | null
+          id?: string
+          category_id?: string | null
+          name: string
+          serial_number?: string | null
+          photo_url?: string | null
+          purchase_cost?: number | null
+          daily_rate: number
+          currency?: CurrencyCode
+          brand?: string | null
+          specs?: string | null
+          status?: EquipmentStatus
+          notes?: string | null
+          source?: string | null
+          sort_order?: number
+          created_at?: string
           updated_at?: string
         }
+        Update: {
+          id?: string
+          category_id?: string | null
+          name?: string
+          serial_number?: string | null
+          photo_url?: string | null
+          purchase_cost?: number | null
+          daily_rate?: number
+          currency?: CurrencyCode
+          brand?: string | null
+          specs?: string | null
+          status?: EquipmentStatus
+          notes?: string | null
+          source?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'equipment_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'equipment_categories'
+            referencedColumns: ['id']
+          },
+        ]
       }
       equipment_maintenance: {
         Row: {
-          id: string; equipment_id: string; scheduled_date: string | null
-          completed_date: string | null; description: string | null
-          cost: number | null; created_at: string
+          id: string
+          equipment_id: string
+          scheduled_date: string | null
+          completed_date: string | null
+          description: string | null
+          cost: number | null
+          created_at: string
         }
         Insert: {
-          id?: string; equipment_id: string; scheduled_date?: string | null
-          completed_date?: string | null; description?: string | null
-          cost?: number | null; created_at?: string
+          id?: string
+          equipment_id: string
+          scheduled_date?: string | null
+          completed_date?: string | null
+          description?: string | null
+          cost?: number | null
+          created_at?: string
         }
         Update: {
-          id?: string; equipment_id?: string; scheduled_date?: string | null
-          completed_date?: string | null; description?: string | null; cost?: number | null
+          id?: string
+          equipment_id?: string
+          scheduled_date?: string | null
+          completed_date?: string | null
+          description?: string | null
+          cost?: number | null
+          created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'equipment_maintenance_equipment_id_fkey'
+            columns: ['equipment_id']
+            isOneToOne: false
+            referencedRelation: 'equipment'
+            referencedColumns: ['id']
+          },
+        ]
       }
       clients: {
         Row: {
-          id: string; full_name: string; phone: string | null; telegram_username: string | null
-          telegram_chat_id: number | null; passport_series: string | null
-          passport_number: string | null; passport_issued_by: string | null
-          passport_issued_date: string | null; deposit_held: number; reliability_rating: number
-          segment: 'photographer' | 'videographer' | 'studio' | 'agency' | 'one_time' | 'other'
-          notes: string | null; birth_date: string | null; created_at: string; updated_at: string
+          id: string
+          full_name: string
+          phone: string | null
+          telegram_username: string | null
+          telegram_chat_id: number | null
+          passport_series: string | null
+          passport_number: string | null
+          passport_issued_by: string | null
+          passport_issued_date: string | null
+          deposit_held: number
+          reliability_rating: number
+          segment: ClientSegment
+          document_type: DocumentType
+          notes: string | null
+          birth_date: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string; full_name: string; phone?: string | null; telegram_username?: string | null
-          telegram_chat_id?: number | null; passport_series?: string | null
-          passport_number?: string | null; passport_issued_by?: string | null
-          passport_issued_date?: string | null; deposit_held?: number; reliability_rating?: number
-          segment?: 'photographer' | 'videographer' | 'studio' | 'agency' | 'one_time' | 'other'
-          notes?: string | null; birth_date?: string | null
+          id?: string
+          full_name: string
+          phone?: string | null
+          telegram_username?: string | null
+          telegram_chat_id?: number | null
+          passport_series?: string | null
+          passport_number?: string | null
+          passport_issued_by?: string | null
+          passport_issued_date?: string | null
+          deposit_held?: number
+          reliability_rating?: number
+          segment?: ClientSegment
+          document_type?: DocumentType
+          notes?: string | null
+          birth_date?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          full_name?: string; phone?: string | null; telegram_username?: string | null
-          telegram_chat_id?: number | null; passport_series?: string | null
-          passport_number?: string | null; passport_issued_by?: string | null
-          passport_issued_date?: string | null; deposit_held?: number; reliability_rating?: number
-          segment?: 'photographer' | 'videographer' | 'studio' | 'agency' | 'one_time' | 'other'
-          notes?: string | null; birth_date?: string | null
+          id?: string
+          full_name?: string
+          phone?: string | null
+          telegram_username?: string | null
+          telegram_chat_id?: number | null
+          passport_series?: string | null
+          passport_number?: string | null
+          passport_issued_by?: string | null
+          passport_issued_date?: string | null
+          deposit_held?: number
+          reliability_rating?: number
+          segment?: ClientSegment
+          document_type?: DocumentType
+          notes?: string | null
+          birth_date?: string | null
+          created_at?: string
+          updated_at?: string
         }
+        Relationships: []
       }
       orders: {
         Row: {
-          id: string; order_number: string; client_id: string
-          status: 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
-          start_date: string; end_date: string; total_amount: number; deposit_amount: number
-          deposit_returned: boolean; contract_pdf_url: string | null; notes: string | null
-          created_by: string | null; created_at: string; updated_at: string
+          id: string
+          order_number: string
+          client_id: string
+          status: OrderStatus
+          start_date: string
+          end_date: string
+          total_amount: number
+          deposit_amount: number
+          deposit_returned: boolean
+          contract_pdf_url: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          id?: string; order_number?: string; client_id: string
-          status?: 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
-          start_date: string; end_date: string; total_amount?: number; deposit_amount?: number
-          deposit_returned?: boolean; contract_pdf_url?: string | null; notes?: string | null
+          id?: string
+          order_number?: string
+          client_id: string
+          status?: OrderStatus
+          start_date: string
+          end_date: string
+          total_amount?: number
+          deposit_amount?: number
+          deposit_returned?: boolean
+          contract_pdf_url?: string | null
+          notes?: string | null
           created_by?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          status?: 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
-          start_date?: string; end_date?: string; total_amount?: number; deposit_amount?: number
-          deposit_returned?: boolean; contract_pdf_url?: string | null; notes?: string | null
+          id?: string
+          order_number?: string
+          client_id?: string
+          status?: OrderStatus
+          start_date?: string
+          end_date?: string
+          total_amount?: number
+          deposit_amount?: number
+          deposit_returned?: boolean
+          contract_pdf_url?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: 'orders_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orders_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       order_items: {
         Row: {
-          id: string; order_id: string; equipment_id: string; daily_rate: number; days: number
-          subtotal: number; condition_on_issue: string | null; condition_on_return: string | null
-          issue_photo_urls: string[]; return_photo_urls: string[]
+          id: string
+          order_id: string
+          equipment_id: string
+          daily_rate: number
+          days: number
+          subtotal: number
+          condition_on_issue: string | null
+          condition_on_return: string | null
+          issue_photo_urls: string[]
+          return_photo_urls: string[]
         }
         Insert: {
-          id?: string; order_id: string; equipment_id: string; daily_rate: number; days: number
-          subtotal: number; condition_on_issue?: string | null; condition_on_return?: string | null
-          issue_photo_urls?: string[]; return_photo_urls?: string[]
+          id?: string
+          order_id: string
+          equipment_id: string
+          daily_rate: number
+          days: number
+          subtotal: number
+          condition_on_issue?: string | null
+          condition_on_return?: string | null
+          issue_photo_urls?: string[]
+          return_photo_urls?: string[]
         }
         Update: {
-          condition_on_return?: string | null; return_photo_urls?: string[]
+          id?: string
+          order_id?: string
+          equipment_id?: string
+          daily_rate?: number
+          days?: number
+          subtotal?: number
+          condition_on_issue?: string | null
+          condition_on_return?: string | null
+          issue_photo_urls?: string[]
+          return_photo_urls?: string[]
         }
+        Relationships: [
+          {
+            foreignKeyName: 'order_items_equipment_id_fkey'
+            columns: ['equipment_id']
+            isOneToOne: false
+            referencedRelation: 'equipment'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_items_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
       }
       payments: {
         Row: {
-          id: string; order_id: string; amount: number
-          payment_method: 'cash' | 'transfer' | 'card'
-          payment_type: 'rental' | 'deposit' | 'deposit_return' | 'extra' | 'fine'
-          paid_at: string; notes: string | null; created_by: string | null
+          id: string
+          order_id: string
+          amount: number
+          payment_method: PaymentMethod
+          payment_type: PaymentType
+          paid_at: string
+          notes: string | null
+          created_by: string | null
         }
         Insert: {
-          id?: string; order_id: string; amount: number
-          payment_method?: 'cash' | 'transfer' | 'card'
-          payment_type?: 'rental' | 'deposit' | 'deposit_return' | 'extra' | 'fine'
-          paid_at?: string; notes?: string | null; created_by?: string | null
+          id?: string
+          order_id: string
+          amount: number
+          payment_method?: PaymentMethod
+          payment_type?: PaymentType
+          paid_at?: string
+          notes?: string | null
+          created_by?: string | null
         }
-        Update: { amount?: number; notes?: string | null }
+        Update: {
+          id?: string
+          order_id?: string
+          amount?: number
+          payment_method?: PaymentMethod
+          payment_type?: PaymentType
+          paid_at?: string
+          notes?: string | null
+          created_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'payments_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'payments_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
       }
       blocked_dates: {
         Row: {
-          id: string; equipment_id: string; start_date: string; end_date: string
-          reason: string | null; created_at: string
+          id: string
+          equipment_id: string
+          start_date: string
+          end_date: string
+          reason: string | null
+          created_at: string
         }
         Insert: {
-          id?: string; equipment_id: string; start_date: string; end_date: string
+          id?: string
+          equipment_id: string
+          start_date: string
+          end_date: string
           reason?: string | null
+          created_at?: string
         }
-        Update: { start_date?: string; end_date?: string; reason?: string | null }
+        Update: {
+          id?: string
+          equipment_id?: string
+          start_date?: string
+          end_date?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'blocked_dates_equipment_id_fkey'
+            columns: ['equipment_id']
+            isOneToOne: false
+            referencedRelation: 'equipment'
+            referencedColumns: ['id']
+          },
+        ]
       }
       notification_log: {
         Row: {
-          id: string; order_id: string | null; client_id: string | null; type: string
-          sent_at: string; telegram_message_id: number | null; success: boolean
+          id: string
+          order_id: string | null
+          client_id: string | null
+          type: string
+          sent_at: string
+          telegram_message_id: number | null
+          success: boolean
         }
         Insert: {
-          id?: string; order_id?: string | null; client_id?: string | null; type: string
-          sent_at?: string; telegram_message_id?: number | null; success?: boolean
+          id?: string
+          order_id?: string | null
+          client_id?: string | null
+          type: string
+          sent_at?: string
+          telegram_message_id?: number | null
+          success?: boolean
         }
-        Update: { success?: boolean }
+        Update: {
+          id?: string
+          order_id?: string | null
+          client_id?: string | null
+          type?: string
+          sent_at?: string
+          telegram_message_id?: number | null
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'notification_log_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'notification_log_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
       }
     }
     Views: {
       v_equipment_utilization: {
         Row: {
-          id: string; name: string; category_id: string | null; daily_rate: number
-          purchase_cost: number | null; status: string; total_rentals: number
-          total_rental_days: number; total_revenue: number; roi_percent: number
+          id: string
+          name: string
+          category_id: string | null
+          daily_rate: number
+          purchase_cost: number | null
+          status: string
+          total_rentals: number
+          total_rental_days: number
+          total_revenue: number
+          roi_percent: number
         }
+        Relationships: []
       }
       v_overdue_orders: {
         Row: {
-          id: string; order_number: string; client_id: string; status: string
-          start_date: string; end_date: string; total_amount: number; client_name: string
-          client_phone: string | null; telegram_chat_id: number | null; days_overdue: number
+          id: string
+          order_number: string
+          client_id: string
+          status: string
+          start_date: string
+          end_date: string
+          total_amount: number
+          client_name: string
+          client_phone: string | null
+          telegram_chat_id: number | null
+          days_overdue: number
         }
+        Relationships: []
       }
       v_dashboard_stats: {
         Row: {
-          active_rentals: number; overdue_count: number; revenue_this_month: number
-          revenue_this_week: number; equipment_free: number; equipment_rented: number
-          equipment_maintenance: number; total_clients: number
+          active_rentals: number
+          overdue_count: number
+          revenue_today: number
+          revenue_this_month: number
+          revenue_this_week: number
+          equipment_free: number
+          equipment_rented: number
+          equipment_maintenance: number
+          total_clients: number
         }
+        Relationships: []
       }
     }
     Functions: {
       check_equipment_availability: {
-        Args: { p_equipment_id: string; p_start_date: string; p_end_date: string; p_exclude_order_id?: string }
+        Args: {
+          p_equipment_id: string
+          p_start_date: string
+          p_end_date: string
+          p_exclude_order_id?: string | null
+        }
         Returns: boolean
       }
       create_order_atomic: {
         Args: {
-          p_client_id: string; p_start_date: string; p_end_date: string
-          p_deposit_amount: number; p_notes: string; p_created_by: string; p_items: Json
+          p_client_id: string
+          p_start_date: string
+          p_end_date: string
+          p_deposit_amount: number
+          p_notes: string
+          p_created_by: string
+          p_items: Json
         }
         Returns: string
       }
@@ -183,11 +571,16 @@ export type Database = {
         Args: { p_order_id: string; p_items: Json }
         Returns: void
       }
+      mark_overdue_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: void
+      }
     }
+    Enums: Record<PropertyKey, never>
+    CompositeTypes: Record<PropertyKey, never>
   }
 }
 
-// Convenience type aliases
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row']
 
@@ -199,3 +592,4 @@ export type Order = Tables<'orders'>
 export type OrderItem = Tables<'order_items'>
 export type Payment = Tables<'payments'>
 export type BlockedDate = Tables<'blocked_dates'>
+export type UserProfile = Tables<'user_profiles'>
