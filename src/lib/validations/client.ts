@@ -11,9 +11,10 @@ export const clientSchema = z.object({
   deposit_held: z.coerce.number().min(0).default(0),
   reliability_rating: z.coerce.number().min(1).max(5).default(3),
   segment: z.enum(['photographer','videographer','studio','agency','one_time','other']).default('other'),
-  document_type: z.enum(['passport_id','passport_green','zagranpassport','drivers_license']).default('passport_id'),
+  document_type: z.enum(['passport_id','passport_green','zagranpassport','passport_cover','drivers_license']).default('passport_id'),
   birth_date: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
 })
 
-export type ClientFormValues = z.infer<typeof clientSchema>
+export type ClientFormInput = z.input<typeof clientSchema>
+export type ClientFormValues = z.output<typeof clientSchema>
