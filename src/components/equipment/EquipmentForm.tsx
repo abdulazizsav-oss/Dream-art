@@ -152,10 +152,10 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
         <div className="space-y-1.5">
           <Label>Валюта</Label>
           <Select
-            defaultValue={defaultValues?.currency ?? 'UZS'}
+            value={currencyVal}
             onValueChange={v => setValue('currency', v as EquipmentFormValues['currency'])}
           >
-            <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="min-h-[44px]"><SelectValue>{currencyVal}</SelectValue></SelectTrigger>
             <SelectContent>
               <SelectItem value="UZS">UZS</SelectItem>
               <SelectItem value="USD">USD</SelectItem>
