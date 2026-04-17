@@ -13,7 +13,7 @@ import {
 import { ReliabilityRating } from './ReliabilityRating'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { CLIENT_SEGMENT_LABELS } from '@/lib/utils'
+import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 
 interface ClientFormProps {
   defaultValues?: Partial<ClientFormValues>
