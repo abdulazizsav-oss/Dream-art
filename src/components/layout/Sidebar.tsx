@@ -32,6 +32,8 @@ export function Sidebar({ role, userName }: SidebarProps) {
 
   const navItems = [
     ...baseNavItems,
+    { href: '/admin/categories', label: 'Категории',    icon: Layers },
+    { href: '/admin/brands',    label: 'Бренды',        icon: Tag },
     ...(role === 'super_admin'
       ? [{ href: '/admin/users', label: 'Пользователи', icon: Shield }]
       : []),
