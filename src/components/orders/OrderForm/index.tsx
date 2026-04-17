@@ -30,6 +30,8 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   })
   const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>({
     name: '',
+    phone: '',
+    relation: '',
     doc_type: 'passport_id',
   })
   const [submitting, setSubmitting] = useState(false)
