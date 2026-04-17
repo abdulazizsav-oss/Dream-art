@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { OrderFormValues } from '@/lib/validations/order'
 import { Client, Equipment, EquipmentCategory } from '@/types/database'
-import { StepClient } from './StepClient'
+import { StepClient, TrustedPersonData } from './StepClient'
 import { StepEquipment } from './StepEquipment'
 import { StepDates } from './StepDates'
 import { StepSummary } from './StepSummary'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { calcDays, cn } from '@/lib/utils'
+import { Check } from 'lucide-react'
 
 interface OrderFormProps {
   clients: Client[]
@@ -19,12 +20,17 @@ interface OrderFormProps {
 
 const STEPS = ['Клиент', 'Техника', 'Даты', 'Итог']
 
-export function OrderForm({ clients, equipment }: OrderFormProps) {
+export function OrderForm({ clients: initialClients, equipment }: OrderFormProps) {
   const router = useRouter()
   const [step, setStep] = useState(0)
+  const [allClients, setAllClients] = useState<Client[]>(initialClients)
   const [values, setValues] = useState<Partial<OrderFormValues>>({
     items: [],
     deposit_amount: 0,
+  })
+  const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>({
+    name: '',
+    doc_type: 'passport_id',
   })
   const [submitting, setSubmitting] = useState(false)
 
@@ -34,10 +40,23 @@ export function OrderForm({ clients, equipment }: OrderFormProps) {
 
   async function submit() {
     setSubmitting(true)
+    const days = values.start_date && values.end_date
+      ? calcDays(values.start_date, values.end_date)
+      : 1
+    const payload = {
+      ...values,
+      trusted_person: trustedPerson.name || null,
+      trusted_person_doc_type: trustedPerson.doc_type || null,
+      items: (values.items ?? []).map(item => ({
+        ...item,
+        days,
+        subtotal: item.daily_rate * days,
+      })),
+    }
     const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) {
       const err = await res.json()
@@ -63,7 +82,7 @@ export function OrderForm({ clients, equipment }: OrderFormProps) {
               i === step ? 'bg-blue-600 text-white ring-4 ring-blue-100' :
               'bg-gray-100 text-gray-400'
             )}>
-              {i < step ? '✓' : i + 1}
+              {i < step ? <Check className="w-4 h-4" /> : i + 1}
             </div>
             <span className={cn('text-sm', i === step ? 'font-medium' : 'text-gray-400')}>
               {label}
@@ -76,9 +95,13 @@ export function OrderForm({ clients, equipment }: OrderFormProps) {
       <div className="bg-white rounded-xl border p-6">
         {step === 0 && (
           <StepClient
-            clients={clients}
+            clients={allClients}
             selectedClientId={values.client_id}
-            onSelect={id => { update({ client_id: id }); setStep(1) }}
+            trustedPerson={trustedPerson}
+            onSelect={id => update({ client_id: id })}
+            onTrustedPersonChange={setTrustedPerson}
+            onClientCreated={client => setAllClients(prev => [...prev, client])}
+            onNext={() => setStep(1)}
           />
         )}
         {step === 1 && (
@@ -107,8 +130,9 @@ export function OrderForm({ clients, equipment }: OrderFormProps) {
         {step === 3 && (
           <StepSummary
             values={values as OrderFormValues}
-            clients={clients}
+            clients={allClients}
             equipment={equipment}
+            trustedPerson={trustedPerson}
             onBack={() => setStep(2)}
             onSubmit={submit}
             submitting={submitting}
