@@ -43,6 +43,9 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   })
 
   const photoUrl = watch('photo_url') as string | null | undefined
+  const categoryId = watch('category_id') as string | undefined
+  const brandIdVal = watch('brand_id') as string | undefined
+  const currencyVal = (watch('currency') as string | undefined) ?? 'UZS'
 
   async function onSubmit(data: EquipmentFormValues) {
     const url = equipmentId ? `/api/equipment/${equipmentId}` : '/api/equipment'
