@@ -275,6 +275,8 @@ export type Database = {
           deposit_returned: boolean
           contract_pdf_url: string | null
           notes: string | null
+          trusted_person: string | null
+          trusted_person_doc_type: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -291,6 +293,8 @@ export type Database = {
           deposit_returned?: boolean
           contract_pdf_url?: string | null
           notes?: string | null
+          trusted_person?: string | null
+          trusted_person_doc_type?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -307,6 +311,8 @@ export type Database = {
           deposit_returned?: boolean
           contract_pdf_url?: string | null
           notes?: string | null
+          trusted_person?: string | null
+          trusted_person_doc_type?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
