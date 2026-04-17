@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
       .not('orders', 'is', null),
     supabase.from('blocked_dates').select('*').lte('start_date', to).gte('end_date', from),
     supabase.from('equipment').select('id, name, status, equipment_categories(name)').order('name'),
+    supabase.from('user_profiles').select('id, full_name'),
   ])
 
   // Filter to date range
