@@ -93,6 +93,7 @@ export type Database = {
         Row: {
           id: string
           category_id: string | null
+          brand_id: string | null
           name: string
           serial_number: string | null
           photo_url: string | null
@@ -111,6 +112,7 @@ export type Database = {
         Insert: {
           id?: string
           category_id?: string | null
+          brand_id?: string | null
           name: string
           serial_number?: string | null
           photo_url?: string | null
