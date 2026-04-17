@@ -12,9 +12,13 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
   const { data: item } = await supabase
     .from('equipment')
-    .select('*, equipment_categories(name), equipment_maintenance(*), brands(name)')
+    .select('*, equipment_categories(name), equipment_maintenance(*)')
     .eq('id', id)
     .single()
+  const brandId = (item as any)?.brand_id
+  const { data: brandData } = brandId
+    ? await supabase.from('brands').select('name').eq('id', brandId).single()
+    : { data: null }
 
   if (!item) notFound()
 
