@@ -3,12 +3,15 @@
 import { OrderFormValues } from '@/lib/validations/order'
 import { Client, Equipment, EquipmentCategory } from '@/types/database'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, formatDate, calcDays } from '@/lib/utils'
+import { formatCurrency, formatDate, calcDays, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
+import { TrustedPersonData } from './StepClient'
+import { FileText, UserCheck } from 'lucide-react'
 
 interface StepSummaryProps {
   values: OrderFormValues
   clients: Client[]
   equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
+  trustedPerson: TrustedPersonData
   onBack: () => void
   onSubmit: () => void
   submitting: boolean
@@ -42,7 +45,10 @@ export function StepSummary({ values, clients, equipment, onBack, onSubmit, subm
           <p className="font-medium">{client?.full_name}</p>
           {client?.phone && <p className="text-sm text-gray-600">{client.phone}</p>}
           {client?.document_type && (
-            <p className="text-sm text-gray-500">📄 {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}</p>
+            <p className="text-sm text-gray-500 flex items-center gap-1.5">
+              <FileText className="w-4 h-4" />
+              {DOCUMENT_TYPE_LABELS[client.document_type] ?? client.document_type}
+            </p>
           )}
         </div>
 
@@ -61,7 +67,7 @@ export function StepSummary({ values, clients, equipment, onBack, onSubmit, subm
               <div key={item.equipment_id} className="flex justify-between text-sm">
                 <span>{item.equipment?.name ?? 'Неизвестно'}</span>
                 <span className="text-gray-600">
-                  {formatCurrency(item.daily_rate)} × {days}д = {formatCurrency(item.subtotal)}
+                  {formatCurrency(item.daily_rate, item.equipment?.currency) } × {days}д = {formatCurrency(item.subtotal, item.equipment?.currency)}
                 </span>
               </div>
             ))}
