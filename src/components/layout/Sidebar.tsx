@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Camera, Users, ClipboardList,
-  CalendarDays, Wallet, LogOut, Shield,
+  CalendarDays, Wallet, LogOut, Shield, Tag, Layers,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
@@ -87,7 +87,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
         <div className="px-4 py-2.5 rounded-xl bg-gray-50">
           <p className="text-xs font-medium text-gray-700 truncate">{userName || 'Администратор'}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">
-            {role === 'super_admin' ? '⭐ Главный администратор' : 'Администратор'}
+            {role === 'super_admin' ? 'Главный администратор' : 'Администратор'}
           </p>
         </div>
         <Button
