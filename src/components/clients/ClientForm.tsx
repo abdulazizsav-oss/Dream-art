@@ -32,13 +32,6 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   const segment = (watch('segment') as string | undefined) ?? 'other'
   const docType = (watch('document_type') as string | undefined) ?? 'passport_id'
 
-  const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-    passport_id: 'Паспорт ID (биометрический)',
-    passport_green: 'Паспорт зелёный',
-    zagranpassport: 'Загранпаспорт',
-    drivers_license: 'Водительские права',
-  }
-
   async function onSubmit(data: ClientFormValues) {
     const url = clientId ? `/api/clients/${clientId}` : '/api/clients'
     const method = clientId ? 'PUT' : 'POST'
