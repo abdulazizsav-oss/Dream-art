@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Camera, ClipboardList,
-  CalendarDays, Wallet, Users, Shield,
+  CalendarDays, Wallet, Shield,
 } from 'lucide-react'
 
 interface MobileNavProps {
