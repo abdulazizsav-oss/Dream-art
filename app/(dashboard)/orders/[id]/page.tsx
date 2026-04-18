@@ -165,7 +165,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <div key={p.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
                 <div>
                   <p>{PAYMENT_TYPE_LABELS[p.payment_type]} · {PAYMENT_METHOD_LABELS[p.payment_method]}</p>
-                  <p className="text-xs text-gray-400">{formatDate(p.paid_at)}</p>
+                  <p className="text-xs text-gray-400">
+                    {formatDate(p.paid_at)}
+                    {p.created_by_profile?.full_name && ` · Принял: ${p.created_by_profile.full_name}`}
+                  </p>
                   {p.notes && <p className="text-xs text-gray-400">{p.notes}</p>}
                 </div>
                 <span className={cn('font-medium', p.payment_type === 'deposit_return' ? 'text-red-600' : 'text-green-700')}>
