@@ -9,6 +9,7 @@ import {
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { FileText, RotateCcw, UserCheck } from 'lucide-react'
+import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
