@@ -8,26 +8,84 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient()
 
-  const [{ data: bookings }, { data: blocked }, { data: equipment }, { data: profiles }] = await Promise.all([
+  const [ordersResult, blockedResult, equipmentResult, categoriesResult, profilesResult] = await Promise.all([
     supabase
-      .from('order_items')
-      .select('equipment_id, orders(id, order_number, start_date, end_date, status, created_by, clients(full_name))')
-      .not('orders', 'is', null),
+      .from('orders')
+      .select('id, order_number, start_date, end_date, status, created_by, created_at, clients(full_name, phone), order_items(equipment_id, equipment(name, category_id))')
+      .lte('start_date', to)
+      .gte('end_date', from)
+      .not('status', 'in', '(returned,cancelled)'),
     supabase.from('blocked_dates').select('*').lte('start_date', to).gte('end_date', from),
-    supabase.from('equipment').select('id, name, status, equipment_categories(name)').order('name'),
+    supabase
+      .from('equipment')
+      .select('id, name, status, category_id, brand, specs, sort_order, equipment_categories!inner(name, is_active)')
+      .eq('equipment_categories.is_active', true)
+      .order('sort_order')
+      .order('name'),
+    supabase
+      .from('equipment_categories')
+      .select('id, name, slug, sort_order, is_active')
+      .eq('is_active', true)
+      .order('sort_order')
+      .order('name'),
     supabase.from('user_profiles').select('id, full_name'),
   ])
 
-  // Filter to date range
-  const filteredBookings = (bookings ?? []).filter(b => {
-    const order = b.orders as { start_date: string; end_date: string; status: string } | null
-    if (!order) return false
-    if (['cancelled', 'returned'].includes(order.status)) return false
-    return order.start_date <= to && order.end_date >= from
+  let equipment: unknown = equipmentResult.data ?? []
+  if (equipmentResult.error) {
+    const fallback = await supabase
+      .from('equipment')
+      .select('id, name, status, category_id, equipment_categories(name)')
+      .order('name')
+    equipment = fallback.data?.map(item => ({
+      ...item,
+      brand: null,
+      specs: null,
+      sort_order: 0,
+      equipment_categories: item.equipment_categories
+        ? { ...item.equipment_categories, is_active: true }
+        : null,
+    }))
+  }
+
+  let categories: unknown = categoriesResult.data ?? []
+  if (categoriesResult.error) {
+    const fallback = await supabase
+      .from('equipment_categories')
+      .select('id, name, slug')
+      .order('name')
+    categories = fallback.data?.map(item => ({
+      ...item,
+      sort_order: 0,
+      is_active: true,
+    }))
+  }
+
+  const orders = ordersResult.data
+  const blocked = blockedResult.data
+  const profiles = profilesResult.data
+
+  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p.full_name]))
+  const bookings = (orders ?? []).flatMap(order => {
+    const items = (order.order_items ?? []) as {
+      equipment_id: string
+      equipment: { name: string; category_id: string | null } | null
+    }[]
+
+    return items.map(item => ({
+      equipment_id: item.equipment_id,
+      equipment_name: item.equipment?.name ?? 'Техника',
+      order: {
+        id: order.id,
+        order_number: order.order_number,
+        start_date: order.start_date,
+        end_date: order.end_date,
+        status: order.status,
+        created_by: order.created_by,
+        client: order.clients,
+      },
+    }))
   })
 
-  // Build a lookup map: user_id → full_name
-  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p.full_name]))
-
-  return NextResponse.json({ equipment, bookings: filteredBookings, blocked, profiles: profileMap })
+  return NextResponse.json({ equipment, categories, bookings, blocked, profiles: profileMap })
 }
