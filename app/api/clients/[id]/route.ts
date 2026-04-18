@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { clientSchema } from '@/lib/validations/client'
+
+function invalidateClient(id: string) {
+  revalidatePath('/clients')
+  revalidatePath(`/clients/${id}`)
+  revalidatePath('/orders')
+  revalidatePath('/dashboard')
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
