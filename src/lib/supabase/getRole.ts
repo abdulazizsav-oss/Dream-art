@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from './server'
 
 export type UserRole = 'super_admin' | 'admin'
@@ -8,7 +9,9 @@ export interface UserProfile {
   role: UserRole
 }
 
-export async function getMyProfile(): Promise<UserProfile | null> {
+// React cache() memoizes per-request so layout + page + API route in the same
+// render don't each re-issue the auth.getUser() + profile SELECT.
+export const getMyProfile = cache(async (): Promise<UserProfile | null> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
@@ -18,13 +21,13 @@ export async function getMyProfile(): Promise<UserProfile | null> {
     .eq('id', user.id)
     .single()
   return data as UserProfile | null
-}
+})
 
-export async function getMyRole(): Promise<UserRole | null> {
+export const getMyRole = cache(async (): Promise<UserRole | null> => {
   const profile = await getMyProfile()
   return profile?.role ?? null
-}
+})
 
-export async function isSuperAdmin(): Promise<boolean> {
+export const isSuperAdmin = cache(async (): Promise<boolean> => {
   return (await getMyRole()) === 'super_admin'
-}
+})
