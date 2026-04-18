@@ -71,6 +71,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {order.created_at && (
             <p className="text-[11px] text-gray-400 mt-1">{formatDateTime(order.created_at)}</p>
           )}
+          {createdByProfile?.full_name && (
+            <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+              <User className="w-3 h-3" />
+              Оформил: <span className="font-medium text-gray-700">{createdByProfile.full_name}</span>
+            </p>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Период</p>
