@@ -31,6 +31,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  revalidatePath('/orders')
+  revalidatePath(`/orders/${id}`)
+  revalidatePath('/dashboard')
+  revalidatePath('/calendar')
+
   return NextResponse.json(data)
 }
 
