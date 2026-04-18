@@ -56,5 +56,9 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  revalidatePath('/equipment')
+  revalidatePath('/dashboard')
+
   return NextResponse.json(data, { status: 201 })
 }
