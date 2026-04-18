@@ -61,8 +61,10 @@ export default async function OrdersPage() {
   )
 }
 
-function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; created_at: string | null; clients: { full_name: string } | null } }) {
+function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; created_at: string | null; clients: { full_name: string } | null; payments?: { amount: number; payment_type: string }[] | null } }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
+  const paidRental = (order.payments ?? []).filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
+  const debt = Math.max(0, order.total_amount - paidRental)
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors min-h-[64px] gap-2">
       <Link href={`/orders/${order.id}`} className="flex-1 min-w-0">
@@ -78,7 +80,7 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
           {ORDER_STATUS_LABELS[order.status]}
         </span>
         {isActive && (
-          <CloseOrderButton orderId={order.id} variant="outline" size="sm" className="text-xs" />
+          <CloseOrderButton orderId={order.id} debt={debt} variant="outline" size="sm" className="text-xs" />
         )}
       </div>
     </div>
