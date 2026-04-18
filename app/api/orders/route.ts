@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { orderSchema } from '@/lib/validations/order'
 import { sendOrderConfirmation } from '@/lib/bot/notifications'
