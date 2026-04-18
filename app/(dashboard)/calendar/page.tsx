@@ -79,6 +79,15 @@ function firstName(value?: string | null) {
   return value?.trim().split(/\s+/)[0] ?? ''
 }
 
+function toTashkentTime(iso: string | null): string {
+  if (!iso) return ''
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Tashkent',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(iso))
+}
+
 export default function CalendarPage() {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date()
