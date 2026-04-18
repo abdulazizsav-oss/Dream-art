@@ -50,7 +50,9 @@ export function PaymentForm({ orders, defaultOrderId }: PaymentFormProps) {
         <Label>Заказ</Label>
         <Select value={orderId} onValueChange={setOrderId}>
           <SelectTrigger>
-            <SelectValue placeholder="Выберите заказ" />
+            <SelectValue placeholder="Выберите заказ">
+              {orderId ? (() => { const o = orders.find(x => x.id === orderId); return o ? `${o.order_number} — ${o.clients?.full_name}` : orderId })() : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {orders.map(o => (
