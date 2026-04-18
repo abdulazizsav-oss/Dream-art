@@ -75,5 +75,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .in('id', equipmentIds)
   }
 
+  revalidatePath('/orders')
+  revalidatePath(`/orders/${id}`)
+  revalidatePath('/dashboard')
+  revalidatePath('/equipment')
+  revalidatePath('/calendar')
+  revalidatePath('/finance')
+
   return NextResponse.json({ success: true })
 }
