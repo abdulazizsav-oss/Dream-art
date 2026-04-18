@@ -38,14 +38,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         title={order.order_number}
         description={`Клиент: ${client?.full_name}`}
         action={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {order.status === 'active' || order.status === 'overdue' ? (
-              <Link href={`/orders/${id}/return`}>
-                <Button variant="outline">
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Оформить возврат
-                </Button>
-              </Link>
+              <>
+                <CloseOrderButton orderId={id} variant="default" />
+                <Link href={`/orders/${id}/return`}>
+                  <Button variant="outline">
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Возврат с актом
+                  </Button>
+                </Link>
+              </>
             ) : null}
             <a href={`/api/orders/${id}/contract`} target="_blank">
               <Button variant="outline">
