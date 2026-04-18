@@ -69,5 +69,10 @@ export async function POST(req: NextRequest) {
     sendOrderConfirmation(order as unknown as Parameters<typeof sendOrderConfirmation>[0]).catch(console.error)
   }
 
+  revalidatePath('/orders')
+  revalidatePath('/dashboard')
+  revalidatePath('/calendar')
+  revalidatePath('/equipment')
+
   return NextResponse.json(order, { status: 201 })
 }
