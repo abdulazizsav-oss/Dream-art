@@ -61,10 +61,11 @@ export default async function OrdersPage() {
   )
 }
 
-function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; created_at: string | null; clients: { full_name: string } | null; payments?: { amount: number; payment_type: string }[] | null } }) {
+function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; created_at: string | null; clients: { full_name: string } | null; created_by_profile?: { full_name: string } | null; payments?: { amount: number; payment_type: string }[] | null } }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
   const paidRental = (order.payments ?? []).filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
   const debt = Math.max(0, order.total_amount - paidRental)
+  const createdBy = order.created_by_profile?.full_name
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors min-h-[64px] gap-2">
       <Link href={`/orders/${order.id}`} className="flex-1 min-w-0">
@@ -73,6 +74,9 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
           {order.clients?.full_name} · {formatDateRange(order.start_date, order.end_date)}
           {order.created_at ? ` · ${formatDateTime(order.created_at)}` : ''}
         </p>
+        {createdBy && (
+          <p className="text-[11px] text-gray-400 truncate mt-0.5">Оформил: {createdBy}</p>
+        )}
       </Link>
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className="text-sm text-gray-700 hidden sm:inline">{formatCurrency(order.total_amount)}</span>
