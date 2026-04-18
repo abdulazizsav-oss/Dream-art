@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { equipmentSchema } from '@/lib/validations/equipment'
 import type { EquipmentStatus } from '@/types/database'
