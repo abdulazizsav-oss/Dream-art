@@ -19,6 +19,25 @@ export function formatDate(date: string | Date): string {
   return format(new Date(date), 'dd.MM.yyyy', { locale: ru })
 }
 
+export function formatDateTime(date: string | Date): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Tashkent',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(date))
+}
+
+export function formatTime(date: string | Date): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Tashkent',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(date))
+}
+
 export function formatDateRange(start: string, end: string): string {
   return `${formatDate(start)} — ${formatDate(end)}`
 }
