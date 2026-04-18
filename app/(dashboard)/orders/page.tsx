@@ -43,7 +43,7 @@ export default async function OrdersPage() {
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">История</h2>
           <div className="bg-white rounded-xl border divide-y">
-            {past.map(o => <OrderRow key={o.id} order={o} />)}
+            {past.map(o => <OrderRow key={o.id} order={o as any} />)}
           </div>
         </div>
       )}
