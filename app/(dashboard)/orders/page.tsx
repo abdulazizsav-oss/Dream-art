@@ -62,23 +62,24 @@ export default async function OrdersPage() {
 }
 
 function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; clients: { full_name: string } | null } }) {
+  const isActive = order.status === 'active' || order.status === 'overdue'
   return (
-    <Link
-      href={`/orders/${order.id}`}
-      className="flex items-center justify-between px-4 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[64px]"
-    >
-      <div>
+    <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors min-h-[64px] gap-2">
+      <Link href={`/orders/${order.id}`} className="flex-1 min-w-0">
         <p className="font-medium text-sm">{order.order_number}</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-400 truncate">
           {order.clients?.full_name} · {formatDateRange(order.start_date, order.end_date)}
         </p>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-700">{formatCurrency(order.total_amount)}</span>
+      </Link>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-sm text-gray-700 hidden sm:inline">{formatCurrency(order.total_amount)}</span>
         <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', ORDER_STATUS_COLORS[order.status])}>
           {ORDER_STATUS_LABELS[order.status]}
         </span>
+        {isActive && (
+          <CloseOrderButton orderId={order.id} variant="outline" size="sm" className="text-xs" />
+        )}
       </div>
-    </Link>
+    </div>
   )
 }
