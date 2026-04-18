@@ -11,7 +11,7 @@ export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, clients(full_name), payments(amount, payment_type)')
+    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type)')
     .order('created_at', { ascending: false })
     .limit(100)
 
