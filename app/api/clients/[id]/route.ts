@@ -42,5 +42,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { error } = await supabase.from('clients').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  invalidateClient(id)
   return new NextResponse(null, { status: 204 })
 }
