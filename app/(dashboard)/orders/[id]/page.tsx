@@ -67,6 +67,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <span className={cn('mt-1 inline-flex text-xs px-2 py-0.5 rounded-full font-medium', ORDER_STATUS_COLORS[order.status])}>
             {ORDER_STATUS_LABELS[order.status]}
           </span>
+          {order.created_at && (
+            <p className="text-[11px] text-gray-400 mt-1">{formatDateTime(order.created_at)}</p>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Период</p>
