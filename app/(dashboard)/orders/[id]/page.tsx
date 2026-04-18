@@ -8,7 +8,7 @@ import {
   PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { FileText, RotateCcw, UserCheck } from 'lucide-react'
+import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
