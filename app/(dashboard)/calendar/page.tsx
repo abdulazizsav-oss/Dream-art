@@ -361,6 +361,7 @@ function FragmentRows({
             const order = booking?.order
             const creatorName = order?.created_by ? profiles[order.created_by] : ''
             const clientName = order?.client?.full_name ?? ''
+            const orderTime = order?.created_at ? toTashkentTime(order.created_at) : ''
             const isToday = value === today
             const isOverdue = order?.status === 'overdue'
 
