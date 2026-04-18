@@ -90,13 +90,12 @@ export function CloseOrderButton({ orderId, debt, variant = 'default', size = 'd
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant={variant} size={size} className={className}>
-          <CheckCircle className="w-4 h-4 mr-2" />
-          Закрыть заказ
-        </Button>
-      </DialogTrigger>
+    <>
+      <Button type="button" variant={variant} size={size} className={className} onClick={() => setOpen(true)}>
+        <CheckCircle className="w-4 h-4 mr-2" />
+        Закрыть заказ
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Закрытие заказа</DialogTitle>
