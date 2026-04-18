@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import {
-  formatCurrency, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
+  formatCurrency, formatDate, formatDateTime, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS,
   PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
