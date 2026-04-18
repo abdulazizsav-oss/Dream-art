@@ -393,7 +393,7 @@ function FragmentRows({
                     )}
                   >
                     <span className="block text-[10px] leading-tight font-semibold truncate">
-                      {firstName(clientName) || 'Клиент'}
+                      {firstName(clientName) || 'Клиент'}{orderTime ? ` · ${orderTime}` : ''}
                     </span>
                     <span className="block text-[9px] leading-tight opacity-70 truncate">
                       {creatorName ? firstName(creatorName) : order.order_number}
