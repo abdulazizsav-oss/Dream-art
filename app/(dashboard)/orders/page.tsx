@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDateRange, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, ClipboardList } from 'lucide-react'
+import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 
 export default async function OrdersPage() {
   const supabase = await createClient()
