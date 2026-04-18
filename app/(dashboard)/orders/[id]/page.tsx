@@ -28,7 +28,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const trustedPerson = (order as any).trusted_person as string | null
   const trustedDocType = (order as any).trusted_person_doc_type as string | null
   const items = (order.order_items as { id: string; equipment: { name: string; currency: 'UZS' | 'USD' } | null; daily_rate: number; days: number; subtotal: number; condition_on_issue: string | null; condition_on_return: string | null }[]) ?? []
-  const payments = (order.payments as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
+  const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
 
   const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
   const debt = order.total_amount - payments.filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
