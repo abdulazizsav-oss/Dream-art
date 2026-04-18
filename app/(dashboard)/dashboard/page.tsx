@@ -38,7 +38,7 @@ export default async function DashboardPage() {
 
   const s = stats as {
     active_rentals: number; overdue_count: number; revenue_this_month: number
-    revenue_this_week: number; equipment_free: number; equipment_rented: number
+    revenue_today: number; revenue_this_week: number; equipment_free: number; equipment_rented: number
     equipment_maintenance: number; total_clients: number
   } | null
 

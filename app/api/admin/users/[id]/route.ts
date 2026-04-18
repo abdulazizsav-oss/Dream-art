@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { isSuperAdmin } from '@/lib/supabase/getRole'
+import type { Database } from '@/types/database'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isSuperAdmin())) {
@@ -10,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { role, full_name } = await req.json()
   const supabase = await createClient()
 
-  const update: Record<string, string> = {}
+  const update: Database['public']['Tables']['user_profiles']['Update'] = {}
   if (role) update.role = role
   if (full_name) update.full_name = full_name
 
@@ -24,7 +25,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const { id } = await params
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
 
   const { error } = await supabase.auth.admin.deleteUser(id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

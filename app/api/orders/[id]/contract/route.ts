@@ -9,14 +9,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: order, error } = await supabase
     .from('orders')
-    .select('*, clients(*), order_items(*, equipment(name, serial_number))')
+    .select('*, clients(*), order_items(*, equipment(name, currency))')
     .eq('id', id)
     .single()
 
   if (error || !order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
   const client = order.clients as { full_name: string; phone: string | null; passport_series: string | null; passport_number: string | null } | null
-  const items = (order.order_items as { equipment: { name: string; serial_number: string | null } | null; daily_rate: number; days: number; subtotal: number }[]) ?? []
+  const items = (order.order_items as { equipment: { name: string; currency: 'UZS' | 'USD' } | null; daily_rate: number; days: number; subtotal: number }[]) ?? []
 
   const pdfBytes = await generateContract({
     orderNumber: order.order_number,
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     endDate: formatDate(order.end_date),
     items: items.map(i => ({
       name: i.equipment?.name ?? 'Оборудование',
-      serialNumber: i.equipment?.serial_number ?? null,
+      currency: i.equipment?.currency ?? 'UZS',
       dailyRate: i.daily_rate,
       days: i.days,
       subtotal: i.subtotal,
@@ -39,7 +39,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     createdAt: formatDate(order.created_at),
   })
 
-  return new NextResponse(pdfBytes, {
+  const pdfBody = new ArrayBuffer(pdfBytes.byteLength)
+  new Uint8Array(pdfBody).set(pdfBytes)
+
+  return new NextResponse(new Blob([pdfBody], { type: 'application/pdf' }), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="contract-${order.order_number}.pdf"`,

@@ -1,0 +1,221 @@
+import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
+import { Plus, Wrench, ChevronRight, Camera, Boxes, Search } from 'lucide-react'
+import { Equipment, EquipmentCategory } from '@/types/database'
+
+function getEquipmentGroup(item: Equipment) {
+  const brand = item.brand?.trim()
+  if (brand) return brand
+
+  const notesPrefix = item.notes?.split('·')[0]?.trim()
+  if (notesPrefix && notesPrefix.length <= 24) return notesPrefix
+
+  return item.name.split(/\s+/)[0] || 'Другое'
+}
+
+export default async function EquipmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; search?: string }>
+}) {
+  const { category: catId, search } = await searchParams
+  const supabase = await createClient()
+
+  let { data: categories, error: categoriesError } = await supabase
+    .from('equipment_categories')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order')
+    .order('name')
+
+  if (categoriesError) {
+    const fallback = await supabase
+      .from('equipment_categories')
+      .select('*')
+      .order('name')
+    categories = fallback.data
+  }
+
+  const categoryList = (categories ?? []) as EquipmentCategory[]
+
+  if (!catId) {
+    return (
+      <div>
+        <PageHeader
+          title="Каталог техники"
+          description="Категории и позиции для аренды"
+          action={
+            <Link href="/equipment/new">
+              <Button className="min-h-[44px] px-5 bg-zinc-900 hover:bg-zinc-800">
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить
+              </Button>
+            </Link>
+          }
+        />
+
+        {categoryList.length === 0 ? (
+          <div className="bg-white rounded-xl border p-12 text-center">
+            <Wrench className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+            <p className="text-zinc-500">Категории не добавлены</p>
+            <Link href="/equipment/new" className="mt-3 inline-block">
+              <Button size="sm">Добавить первую позицию</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {categoryList.map((cat, index) => (
+              <Link
+                key={cat.id}
+                href={`/equipment?category=${cat.id}`}
+                className="group bg-white rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all overflow-hidden"
+              >
+                <div className="h-28 bg-zinc-50 flex items-center justify-between px-5 border-b border-zinc-100">
+                  <Boxes className="w-9 h-9 text-zinc-300 group-hover:text-zinc-500 transition-colors" />
+                  <span className="font-mono text-xs text-zinc-300 tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <p className="font-semibold text-zinc-950 truncate">{cat.name}</p>
+                  <p className="text-sm text-zinc-400 mt-1">Открыть позиции</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const currentCat = categoryList.find(c => c.id === catId)
+  let query = supabase
+    .from('equipment')
+    .select('*')
+    .eq('category_id', catId)
+    .order('sort_order')
+    .order('name')
+
+  if (search) {
+    const safeSearch = search.replaceAll(',', ' ')
+    query = query.or(`name.ilike.%${safeSearch}%,brand.ilike.%${safeSearch}%,specs.ilike.%${safeSearch}%,notes.ilike.%${safeSearch}%`)
+  }
+
+  let { data: equipment, error: equipmentError } = await query
+  if (equipmentError) {
+    let fallbackQuery = supabase
+      .from('equipment')
+      .select('*')
+      .eq('category_id', catId)
+      .order('name')
+
+    if (search) fallbackQuery = fallbackQuery.ilike('name', `%${search}%`)
+
+    const fallback = await fallbackQuery
+    equipment = fallback.data
+  }
+  const equipmentList = (equipment ?? []) as Equipment[]
+  const groupedEquipment = Array.from(
+    equipmentList.reduce((groups, item) => {
+      const groupName = getEquipmentGroup(item)
+      groups.set(groupName, [...(groups.get(groupName) ?? []), item])
+      return groups
+    }, new Map<string, Equipment[]>())
+  ).map(([brand, items]) => ({ brand, items }))
+
+  return (
+    <div>
+      <PageHeader
+        title={currentCat?.name ?? 'Техника'}
+        description="Позиции каталога"
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link href="/equipment">
+              <Button variant="outline" className="min-h-[44px]">
+                Категории
+              </Button>
+            </Link>
+            <Link href="/equipment/new">
+              <Button className="min-h-[44px] px-5 bg-zinc-900 hover:bg-zinc-800">
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить
+              </Button>
+            </Link>
+          </div>
+        }
+      />
+
+      <form className="mb-4 max-w-md">
+        <input type="hidden" name="category" value={catId} />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+          <input
+            name="search"
+            defaultValue={search ?? ''}
+            placeholder="Поиск по названию, бренду или характеристикам"
+            className="w-full min-h-[44px] rounded-lg border bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+          />
+        </div>
+      </form>
+
+      {equipmentList.length === 0 ? (
+        <div className="bg-white rounded-xl border p-12 text-center">
+          <Wrench className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+          <p className="text-zinc-500">В этой категории нет позиций</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {groupedEquipment.map(group => (
+            <section key={group.brand} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-zinc-500">
+                  {group.brand}
+                </h2>
+                <div className="h-px flex-1 bg-zinc-200" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {group.items.map(item => (
+                  <Link
+                    key={item.id}
+                    href={`/equipment/${item.id}`}
+                    className="group bg-white rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all overflow-hidden"
+                  >
+                    <div className="h-40 bg-zinc-50 flex items-center justify-center overflow-hidden border-b border-zinc-100">
+                      {item.photo_url ? (
+                        <img
+                          src={item.photo_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <Camera className="w-12 h-12 text-zinc-200 group-hover:text-zinc-300 transition-colors" />
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <p className="font-semibold text-zinc-950 leading-snug">{item.name}</p>
+                      {item.specs && (
+                        <p className="text-xs text-zinc-600 mt-1 line-clamp-2">{item.specs}</p>
+                      )}
+                      {item.notes && (
+                        <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{item.notes}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
+                        <span className="text-sm font-medium text-zinc-800">
+                          {formatCurrency(item.daily_rate, item.currency)}<span className="text-zinc-400 font-normal">/день</span>
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-zinc-700 transition-colors" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

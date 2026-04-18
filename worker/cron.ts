@@ -24,3 +24,13 @@ interface Env {
   APP_URL: string
   CRON_SECRET: string
 }
+
+interface ScheduledEvent {
+  scheduledTime: number
+  cron: string
+}
+
+interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void
+  passThroughOnException(): void
+}

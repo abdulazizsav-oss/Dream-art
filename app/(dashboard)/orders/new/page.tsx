@@ -5,10 +5,24 @@ import { OrderForm } from '@/components/orders/OrderForm'
 export default async function NewOrderPage() {
   const supabase = await createClient()
 
-  const [{ data: clients }, { data: equipment }] = await Promise.all([
-    supabase.from('clients').select('*').order('full_name'),
-    supabase.from('equipment').select('*, equipment_categories(*)').order('name'),
-  ])
+  const clientsPromise = supabase.from('clients').select('*').order('full_name')
+  const equipmentPromise = supabase
+    .from('equipment')
+    .select('*, equipment_categories!inner(*)')
+    .eq('equipment_categories.is_active', true)
+    .order('sort_order')
+    .order('name')
+
+  const [{ data: clients }, equipmentResult] = await Promise.all([clientsPromise, equipmentPromise])
+  let equipment = equipmentResult.data
+
+  if (equipmentResult.error) {
+    const fallback = await supabase
+      .from('equipment')
+      .select('*, equipment_categories(*)')
+      .order('name')
+    equipment = fallback.data
+  }
 
   return (
     <div>

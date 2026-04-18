@@ -7,11 +7,17 @@ interface ContractData {
   clientPassport: string | null
   startDate: string
   endDate: string
-  items: { name: string; serialNumber: string | null; dailyRate: number; days: number; subtotal: number }[]
+  items: { name: string; currency: 'UZS' | 'USD'; dailyRate: number; days: number; subtotal: number }[]
   totalAmount: number
   depositAmount: number
   notes: string | null
   createdAt: string
+}
+
+function money(amount: number, currency: 'UZS' | 'USD') {
+  return currency === 'USD'
+    ? `$${amount.toLocaleString('ru')}`
+    : `${amount.toLocaleString('ru')} сум`
 }
 
 export async function generateContract(data: ContractData): Promise<Uint8Array> {
@@ -60,8 +66,8 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   gap(0.5)
 
   data.items.forEach((item, i) => {
-    line(`${i + 1}. ${item.name}${item.serialNumber ? ` (S/N: ${item.serialNumber})` : ''}`)
-    line(`   ${item.dailyRate.toLocaleString('ru')} сум/день × ${item.days} дн. = ${item.subtotal.toLocaleString('ru')} сум`, 50, 9)
+    line(`${i + 1}. ${item.name}`)
+    line(`   ${money(item.dailyRate, item.currency)}/день × ${item.days} дн. = ${money(item.subtotal, item.currency)}`, 50, 9)
     gap(0.3)
   })
   gap(0.5)

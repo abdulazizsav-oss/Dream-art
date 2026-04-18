@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { equipmentSchema } from '@/lib/validations/equipment'
+import type { EquipmentStatus } from '@/types/database'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -11,16 +12,31 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('equipment')
-    .select('*, equipment_categories(name, slug)')
+    .select('*, equipment_categories(name, slug, is_active)')
     .order('name')
 
   if (category) query = query.eq('category_id', category)
-  if (status) query = query.eq('status', status)
-  if (search) query = query.ilike('name', `%${search}%`)
+  if (status) query = query.eq('status', status as EquipmentStatus)
+  if (search) {
+    const safeSearch = search.replaceAll(',', ' ')
+    query = query.or(`name.ilike.%${safeSearch}%,brand.ilike.%${safeSearch}%,specs.ilike.%${safeSearch}%,notes.ilike.%${safeSearch}%`)
+  }
 
-  const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const result = await query
+  if (!result.error) return NextResponse.json(result.data)
+
+  let fallbackQuery = supabase
+    .from('equipment')
+    .select('*, equipment_categories(name, slug)')
+    .order('name')
+
+  if (category) fallbackQuery = fallbackQuery.eq('category_id', category)
+  if (status) fallbackQuery = fallbackQuery.eq('status', status as EquipmentStatus)
+  if (search) fallbackQuery = fallbackQuery.ilike('name', `%${search}%`)
+
+  const fallback = await fallbackQuery
+  if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 })
+  return NextResponse.json(fallback.data)
 }
 
 export async function POST(req: NextRequest) {
