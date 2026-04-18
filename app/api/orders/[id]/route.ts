@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // Set order status to returned
   const { error: orderErr } = await supabase
     .from('orders')
-    .update({ status: 'returned', actual_return_date: new Date().toISOString().split('T')[0] })
+    .update({ status: 'returned', actual_return_date: new Date().toISOString().split('T')[0] } as any)
     .eq('id', id)
 
   if (orderErr) return NextResponse.json({ error: orderErr.message }, { status: 500 })
