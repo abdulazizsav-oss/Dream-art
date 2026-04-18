@@ -178,6 +178,7 @@ export function CloseOrderButton({ orderId, debt, variant = 'default', size = 'd
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   )
 }
