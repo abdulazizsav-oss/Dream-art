@@ -82,6 +82,7 @@ export async function GET(req: NextRequest) {
         end_date: order.end_date,
         status: order.status,
         created_by: order.created_by,
+        created_at: (order as any).created_at ?? null,
         client: order.clients,
       },
     }))
