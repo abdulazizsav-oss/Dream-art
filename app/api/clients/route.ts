@@ -27,5 +27,9 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabase.from('clients').insert(parsed.data).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  revalidatePath('/clients')
+  revalidatePath('/dashboard')
+
   return NextResponse.json(data, { status: 201 })
 }
