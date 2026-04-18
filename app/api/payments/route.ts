@@ -44,5 +44,11 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  revalidatePath('/finance')
+  revalidatePath('/orders')
+  revalidatePath(`/orders/${parsed.data.order_id}`)
+  revalidatePath('/dashboard')
+
   return NextResponse.json(data, { status: 201 })
 }
