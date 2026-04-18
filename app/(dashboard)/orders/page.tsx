@@ -61,7 +61,7 @@ export default async function OrdersPage() {
   )
 }
 
-function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; clients: { full_name: string } | null } }) {
+function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; created_at: string | null; clients: { full_name: string } | null } }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors min-h-[64px] gap-2">
@@ -69,6 +69,7 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
         <p className="font-medium text-sm">{order.order_number}</p>
         <p className="text-xs text-gray-400 truncate">
           {order.clients?.full_name} · {formatDateRange(order.start_date, order.end_date)}
+          {order.created_at ? ` · ${formatDateTime(order.created_at)}` : ''}
         </p>
       </Link>
       <div className="flex items-center gap-2 flex-shrink-0">
