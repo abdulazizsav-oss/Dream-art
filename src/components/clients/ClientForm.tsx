@@ -11,10 +11,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { ReliabilityRating } from './ReliabilityRating'
+import { ImageUpload } from '@/components/ui/ImageUpload'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
-import { UserCheck } from 'lucide-react'
+import { UserCheck, Camera, AtSign, MapPin } from 'lucide-react'
 
 interface ClientFormProps {
   defaultValues?: Partial<ClientFormValues>
