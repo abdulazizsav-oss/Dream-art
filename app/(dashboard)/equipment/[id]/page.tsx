@@ -89,6 +89,77 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
         </div>
       )}
 
+      {/* Комплектация и режим съёмки */}
+      {(kitItems.length > 0 || isCamera) && (
+        <div className="bg-white rounded-xl border p-4 space-y-3">
+          {isCamera && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Режим съёмки:</span>
+              <span
+                className={
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ' +
+                  (dayNight === 'day'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : dayNight === 'night'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                      : 'bg-gray-50 text-gray-700 border border-gray-200')
+                }
+              >
+                {dayNight === 'day' && <><Sun className="w-3 h-3" /> День</>}
+                {dayNight === 'night' && <><Moon className="w-3 h-3" /> Ночь</>}
+                {dayNight === 'both' && <><Sparkles className="w-3 h-3" /> День и ночь</>}
+              </span>
+            </div>
+          )}
+          {kitItems.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                <Package className="w-3.5 h-3.5" />
+                Комплектация
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {kitItems.map(k => (
+                  <span key={k} className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    {k}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ROI / Заработано */}
+      {utilization && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <TrendingUp className="w-4 h-4" />
+              Всего аренд
+            </div>
+            <p className="text-2xl font-bold mt-1">{utilization.total_rentals ?? 0}</p>
+          </div>
+          <div className="bg-white rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <CircleDollarSign className="w-4 h-4" />
+              Заработано
+            </div>
+            <p className="text-2xl font-bold mt-1 text-green-600">
+              {formatCurrency(utilization.total_revenue ?? 0, item.currency)}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <TrendingUp className="w-4 h-4" />
+              ROI
+            </div>
+            <p className={'text-2xl font-bold mt-1 ' + ((utilization.roi_percent ?? 0) >= 100 ? 'text-green-600' : 'text-gray-900')}>
+              {Math.round(utilization.roi_percent ?? 0)}%
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold mb-4">Редактировать</h2>
         <EquipmentForm
@@ -109,6 +180,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             notes: item.notes ?? undefined,
             source: item.source ?? undefined,
             sort_order: item.sort_order,
+            kit_items: kitItems,
+            day_night: dayNight,
           }}
         />
       </div>
