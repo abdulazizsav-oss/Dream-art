@@ -131,6 +131,8 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
             depositAmount={values.deposit_amount ?? 0}
             notes={values.notes ?? ''}
             selectedEquipmentIds={(values.items ?? []).map(i => i.equipment_id)}
+            selectedItems={values.items ?? []}
+            equipment={equipment}
             onUpdate={patch => update(patch)}
             onNext={() => setStep(3)}
             onBack={() => setStep(1)}
