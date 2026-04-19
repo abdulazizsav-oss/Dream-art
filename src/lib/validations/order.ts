@@ -6,6 +6,7 @@ export const orderItemSchema = z.object({
   days: z.number().min(1),
   subtotal: z.number().min(0),
   condition_on_issue: z.string().default('Хорошее'),
+  selected_kit_items: z.array(z.string()).default([]).optional(),
 })
 
 export const orderSchema = z.object({
