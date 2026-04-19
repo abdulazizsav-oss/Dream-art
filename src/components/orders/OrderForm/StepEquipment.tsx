@@ -47,25 +47,23 @@ export function StepEquipment({
       .then(setAvailability)
   }, [startDate, endDate, equipment])
 
-  /** Сколько единиц каждой модели уже в корзине (по equipment.id) — для подсветки счётчика на карточке. */
+  /**
+   * Счётчик по модели: показываем суммарное количество выбранных единиц для всех карточек той же модели.
+   * Т.е. если в корзине Canon R5 (2 шт.) — на всех карточках "Canon R5" будет показываться "×2".
+   */
   const selectedCounts = useMemo(() => {
-    const counts = new Map<string, number>()
+    // Подсчёт по имени модели
+    const byModel = new Map<string, number>()
     for (const item of selectedItems) {
       const eq = equipment.find(e => e.id === item.equipment_id)
       if (!eq) continue
-      const key = groupKey(eq)
-      // Подсвечиваем счётчик у всех карточек этой модели
-      for (const row of equipment) {
-        if (row.name === eq.name) {
-          counts.set(row.id, (counts.get(row.id) ?? 0) + 1 / equipment.filter(r => r.name === eq.name).length)
-        }
-      }
-      // Лучше — индивидуальный подсчёт: сколько раз модель встречается
-      counts.set(item.equipment_id, (counts.get(item.equipment_id) ?? 0) + 1)
+      byModel.set(groupKey(eq), (byModel.get(groupKey(eq)) ?? 0) + 1)
     }
-    // Очистим мусор (дробные из верхнего хака)
-    for (const [k, v] of counts) {
-      if (!Number.isInteger(v)) counts.delete(k)
+    // Распределяем на все карточки этой модели
+    const counts = new Map<string, number>()
+    for (const row of equipment) {
+      const n = byModel.get(groupKey(row))
+      if (n) counts.set(row.id, n)
     }
     return counts
   }, [selectedItems, equipment])
