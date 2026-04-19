@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { calcDays } from '@/lib/utils'
-import { OrderFormValues } from '@/lib/validations/order'
+import { OrderFormValues, OrderItemFormValue } from '@/lib/validations/order'
+import type { Equipment, EquipmentCategory } from '@/types/database'
+import { LiveTotal } from './LiveTotal'
 
 interface StepDatesProps {
   startDate: string
