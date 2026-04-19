@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate, calcDays, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 import { TrustedPersonData } from './StepClient'
 import { FileText, UserCheck } from 'lucide-react'
+import { LiveTotal } from './LiveTotal'
 
 interface StepSummaryProps {
   values: OrderFormValues
