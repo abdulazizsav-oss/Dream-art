@@ -17,6 +17,8 @@ export const equipmentSchema = z.object({
   notes: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   source: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   sort_order: z.coerce.number().int().min(0).default(0).optional(),
+  kit_items: z.array(z.string()).default([]).optional(),
+  day_night: z.enum(['day', 'night', 'both']).default('both').optional(),
 })
 
 export type EquipmentFormInput = z.input<typeof equipmentSchema>
