@@ -80,19 +80,56 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         {errors.full_name && <p className="text-xs text-red-500">{errors.full_name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>Телефон *</Label>
-          <Input {...register('phone')} placeholder="+998 90 123-45-67" className="min-h-[44px]" />
-          {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
+      <div className="space-y-1.5">
+        <Label>Телефон *</Label>
+        <Input {...register('phone')} placeholder="+998 90 123-45-67" className="min-h-[44px]" />
+        {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
+      </div>
+
+      {/* ── Контакты ── */}
+      <div className="border-t pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <AtSign className="w-4 h-4 text-blue-500" />
+          <h3 className="text-sm font-semibold text-gray-700">Контакты</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>Telegram</Label>
-          <Input {...register('telegram_username')} placeholder="@username" className="min-h-[44px]" />
+          <Label>Email</Label>
+          <Input type="email" {...register('email')} placeholder="client@example.com" className="min-h-[44px]" />
+          {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>Telegram *</Label>
+            <Input {...register('telegram_username')} placeholder="@username" className="min-h-[44px]" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Instagram *</Label>
+            <Input {...register('instagram_username')} placeholder="@username" className="min-h-[44px]" />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Facebook</Label>
+          <Input {...register('facebook_username')} placeholder="fb.com/username" className="min-h-[44px]" />
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      {/* ── Адреса ── */}
+      <div className="border-t pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-blue-500" />
+          <h3 className="text-sm font-semibold text-gray-700">Адреса</h3>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Адрес фактический *</Label>
+          <Textarea {...register('address_actual')} rows={2} placeholder="Город, улица, дом, квартира" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Адрес по прописке *</Label>
+          <Textarea {...register('address_registered')} rows={2} placeholder="Город, улица, дом, квартира" />
+        </div>
+      </div>
+
+      <div className="border-t pt-4 space-y-1.5">
         <Label>Сегмент</Label>
         <Select
           value={segment}
