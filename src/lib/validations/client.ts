@@ -3,7 +3,17 @@ import { z } from 'zod'
 export const clientSchema = z.object({
   full_name: z.string().min(1, 'ФИО обязательно'),
   phone: z.string().min(1, 'Укажите номер телефона'),
+  // Контакты (email/telegram/instagram/facebook)
+  email: z.preprocess(v => v === '' ? null : v, z.string().email('Некорректный email').nullable().optional()),
   telegram_username: z.string().nullable().optional(),
+  instagram_username: z.string().nullable().optional(),
+  facebook_username: z.string().nullable().optional(),
+  // Адреса
+  address_actual: z.string().nullable().optional(),
+  address_registered: z.string().nullable().optional(),
+  // Фото клиента
+  photo_url: z.preprocess(v => v === '' ? null : v, z.string().url().nullable().optional()),
+  // Паспорт
   passport_series: z.string().nullable().optional(),
   passport_number: z.string().nullable().optional(),
   passport_issued_by: z.string().nullable().optional(),
