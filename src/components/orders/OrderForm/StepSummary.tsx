@@ -34,6 +34,15 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
     <div>
       <h2 className="font-semibold text-lg mb-4">Подтверждение заказа</h2>
 
+      <div className="mb-4">
+        <LiveTotal
+          startDate={values.start_date}
+          endDate={values.end_date}
+          items={values.items}
+          equipment={equipment}
+        />
+      </div>
+
       <div className="space-y-4">
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-xs text-gray-500 mb-1">Клиент</p>
