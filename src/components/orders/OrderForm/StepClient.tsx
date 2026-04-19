@@ -78,11 +78,34 @@ export function StepClient({
   async function handleCreateClient() {
     if (!newName.trim()) { toast.error('Введите ФИО'); return }
     if (!newPhone.trim()) { toast.error('Укажите номер телефона'); return }
+    if (!newTelegram.trim()) { toast.error('Укажите Telegram'); return }
+    if (!newInstagram.trim()) { toast.error('Укажите Instagram'); return }
+    if (!newAddressActual.trim()) { toast.error('Укажите фактический адрес'); return }
+    if (!newAddressRegistered.trim()) { toast.error('Укажите адрес по прописке'); return }
+
     setCreating(true)
     const res = await fetch('/api/clients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ full_name: newName.trim(), phone: newPhone.trim(), segment: newSegment }),
+      body: JSON.stringify({
+        full_name: newName.trim(),
+        phone: newPhone.trim(),
+        segment: newSegment,
+        email: newEmail.trim() || null,
+        telegram_username: newTelegram.trim() || null,
+        instagram_username: newInstagram.trim() || null,
+        facebook_username: newFacebook.trim() || null,
+        address_actual: newAddressActual.trim() || null,
+        address_registered: newAddressRegistered.trim() || null,
+        photo_url: newPhoto ?? null,
+        birth_date: newBirthDate || null,
+        document_type: newDocType,
+        passport_series: newPassportSeries.trim() || null,
+        passport_number: newPassportNumber.trim() || null,
+        passport_issued_by: newPassportIssuedBy.trim() || null,
+        passport_issued_date: newPassportIssuedDate || null,
+        notes: newNotes.trim() || null,
+      }),
     })
     if (!res.ok) {
       toast.error('Ошибка создания клиента')
@@ -96,8 +119,11 @@ export function StepClient({
     // Доверенное лицо пока пусто — клиент только создан
     onTrustedPersonChange({ ...trustedPerson, name: client.full_name })
     setShowCreate(false)
-    setNewName('')
-    setNewPhone('')
+    // Сброс полей
+    setNewName(''); setNewPhone(''); setNewEmail(''); setNewTelegram(''); setNewInstagram('')
+    setNewFacebook(''); setNewAddressActual(''); setNewAddressRegistered(''); setNewPhoto(null)
+    setNewBirthDate(''); setNewPassportSeries(''); setNewPassportNumber('')
+    setNewPassportIssuedBy(''); setNewPassportIssuedDate(''); setNewNotes('')
     setCreating(false)
   }
 
