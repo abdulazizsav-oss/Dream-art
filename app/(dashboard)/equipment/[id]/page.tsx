@@ -12,7 +12,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
   const { data: item } = await supabase
     .from('equipment')
-    .select('*, equipment_categories(name), equipment_maintenance(*)')
+    .select('*, equipment_categories(name, slug), equipment_maintenance(*)')
     .eq('id', id)
     .single()
   const brandId = (item as any)?.brand_id
@@ -21,6 +21,17 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
     : { data: null }
 
   if (!item) notFound()
+
+  const { data: utilization } = await supabase
+    .from('v_equipment_utilization')
+    .select('total_rentals, total_revenue, roi_percent')
+    .eq('id', id)
+    .single()
+
+  const kitItems = ((item as any).kit_items ?? []) as string[]
+  const dayNight = ((item as any).day_night ?? 'both') as 'day' | 'night' | 'both'
+  const categorySlug = (item.equipment_categories as { slug?: string } | null)?.slug
+  const isCamera = categorySlug === 'cameras'
 
   const [{ data: categories }, { data: brands }] = await Promise.all([
     supabase.from('equipment_categories').select('*').order('sort_order').order('name'),
