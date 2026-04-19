@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { EquipmentForm } from '@/components/equipment/EquipmentForm'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import Link from 'next/link'
-import { CalendarDays, CircleDollarSign, Layers } from 'lucide-react'
+import { CalendarDays, CircleDollarSign, Layers, Package, Sun, Moon, Sparkles, TrendingUp } from 'lucide-react'
 
 export default async function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
