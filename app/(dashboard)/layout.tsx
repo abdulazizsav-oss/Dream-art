@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { NavigationProgress } from '@/components/layout/NavigationProgress'
 import { getMyProfile } from '@/lib/supabase/getRole'
 
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      <NavigationProgress />
       <Sidebar role={profile?.role ?? 'admin'} userName={profile?.full_name ?? ''} />
       <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
         {children}
