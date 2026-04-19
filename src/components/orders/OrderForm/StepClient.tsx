@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { Client } from '@/types/database'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { ImageUpload } from '@/components/ui/ImageUpload'
 import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS, cn } from '@/lib/utils'
-import { Search, UserPlus, ChevronRight, FileText, UserCheck, Phone } from 'lucide-react'
+import { Search, UserPlus, ChevronRight, FileText, UserCheck, Phone, Camera, AtSign, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 
 export interface TrustedPersonData {
