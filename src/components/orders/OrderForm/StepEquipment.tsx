@@ -6,6 +6,7 @@ import { OrderItemFormValue } from '@/lib/validations/order'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, cn } from '@/lib/utils'
 import { Check, Search } from 'lucide-react'
+import { LiveTotal } from './LiveTotal'
 
 interface StepEquipmentProps {
   equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
