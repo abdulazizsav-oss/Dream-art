@@ -198,6 +198,62 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
         </div>
       </div>
 
+      {/* ── Комплектация ── */}
+      <div className="border-t pt-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Package className="w-4 h-4 text-blue-500" />
+          <Label>Комплектация</Label>
+        </div>
+        <p className="text-xs text-gray-400 -mt-2">
+          Что выдаётся вместе с техникой. При оформлении заказа админ отмечает галочками, что именно выдано клиенту.
+        </p>
+        <TagInput
+          value={kitItems}
+          onChange={tags => setValue('kit_items', tags)}
+          placeholder="Напишите и нажмите Enter…"
+          suggestions={KIT_SUGGESTIONS}
+        />
+      </div>
+
+      {/* ── День / Ночь (только для камер) ── */}
+      {isCamera && (
+        <div className="border-t pt-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-500" />
+            <Label>Режим съёмки</Label>
+          </div>
+          <p className="text-xs text-gray-400 -mt-2">
+            Для камер: помогает фильтровать технику в каталоге по условиям съёмки.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { value: 'day', label: 'День', icon: Sun },
+              { value: 'night', label: 'Ночь', icon: Moon },
+              { value: 'both', label: 'День и ночь', icon: Sparkles },
+            ] as const).map(opt => {
+              const Icon = opt.icon
+              const active = dayNight === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setValue('day_night', opt.value)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl border-2 transition-all',
+                    active
+                      ? 'border-blue-400 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600',
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-medium">{opt.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <Label htmlFor="notes">Заметки</Label>
         <Textarea id="notes" {...register('notes')} rows={3} placeholder="Комплект, особенности, внутренние пометки" />
