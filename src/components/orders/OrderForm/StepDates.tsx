@@ -77,6 +77,17 @@ export function StepDates({
         </p>
       )}
 
+      {selectedItems.length > 0 && (
+        <div className="mb-4">
+          <LiveTotal
+            startDate={start}
+            endDate={end}
+            items={selectedItems}
+            equipment={equipment}
+          />
+        </div>
+      )}
+
       {conflict && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 mb-4">
           Некоторая техника уже забронирована на эти даты. Измените даты или вернитесь и уберите конфликтующие позиции.
