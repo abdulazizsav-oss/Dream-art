@@ -56,8 +56,25 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-xl">
 
+      {/* ── Фото клиента ── */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Camera className="w-4 h-4 text-blue-500" />
+          <Label>Фото клиента</Label>
+        </div>
+        <div className="w-28">
+          <ImageUpload
+            bucket="client-photos"
+            value={photoUrl}
+            onChange={url => setValue('photo_url', url ?? '')}
+            aspectRatio="square"
+          />
+        </div>
+        <p className="text-xs text-gray-400">Фото автоматически сжимается до ~400 КБ</p>
+      </div>
+
       {/* ── Основная информация ── */}
-      <div className="space-y-1.5">
+      <div className="border-t pt-4 space-y-1.5">
         <Label>ФИО *</Label>
         <Input {...register('full_name')} placeholder="Иванов Иван Иванович" className="min-h-[44px]" />
         {errors.full_name && <p className="text-xs text-red-500">{errors.full_name.message}</p>}
