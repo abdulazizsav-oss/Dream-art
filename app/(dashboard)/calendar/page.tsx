@@ -273,11 +273,31 @@ export default function CalendarPage() {
           </thead>
           <tbody>
             {!data && !error && (
-              <tr>
-                <td colSpan={daysVisible + 1} className="text-center py-12 text-zinc-400">
-                  Загрузка календаря
-                </td>
-              </tr>
+              <>
+                {Array.from({ length: 8 }).map((_, gi) => (
+                  <tr key={`skel-group-${gi}`}>
+                    {gi % 3 === 0 ? (
+                      <td colSpan={daysVisible + 1} className="bg-zinc-50/70 px-4 py-2">
+                        <div className="h-3 w-32 rounded-full bg-zinc-200 animate-pulse" />
+                      </td>
+                    ) : (
+                      <>
+                        <td className="sticky left-0 bg-white z-10 px-4 py-3 border-r min-w-64 border-b">
+                          <div className="h-4 w-40 rounded-full bg-zinc-200 animate-pulse mb-1.5" />
+                          <div className="h-3 w-24 rounded-full bg-zinc-100 animate-pulse" />
+                        </td>
+                        {Array.from({ length: daysVisible }).map((_, di) => (
+                          <td key={di} className="border-r border-zinc-100 border-b p-1 h-14">
+                            {di % 7 === gi % 4 ? (
+                              <div className="h-full w-full rounded-md bg-emerald-100 animate-pulse" />
+                            ) : null}
+                          </td>
+                        ))}
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </>
             )}
             {error && (
               <tr>
