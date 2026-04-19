@@ -44,10 +44,24 @@ export function StepClient({
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
 
-  // Поля новой карточки
+  // Поля новой карточки — расширенный набор
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
   const [newSegment, setNewSegment] = useState('other')
+  const [newEmail, setNewEmail] = useState('')
+  const [newTelegram, setNewTelegram] = useState('')
+  const [newInstagram, setNewInstagram] = useState('')
+  const [newFacebook, setNewFacebook] = useState('')
+  const [newAddressActual, setNewAddressActual] = useState('')
+  const [newAddressRegistered, setNewAddressRegistered] = useState('')
+  const [newPhoto, setNewPhoto] = useState<string | null>(null)
+  const [newBirthDate, setNewBirthDate] = useState('')
+  const [newDocType, setNewDocType] = useState('passport_id')
+  const [newPassportSeries, setNewPassportSeries] = useState('')
+  const [newPassportNumber, setNewPassportNumber] = useState('')
+  const [newPassportIssuedBy, setNewPassportIssuedBy] = useState('')
+  const [newPassportIssuedDate, setNewPassportIssuedDate] = useState('')
+  const [newNotes, setNewNotes] = useState('')
 
   const selectedClient = clients.find(c => c.id === selectedClientId) as (Client & {
     trusted_person_name?: string | null
