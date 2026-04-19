@@ -79,7 +79,14 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
         )}
       </Link>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <span className="text-sm text-gray-700 hidden sm:inline">{formatCurrency(order.total_amount)}</span>
+        <div className="hidden sm:flex flex-col items-end leading-tight">
+          <span className="text-sm text-gray-700">{formatCurrency(order.total_amount)}</span>
+          {paidRental > 0 && (
+            <span className="text-[11px] text-green-600 font-medium">
+              Заработано: {formatCurrency(paidRental)}
+            </span>
+          )}
+        </div>
         <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', ORDER_STATUS_COLORS[order.status])}>
           {ORDER_STATUS_LABELS[order.status]}
         </span>
