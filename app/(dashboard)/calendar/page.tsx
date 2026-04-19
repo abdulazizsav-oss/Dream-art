@@ -402,21 +402,30 @@ function FragmentRows({
                       clientName,
                       order.client?.phone,
                       creatorName ? `Оформил: ${creatorName}` : '',
-                      `${order.start_date} - ${order.end_date}`,
+                      `${order.start_date} – ${order.end_date}`,
                       booking.equipment_name,
                     ].filter(Boolean).join(' | ')}
                     className={cn(
-                      'block h-full rounded-md border px-1.5 py-1 overflow-hidden transition-colors',
+                      'group/cell block h-full rounded-md border px-1.5 py-1 overflow-hidden transition-all',
                       isOverdue
-                        ? 'bg-red-50 border-red-200 text-red-900 hover:bg-red-100'
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-950 hover:bg-emerald-100'
+                        ? 'bg-red-50 border-red-200 text-red-900 hover:bg-red-100 hover:border-red-300'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-300'
                     )}
                   >
-                    <span className="block text-[10px] leading-tight font-semibold truncate">
-                      {firstName(clientName) || 'Клиент'}{orderTime ? ` · ${orderTime}` : ''}
+                    {/* Номер заказа */}
+                    <span className={cn(
+                      'block text-[9px] font-mono leading-none mb-0.5 opacity-60',
+                    )}>
+                      {order.order_number.replace('DA-', '#')}
                     </span>
-                    <span className="block text-[9px] leading-tight opacity-70 truncate">
-                      {creatorName ? firstName(creatorName) : order.order_number}
+                    {/* Имя клиента + время */}
+                    <span className="block text-[10px] leading-tight font-semibold truncate">
+                      {firstName(clientName) || 'Клиент'}
+                      {orderTime ? <span className="font-normal opacity-70"> {orderTime}</span> : ''}
+                    </span>
+                    {/* Техника */}
+                    <span className="block text-[9px] leading-tight opacity-55 truncate">
+                      {booking.equipment_name}
                     </span>
                   </Link>
                 ) : blocked ? (
