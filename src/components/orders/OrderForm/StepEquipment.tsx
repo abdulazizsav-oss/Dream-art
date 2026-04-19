@@ -183,9 +183,14 @@ export function StepEquipment({
       </div>
 
       {selectedItems.length > 0 && (
-        <p className="text-sm text-gray-600 mb-4">
-          Выбрано: {selectedItems.length}
-        </p>
+        <div className="mb-4">
+          <LiveTotal
+            startDate={startDate}
+            endDate={endDate}
+            items={selectedItems}
+            equipment={equipment}
+          />
+        </div>
       )}
 
       <div className="flex gap-3">
