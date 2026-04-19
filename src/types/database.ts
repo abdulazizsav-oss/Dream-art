@@ -379,6 +379,7 @@ export type Database = {
           condition_on_return: string | null
           issue_photo_urls: string[]
           return_photo_urls: string[]
+          selected_kit_items: string[]
         }
         Insert: {
           id?: string
@@ -391,6 +392,7 @@ export type Database = {
           condition_on_return?: string | null
           issue_photo_urls?: string[]
           return_photo_urls?: string[]
+          selected_kit_items?: string[]
         }
         Update: {
           id?: string
@@ -403,6 +405,7 @@ export type Database = {
           condition_on_return?: string | null
           issue_photo_urls?: string[]
           return_photo_urls?: string[]
+          selected_kit_items?: string[]
         }
         Relationships: [
           {
