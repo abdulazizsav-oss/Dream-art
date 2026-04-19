@@ -151,3 +151,77 @@
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
+
+/* ─── Интерактивные состояния кнопок и ссылок ─── */
+@layer base {
+  /* Лёгкое "прожатие" при клике — даёт физическую обратную связь */
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a:active {
+    transform: scale(0.98);
+    transition: transform 80ms ease-out;
+  }
+
+  /* Плавный fade-in для основного контента страниц при входе */
+  main > * {
+    animation: page-fade-in 220ms ease-out;
+  }
+
+  /* Фокус-кольцо: убираем дефолтное синее, ставим своё мягкое */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Скелетон с мягким пульсом (чуть медленнее дефолтного Tailwind) */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(241 245 249) 0%,
+    rgb(226 232 240) 50%,
+    rgb(241 245 249) 100%
+  );
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Приятный hover для карточек оборудования / клиентов — "всплывают" */
+.card-hover {
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.12);
+}
+
+/* Плавные переходы для цветов/фонов */
+@layer utilities {
+  .transition-smooth {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
