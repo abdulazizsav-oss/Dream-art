@@ -106,6 +106,8 @@ export type Database = {
           notes: string | null
           source: string | null
           sort_order: number
+          kit_items: string[]
+          day_night: 'day' | 'night' | 'both'
           created_at: string
           updated_at: string
         }
@@ -125,6 +127,8 @@ export type Database = {
           notes?: string | null
           source?: string | null
           sort_order?: number
+          kit_items?: string[]
+          day_night?: 'day' | 'night' | 'both'
           created_at?: string
           updated_at?: string
         }
@@ -144,6 +148,8 @@ export type Database = {
           notes?: string | null
           source?: string | null
           sort_order?: number
+          kit_items?: string[]
+          day_night?: 'day' | 'night' | 'both'
           created_at?: string
           updated_at?: string
         }
