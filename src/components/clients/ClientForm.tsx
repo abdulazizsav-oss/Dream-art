@@ -33,6 +33,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   const rating = Number(watch('reliability_rating') ?? 3)
   const segment = (watch('segment') as string | undefined) ?? 'other'
   const docType = (watch('document_type') as string | undefined) ?? 'passport_id'
+  const photoUrl = (watch('photo_url') as string | undefined) ?? null
 
   async function onSubmit(data: ClientFormValues) {
     const url = clientId ? `/api/clients/${clientId}` : '/api/clients'
