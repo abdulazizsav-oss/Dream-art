@@ -9,11 +9,29 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ImageUpload } from '@/components/ui/ImageUpload'
+import { TagInput } from '@/components/ui/TagInput'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { Sun, Moon, Package, Sparkles } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+const KIT_SUGGESTIONS = [
+  'Бленда',
+  'Крышка передняя',
+  'Крышка задняя',
+  'Мешок',
+  'Ремень',
+  'Зарядное',
+  'Аккумулятор',
+  'Кабель',
+  'Карта памяти',
+  'Чехол',
+  'Кофр',
+  'Пульт',
+]
 
 interface Brand { id: string; name: string; logo_url: string | null }
 
