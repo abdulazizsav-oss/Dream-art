@@ -235,8 +235,14 @@ export type Database = {
           id?: string
           full_name: string
           phone?: string | null
+          email?: string | null
           telegram_username?: string | null
           telegram_chat_id?: number | null
+          instagram_username?: string | null
+          facebook_username?: string | null
+          address_actual?: string | null
+          address_registered?: string | null
+          photo_url?: string | null
           passport_series?: string | null
           passport_number?: string | null
           passport_issued_by?: string | null
@@ -257,8 +263,14 @@ export type Database = {
           id?: string
           full_name?: string
           phone?: string | null
+          email?: string | null
           telegram_username?: string | null
           telegram_chat_id?: number | null
+          instagram_username?: string | null
+          facebook_username?: string | null
+          address_actual?: string | null
+          address_registered?: string | null
+          photo_url?: string | null
           passport_series?: string | null
           passport_number?: string | null
           passport_issued_by?: string | null
