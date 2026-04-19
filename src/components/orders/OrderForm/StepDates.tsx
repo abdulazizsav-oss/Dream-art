@@ -16,13 +16,15 @@ interface StepDatesProps {
   depositAmount: number
   notes: string
   selectedEquipmentIds: string[]
+  selectedItems: OrderItemFormValue[]
+  equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
   onUpdate: (patch: Partial<OrderFormValues>) => void
   onNext: () => void
   onBack: () => void
 }
 
 export function StepDates({
-  startDate, endDate, depositAmount, notes, selectedEquipmentIds, onUpdate, onNext, onBack,
+  startDate, endDate, depositAmount, notes, selectedEquipmentIds, selectedItems, equipment, onUpdate, onNext, onBack,
 }: StepDatesProps) {
   const [start, setStart] = useState(startDate || new Date().toISOString().split('T')[0])
   const [end, setEnd] = useState(endDate || new Date().toISOString().split('T')[0])
