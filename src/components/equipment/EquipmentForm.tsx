@@ -64,6 +64,11 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   const categoryId = watch('category_id') as string | undefined
   const brandIdVal = watch('brand_id') as string | undefined
   const currencyVal = (watch('currency') as string | undefined) ?? 'UZS'
+  const kitItems = (watch('kit_items') as string[] | undefined) ?? []
+  const dayNight = (watch('day_night') as 'day' | 'night' | 'both' | undefined) ?? 'both'
+
+  const currentCategory = categories.find(c => c.id === categoryId)
+  const isCamera = currentCategory?.slug === 'cameras'
 
   async function onSubmit(data: EquipmentFormValues) {
     const url = equipmentId ? `/api/equipment/${equipmentId}` : '/api/equipment'
