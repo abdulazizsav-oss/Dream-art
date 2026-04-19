@@ -1,12 +1,13 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
 
 interface ImageUploadProps {
-  bucket: 'equipment-photos' | 'category-photos' | 'brand-logos'
+  bucket: 'equipment-photos' | 'category-photos' | 'brand-logos' | 'client-photos'
   value?: string | null
   onChange: (url: string | null) => void
   className?: string
@@ -36,19 +37,30 @@ export function ImageUpload({
       alert('Только изображения (JPG, PNG, WEBP)')
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Максимальный размер файла — 5 МБ')
+    if (file.size > 15 * 1024 * 1024) {
+      alert('Максимальный размер файла — 15 МБ (до сжатия)')
       return
     }
 
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop() ?? 'jpg'
+      // Сжатие: ужимаем до ~0.4 МБ / 1600px по длинной стороне, WebP по возможности
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 0.4,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        initialQuality: 0.82,
+        fileType: 'image/webp',
+      }).catch(() => file) // fallback на оригинал если сжатие упало
+
+      const useWebp = compressed.type === 'image/webp'
+      const ext = useWebp ? 'webp' : (file.name.split('.').pop() ?? 'jpg')
       const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-      const { error } = await supabase.storage.from(bucket).upload(path, file, {
+      const { error } = await supabase.storage.from(bucket).upload(path, compressed, {
         cacheControl: '3600',
         upsert: false,
+        contentType: compressed.type,
       })
       if (error) throw error
 
