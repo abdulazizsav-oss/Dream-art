@@ -53,6 +53,26 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
     router.refresh()
   }
 
+  async function downloadPhoto() {
+    if (!photoUrl) return
+    try {
+      const res = await fetch(photoUrl)
+      const blob = await res.blob()
+      const href = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = href
+      const ext = (blob.type.split('/')[1] ?? 'jpg').split('+')[0]
+      const name = (watch('full_name') as string | undefined)?.trim().replace(/\s+/g, '_') || 'client'
+      a.download = `${name}-photo.${ext}`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(href)
+    } catch {
+      toast.error('Не удалось скачать фото')
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-xl">
 
