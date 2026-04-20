@@ -69,16 +69,26 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           defaultValues={{
             full_name: client.full_name,
             phone: client.phone ?? undefined,
+            email: client.email ?? undefined,
             telegram_username: client.telegram_username ?? undefined,
+            instagram_username: client.instagram_username ?? undefined,
+            facebook_username: client.facebook_username ?? undefined,
+            address_actual: client.address_actual ?? undefined,
+            address_registered: client.address_registered ?? undefined,
+            photo_url: client.photo_url ?? undefined,
+            document_type: client.document_type ?? 'passport_id',
             passport_series: client.passport_series ?? undefined,
             passport_number: client.passport_number ?? undefined,
             passport_issued_by: client.passport_issued_by ?? undefined,
             passport_issued_date: client.passport_issued_date ?? undefined,
+            birth_date: client.birth_date ?? undefined,
             deposit_held: client.deposit_held,
             reliability_rating: client.reliability_rating,
             segment: client.segment,
-            birth_date: client.birth_date ?? undefined,
             notes: client.notes ?? undefined,
+            trusted_person_name: client.trusted_person_name ?? undefined,
+            trusted_person_phone: client.trusted_person_phone ?? undefined,
+            trusted_person_relation: client.trusted_person_relation ?? undefined,
           }}
         />
       </div>
