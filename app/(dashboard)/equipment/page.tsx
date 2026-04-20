@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Wrench, ChevronRight, Camera, Boxes, Settings, Pencil } from 'lucide-react'
+import { Plus, Wrench, ChevronRight, Camera, Boxes, Settings, Pencil, Moon, Sun } from 'lucide-react'
 
 export default async function EquipmentPage({
   searchParams,
@@ -18,18 +18,11 @@ export default async function EquipmentPage({
   ])
 
   if (!catId) {
-    const { data: equipment } = await supabase.from('equipment').select('category_id, status')
-    const countsByCategory = (categories ?? []).map(cat => ({
-      ...cat,
-      total: equipment?.filter(e => e.category_id === cat.id).length ?? 0,
-      free:  equipment?.filter(e => e.category_id === cat.id && e.status === 'free').length ?? 0,
-    }))
-
     return (
       <div>
         <PageHeader
           title="Каталог техники"
-          description={`${equipment?.length ?? 0} позиций`}
+          description="Категории и каталожные позиции"
           action={
             <div className="flex gap-2">
               <Link href="/admin/categories">
@@ -45,7 +38,7 @@ export default async function EquipmentPage({
             </div>
           }
         />
-        {countsByCategory.length === 0 ? (
+        {(categories?.length ?? 0) === 0 ? (
           <div className="bg-white rounded-2xl border p-12 text-center">
             <Wrench className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Категорий нет</p>
@@ -55,7 +48,7 @@ export default async function EquipmentPage({
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            {countsByCategory.map((cat, i) => (
+            {(categories ?? []).map((cat, i) => (
               <div
                 key={cat.id}
                 className="group relative bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
@@ -82,10 +75,7 @@ export default async function EquipmentPage({
                   </div>
                   <div className="p-4">
                     <p className="font-semibold text-gray-900 truncate">{cat.name}</p>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <p className="text-sm text-gray-400">{cat.total} ед.</p>
-                      <span className="text-xs text-green-600 font-medium">{cat.free} своб.</span>
-                    </div>
+                    <p className="mt-1.5 text-sm text-gray-400">Открыть категорию</p>
                   </div>
                 </Link>
               </div>
@@ -201,11 +191,24 @@ export default async function EquipmentPage({
                     {(item as any).specs && (
                       <p className="text-xs text-gray-500 mt-1 line-clamp-1">{(item as any).specs}</p>
                     )}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                      <span className="text-sm font-medium text-gray-800">
-                        {formatCurrency(item.daily_rate)}<span className="text-gray-400 font-normal">/день</span>
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                    <div className="mt-3 space-y-1.5 border-t pt-3 text-xs">
+                      <div className="flex items-center justify-between text-gray-700">
+                        <span className="inline-flex items-center gap-1">
+                          <Sun className="h-3.5 w-3.5 text-amber-500" />
+                          День
+                        </span>
+                        <span className="font-medium">{formatCurrency((item as any).day_rate ?? item.daily_rate, item.currency)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-gray-700">
+                        <span className="inline-flex items-center gap-1">
+                          <Moon className="h-3.5 w-3.5 text-indigo-500" />
+                          Ночь
+                        </span>
+                        <div className="inline-flex items-center gap-2">
+                          <span className="font-medium">{formatCurrency((item as any).night_rate ?? item.daily_rate, item.currency)}</span>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Link>

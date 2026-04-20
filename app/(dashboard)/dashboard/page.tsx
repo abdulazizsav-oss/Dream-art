@@ -16,6 +16,8 @@ export default async function DashboardPage() {
     { data: topEquipment },
     { data: overdueOrders },
     { data: activeOrders },
+    { count: equipmentCount },
+    { count: maintenanceCount },
   ] = await Promise.all([
     supabase.from('v_dashboard_stats').select('*').single(),
     supabase
@@ -34,6 +36,8 @@ export default async function DashboardPage() {
       .eq('status', 'active')
       .order('end_date')
       .limit(8),
+    supabase.from('equipment').select('*', { count: 'exact', head: true }),
+    supabase.from('equipment').select('*', { count: 'exact', head: true }).eq('status', 'maintenance'),
   ])
 
   const s = stats as {
@@ -85,19 +89,19 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Equipment status */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* Equipment summary */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-semibold text-green-600">{s?.equipment_free ?? 0}</p>
-          <p className="text-xs text-gray-500 mt-1">Свободно</p>
+          <p className="text-2xl font-semibold text-zinc-900">{equipmentCount ?? 0}</p>
+          <p className="text-xs text-gray-500 mt-1">Позиции каталога</p>
         </div>
         <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-semibold text-blue-600">{s?.equipment_rented ?? 0}</p>
-          <p className="text-xs text-gray-500 mt-1">В аренде</p>
-        </div>
-        <div className="bg-white rounded-xl border p-4 text-center">
-          <p className="text-2xl font-semibold text-yellow-600">{s?.equipment_maintenance ?? 0}</p>
+          <p className="text-2xl font-semibold text-yellow-600">{maintenanceCount ?? 0}</p>
           <p className="text-xs text-gray-500 mt-1">На ТО</p>
+        </div>
+        <div className="bg-white rounded-xl border p-4 text-center">
+          <p className="text-2xl font-semibold text-blue-600">{s?.active_rentals ?? 0}</p>
+          <p className="text-xs text-gray-500 mt-1">Активные заказы</p>
         </div>
       </div>
 

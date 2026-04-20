@@ -10,8 +10,9 @@ import { StepEquipment } from './StepEquipment'
 import { StepDates } from './StepDates'
 import { StepSummary } from './StepSummary'
 import { Button } from '@/components/ui/button'
-import { calcDays, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
+import { DEFAULT_END_TIME, DEFAULT_START_TIME, recalculateOrderItems } from '@/lib/rental'
 
 interface OrderFormProps {
   clients: Client[]
@@ -27,6 +28,8 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   const [values, setValues] = useState<Partial<OrderFormValues>>({
     items: [],
     deposit_amount: 0,
+    start_time: DEFAULT_START_TIME,
+    end_time: DEFAULT_END_TIME,
   })
   const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>({
     name: '',
@@ -37,14 +40,18 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   const [submitting, setSubmitting] = useState(false)
 
   function update(patch: Partial<OrderFormValues>) {
-    setValues(v => ({ ...v, ...patch }))
+    setValues(prev => {
+      const next = { ...prev, ...patch }
+      if (patch.items || patch.start_date || patch.end_date || patch.start_time || patch.end_time) {
+        next.items = recalculateOrderItems(next.items ?? [], equipment, next)
+      }
+      return next
+    })
   }
 
   async function submit() {
     setSubmitting(true)
-    const days = values.start_date && values.end_date
-      ? calcDays(values.start_date, values.end_date)
-      : 1
+    const recalculatedItems = recalculateOrderItems(values.items ?? [], equipment, values)
     // Формируем строку: "Иван Иванов (Брат) +998901234567"
     const tpParts = [
       trustedPerson.name,
@@ -56,11 +63,7 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
       ...values,
       trusted_person: tpParts || null,
       trusted_person_doc_type: trustedPerson.doc_type || null,
-      items: (values.items ?? []).map(item => ({
-        ...item,
-        days,
-        subtotal: item.daily_rate * days,
-      })),
+      items: recalculatedItems,
     }
     const res = await fetch('/api/orders', {
       method: 'POST',
@@ -80,9 +83,9 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-6xl">
       {/* Progress */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="mb-8 flex flex-wrap items-center gap-2">
         {STEPS.map((label, i) => (
           <div key={i} className="flex items-center gap-2">
             <div className={cn(
@@ -101,7 +104,7 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border p-6">
+      <div className="rounded-2xl border bg-white p-4 md:p-6">
         {step === 0 && (
           <StepClient
             clients={allClients}
@@ -118,6 +121,8 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
             equipment={equipment}
             startDate={values.start_date}
             endDate={values.end_date}
+            startTime={values.start_time}
+            endTime={values.end_time}
             selectedItems={values.items ?? []}
             onUpdate={items => update({ items })}
             onNext={() => setStep(2)}
@@ -128,9 +133,10 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
           <StepDates
             startDate={values.start_date ?? ''}
             endDate={values.end_date ?? ''}
+            startTime={values.start_time ?? DEFAULT_START_TIME}
+            endTime={values.end_time ?? DEFAULT_END_TIME}
             depositAmount={values.deposit_amount ?? 0}
             notes={values.notes ?? ''}
-            selectedEquipmentIds={(values.items ?? []).map(i => i.equipment_id)}
             selectedItems={values.items ?? []}
             equipment={equipment}
             onUpdate={patch => update(patch)}

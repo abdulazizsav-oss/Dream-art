@@ -5,12 +5,15 @@ import { useOrderTotal } from './useOrderTotal'
 import type { Equipment } from '@/types/database'
 import type { OrderItemFormValue } from '@/lib/validations/order'
 import { Calendar, Package, Wallet } from 'lucide-react'
+import { describeBreakdown } from '@/lib/rental'
 
 interface LiveTotalProps {
   startDate: string | undefined | null
   endDate: string | undefined | null
+  startTime?: string | undefined | null
+  endTime?: string | undefined | null
   items: OrderItemFormValue[]
-  equipment: Pick<Equipment, 'id' | 'currency'>[]
+  equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate'>[]
   variant?: 'compact' | 'card'
   className?: string
 }
@@ -18,14 +21,22 @@ interface LiveTotalProps {
 export function LiveTotal({
   startDate,
   endDate,
+  startTime,
+  endTime,
   items,
   equipment,
   variant = 'card',
   className,
 }: LiveTotalProps) {
-  const { days, itemsCount, total, currency } = useOrderTotal(startDate, endDate, items, equipment)
-
-  const daysLabel = days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'
+  const { dayUnits, nightUnits, itemsCount, total, currency } = useOrderTotal(
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    items,
+    equipment,
+  )
+  const unitsLabel = describeBreakdown(dayUnits, nightUnits)
 
   if (variant === 'compact') {
     return (
@@ -33,7 +44,7 @@ export function LiveTotal({
         <div className="flex items-center gap-3 text-gray-500">
           <span className="inline-flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5" />
-            {days} {daysLabel}
+            {unitsLabel}
           </span>
           <span className="inline-flex items-center gap-1">
             <Package className="w-3.5 h-3.5" />
@@ -49,12 +60,12 @@ export function LiveTotal({
 
   return (
     <div
-      className={cn(
-        'rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 shadow-sm',
-        className,
-      )}
-    >
-      <div className="flex items-center gap-2 text-xs text-blue-600 mb-2">
+        className={cn(
+          'rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm',
+          className,
+        )}
+      >
+      <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
         <Wallet className="w-3.5 h-3.5" />
         Предварительный итог
       </div>
@@ -62,14 +73,14 @@ export function LiveTotal({
         <div className="space-y-0.5 text-xs text-gray-500">
           <p className="flex items-center gap-1.5">
             <Calendar className="w-3 h-3" />
-            {days} {daysLabel}
+            {unitsLabel}
           </p>
           <p className="flex items-center gap-1.5">
             <Package className="w-3 h-3" />
             {itemsCount} {itemsCount === 1 ? 'позиция' : itemsCount < 5 ? 'позиции' : 'позиций'}
           </p>
         </div>
-        <p className="text-2xl font-bold text-blue-700 tabular-nums">
+        <p className="text-2xl font-bold text-zinc-900 tabular-nums">
           {formatCurrency(total, currency)}
         </p>
       </div>

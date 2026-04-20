@@ -14,6 +14,8 @@ export type ClientSegment = 'photographer' | 'videographer' | 'studio' | 'agency
 export type DocumentType = 'passport_id' | 'passport_green' | 'zagranpassport' | 'passport_cover' | 'drivers_license'
 export type UserRole = 'admin' | 'super_admin'
 export type CurrencyCode = 'UZS' | 'USD'
+export type ShiftType = 'day' | 'night'
+export type RateSource = 'auto' | 'manual'
 
 export type Database = {
   public: {
@@ -99,6 +101,8 @@ export type Database = {
           photo_url: string | null
           purchase_cost: number | null
           daily_rate: number
+          day_rate: number
+          night_rate: number
           currency: CurrencyCode
           brand: string | null
           specs: string | null
@@ -120,6 +124,8 @@ export type Database = {
           photo_url?: string | null
           purchase_cost?: number | null
           daily_rate: number
+          day_rate?: number
+          night_rate?: number
           currency?: CurrencyCode
           brand?: string | null
           specs?: string | null
@@ -141,6 +147,8 @@ export type Database = {
           photo_url?: string | null
           purchase_cost?: number | null
           daily_rate?: number
+          day_rate?: number
+          night_rate?: number
           currency?: CurrencyCode
           brand?: string | null
           specs?: string | null
@@ -303,6 +311,9 @@ export type Database = {
           status: OrderStatus
           start_date: string
           end_date: string
+          start_time: string
+          end_time: string
+          actual_return_date: string | null
           total_amount: number
           deposit_amount: number
           deposit_returned: boolean
@@ -321,6 +332,9 @@ export type Database = {
           status?: OrderStatus
           start_date: string
           end_date: string
+          start_time?: string
+          end_time?: string
+          actual_return_date?: string | null
           total_amount?: number
           deposit_amount?: number
           deposit_returned?: boolean
@@ -339,6 +353,9 @@ export type Database = {
           status?: OrderStatus
           start_date?: string
           end_date?: string
+          start_time?: string
+          end_time?: string
+          actual_return_date?: string | null
           total_amount?: number
           deposit_amount?: number
           deposit_returned?: boolean
@@ -373,8 +390,14 @@ export type Database = {
           order_id: string
           equipment_id: string
           daily_rate: number
+          day_rate_snapshot: number
+          night_rate_snapshot: number
+          day_units: number
+          night_units: number
           days: number
           subtotal: number
+          shift_type: ShiftType
+          rate_source: RateSource
           condition_on_issue: string | null
           condition_on_return: string | null
           issue_photo_urls: string[]
@@ -386,8 +409,14 @@ export type Database = {
           order_id: string
           equipment_id: string
           daily_rate: number
+          day_rate_snapshot?: number
+          night_rate_snapshot?: number
+          day_units?: number
+          night_units?: number
           days: number
           subtotal: number
+          shift_type?: ShiftType
+          rate_source?: RateSource
           condition_on_issue?: string | null
           condition_on_return?: string | null
           issue_photo_urls?: string[]
@@ -399,8 +428,14 @@ export type Database = {
           order_id?: string
           equipment_id?: string
           daily_rate?: number
+          day_rate_snapshot?: number
+          night_rate_snapshot?: number
+          day_units?: number
+          night_units?: number
           days?: number
           subtotal?: number
+          shift_type?: ShiftType
+          rate_source?: RateSource
           condition_on_issue?: string | null
           condition_on_return?: string | null
           issue_photo_urls?: string[]
@@ -615,6 +650,8 @@ export type Database = {
           p_client_id: string
           p_start_date: string
           p_end_date: string
+          p_start_time?: string
+          p_end_time?: string
           p_deposit_amount: number
           p_notes: string
           p_created_by: string
@@ -623,7 +660,7 @@ export type Database = {
         Returns: string
       }
       return_order_atomic: {
-        Args: { p_order_id: string; p_items: Json }
+        Args: { p_order_id: string; p_items: Json; p_actual_return_date?: string | null }
         Returns: void
       }
       mark_overdue_orders: {

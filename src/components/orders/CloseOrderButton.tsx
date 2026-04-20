@@ -97,10 +97,10 @@ export function CloseOrderButton({ orderId, debt, variant = 'default', size = 'd
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+          <DialogHeader>
           <DialogTitle>Закрытие заказа</DialogTitle>
           <DialogDescription>
-            Запишем оплату и освободим технику. Если клиент не рассчитался полностью — оставим долг.
+            Запишем оплату и закроем заказ. Если клиент не рассчитался полностью — оставим долг.
           </DialogDescription>
         </DialogHeader>
 

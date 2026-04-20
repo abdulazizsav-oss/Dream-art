@@ -35,12 +35,25 @@ export async function POST(req: NextRequest) {
   const parsed = orderSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { client_id, start_date, end_date, deposit_amount, notes, items, trusted_person, trusted_person_doc_type } = parsed.data
+  const {
+    client_id,
+    start_date,
+    end_date,
+    start_time,
+    end_time,
+    deposit_amount,
+    notes,
+    items,
+    trusted_person,
+    trusted_person_doc_type,
+  } = parsed.data
 
   const { data: orderId, error } = await supabase.rpc('create_order_atomic', {
     p_client_id: client_id,
     p_start_date: start_date,
     p_end_date: end_date,
+    p_start_time: start_time,
+    p_end_time: end_time,
     p_deposit_amount: deposit_amount ?? 0,
     p_notes: notes ?? '',
     p_created_by: user.id,

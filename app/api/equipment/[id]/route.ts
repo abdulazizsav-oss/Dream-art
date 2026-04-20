@@ -32,9 +32,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const parsed = equipmentSchema.partial().safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
+  const payload = {
+    ...parsed.data,
+    ...(parsed.data.day_rate !== undefined ? { daily_rate: parsed.data.day_rate } : {}),
+  }
+
   const { data, error } = await supabase
     .from('equipment')
-    .update(parsed.data)
+    .update(payload)
     .eq('id', id)
     .select()
     .single()

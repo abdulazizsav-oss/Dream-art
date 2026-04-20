@@ -7,7 +7,14 @@ interface ContractData {
   clientPassport: string | null
   startDate: string
   endDate: string
-  items: { name: string; currency: 'UZS' | 'USD'; dailyRate: number; days: number; subtotal: number }[]
+  startTime: string
+  endTime: string
+  items: {
+    name: string
+    currency: 'UZS' | 'USD'
+    pricingLines: { shiftLabel: string; rate: number; unitsLabel: string }[]
+    subtotal: number
+  }[]
   totalAmount: number
   depositAmount: number
   notes: string | null
@@ -58,7 +65,7 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   // Rental period
   line('СРОК АРЕНДЫ:', 50, 11, true)
   gap(0.5)
-  line(`С ${data.startDate} по ${data.endDate}`)
+  line(`С ${data.startDate} ${data.startTime} по ${data.endDate} ${data.endTime}`)
   gap()
 
   // Equipment list
@@ -67,7 +74,10 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
 
   data.items.forEach((item, i) => {
     line(`${i + 1}. ${item.name}`)
-    line(`   ${money(item.dailyRate, item.currency)}/день × ${item.days} дн. = ${money(item.subtotal, item.currency)}`, 50, 9)
+    item.pricingLines.forEach(pricingLine => {
+      line(`   ${pricingLine.shiftLabel}: ${money(pricingLine.rate, item.currency)} × ${pricingLine.unitsLabel}`, 50, 9)
+    })
+    line(`   Итого по позиции: ${money(item.subtotal, item.currency)}`, 50, 9)
     gap(0.3)
   })
   gap(0.5)

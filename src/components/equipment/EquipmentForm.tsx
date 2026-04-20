@@ -15,8 +15,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
-import { Sun, Moon, Package, Sparkles } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Moon, Package, Sun } from 'lucide-react'
 
 const KIT_SUGGESTIONS = [
   'Бленда',
@@ -54,7 +53,8 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
       currency: 'UZS',
-      daily_rate: 0,
+      day_rate: 0,
+      night_rate: 0,
       source: 'Каталог техники',
       ...defaultValues,
     },
@@ -65,10 +65,6 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   const brandIdVal = watch('brand_id') as string | undefined
   const currencyVal = (watch('currency') as string | undefined) ?? 'UZS'
   const kitItems = (watch('kit_items') as string[] | undefined) ?? []
-  const dayNight = (watch('day_night') as 'day' | 'night' | 'both' | undefined) ?? 'both'
-
-  const currentCategory = categories.find(c => c.id === categoryId)
-  const isCamera = currentCategory?.slug === 'cameras'
 
   async function onSubmit(data: EquipmentFormValues) {
     const url = equipmentId ? `/api/equipment/${equipmentId}` : '/api/equipment'
@@ -98,7 +94,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
           bucket="equipment-photos"
           value={photoUrl ?? null}
           onChange={url => setValue('photo_url', url ?? undefined)}
-          aspectRatio="landscape"
+          aspectRatio="square"
         />
       </div>
 
@@ -159,18 +155,36 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
         <Input id="specs" {...register('specs')} placeholder="Full-frame, 4K, комплект" className="min-h-[44px]" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_160px] gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="daily_rate">Ставка аренды/день *</Label>
+          <Label htmlFor="day_rate" className="inline-flex items-center gap-2">
+            <Sun className="w-4 h-4 text-amber-500" />
+            Дневная ставка *
+          </Label>
           <Input
-            id="daily_rate"
+            id="day_rate"
             type="number"
             inputMode="decimal"
-            {...register('daily_rate')}
+            {...register('day_rate')}
             placeholder="100000"
             className="min-h-[44px]"
           />
-          {errors.daily_rate && <p className="text-xs text-red-500">{errors.daily_rate.message}</p>}
+          {errors.day_rate && <p className="text-xs text-red-500">{errors.day_rate.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="night_rate" className="inline-flex items-center gap-2">
+            <Moon className="w-4 h-4 text-indigo-500" />
+            Ночная ставка *
+          </Label>
+          <Input
+            id="night_rate"
+            type="number"
+            inputMode="decimal"
+            {...register('night_rate')}
+            placeholder="100000"
+            className="min-h-[44px]"
+          />
+          {errors.night_rate && <p className="text-xs text-red-500">{errors.night_rate.message}</p>}
         </div>
         <div className="space-y-1.5">
           <Label>Валюта</Label>
@@ -184,17 +198,6 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
               <SelectItem value="USD">USD</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="serial_number">Серийный номер</Label>
-          <Input id="serial_number" {...register('serial_number')} placeholder="SN123456" className="min-h-[44px]" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="purchase_cost">Стоимость покупки</Label>
-          <Input id="purchase_cost" type="number" {...register('purchase_cost')} placeholder="0" className="min-h-[44px]" />
         </div>
       </div>
 
@@ -214,45 +217,6 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
           suggestions={KIT_SUGGESTIONS}
         />
       </div>
-
-      {/* ── День / Ночь (только для камер) ── */}
-      {isCamera && (
-        <div className="border-t pt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-500" />
-            <Label>Режим съёмки</Label>
-          </div>
-          <p className="text-xs text-gray-400 -mt-2">
-            Для камер: помогает фильтровать технику в каталоге по условиям съёмки.
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {([
-              { value: 'day', label: 'День', icon: Sun },
-              { value: 'night', label: 'Ночь', icon: Moon },
-              { value: 'both', label: 'День и ночь', icon: Sparkles },
-            ] as const).map(opt => {
-              const Icon = opt.icon
-              const active = dayNight === opt.value
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setValue('day_night', opt.value)}
-                  className={cn(
-                    'flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl border-2 transition-all',
-                    active
-                      ? 'border-blue-400 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 bg-white hover:border-gray-300 text-gray-600',
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-xs font-medium">{opt.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="space-y-1.5">
         <Label htmlFor="notes">Заметки</Label>

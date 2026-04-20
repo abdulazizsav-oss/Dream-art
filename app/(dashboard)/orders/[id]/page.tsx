@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
+import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -27,7 +28,20 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const createdByProfile = (order as any).created_by_profile as { full_name: string; role?: string } | null
   const trustedPerson = (order as any).trusted_person as string | null
   const trustedDocType = (order as any).trusted_person_doc_type as string | null
-  const items = (order.order_items as { id: string; equipment: { name: string; currency: 'UZS' | 'USD' } | null; daily_rate: number; days: number; subtotal: number; condition_on_issue: string | null; condition_on_return: string | null }[]) ?? []
+  const items = (order.order_items as {
+    id: string
+    equipment: { name: string; currency: 'UZS' | 'USD' } | null
+    daily_rate: number
+    day_rate_snapshot?: number
+    night_rate_snapshot?: number
+    day_units?: number
+    night_units?: number
+    days: number
+    subtotal: number
+    shift_type: 'day' | 'night'
+    condition_on_issue: string | null
+    condition_on_return: string | null
+  }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
 
   const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
@@ -82,6 +96,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="text-xs text-gray-500">Период</p>
           <p className="font-medium text-sm mt-1">
             {formatDate(order.start_date)} — {formatDate(order.end_date)}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {(order as any).start_time ?? '09:30'} — {(order as any).end_time ?? '23:00'}
           </p>
         </div>
         <div className="bg-white rounded-xl border p-4">
@@ -144,7 +161,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 </p>
               </div>
               <span className="text-gray-700">
-                {formatCurrency(item.daily_rate, item.equipment?.currency)} × {item.days}д = {formatCurrency(item.subtotal, item.equipment?.currency)}
+                {getPricingParts(item)
+                  .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
+                  .join(' + ')}
+                {' = '}
+                {formatCurrency(item.subtotal, item.equipment?.currency)}
               </span>
             </div>
           ))}

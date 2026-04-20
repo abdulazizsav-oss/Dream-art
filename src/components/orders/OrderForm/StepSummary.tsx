@@ -3,10 +3,11 @@
 import { OrderFormValues } from '@/lib/validations/order'
 import { Client, Equipment, EquipmentCategory } from '@/types/database'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, formatDate, calcDays, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
+import { formatCurrency, formatDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 import { TrustedPersonData } from './StepClient'
 import { FileText, UserCheck } from 'lucide-react'
 import { LiveTotal } from './LiveTotal'
+import { describeShift, describeUnits, getPricingParts, recalculateOrderItems } from '@/lib/rental'
 
 interface StepSummaryProps {
   values: OrderFormValues
@@ -20,12 +21,10 @@ interface StepSummaryProps {
 
 export function StepSummary({ values, clients, equipment, trustedPerson, onBack, onSubmit, submitting }: StepSummaryProps) {
   const client = clients.find(c => c.id === values.client_id)
-  const days = values.start_date && values.end_date ? calcDays(values.start_date, values.end_date) : 1
 
-  const itemsWithDetails = values.items.map(item => ({
+  const itemsWithDetails = recalculateOrderItems(values.items, equipment, values).map(item => ({
     ...item,
     equipment: equipment.find(e => e.id === item.equipment_id),
-    subtotal: item.daily_rate * days,
   }))
 
   const total = itemsWithDetails.reduce((s, i) => s + i.subtotal, 0)
@@ -38,6 +37,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         <LiveTotal
           startDate={values.start_date}
           endDate={values.end_date}
+          startTime={values.start_time}
+          endTime={values.end_time}
           items={values.items}
           equipment={equipment}
         />
@@ -75,17 +76,23 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           <p className="font-medium">
             {formatDate(values.start_date)} — {formatDate(values.end_date)}
           </p>
-          <p className="text-sm text-gray-600">{days} {days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}</p>
+          <p className="text-sm text-gray-600">
+            {values.start_time} — {values.end_time}
+          </p>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-xs text-gray-500 mb-2">Техника</p>
           <div className="space-y-2">
-            {itemsWithDetails.map(item => (
-              <div key={item.equipment_id} className="flex justify-between text-sm">
+            {itemsWithDetails.map((item, index) => (
+              <div key={`${item.equipment_id}-${index}`} className="flex justify-between text-sm">
                 <span>{item.equipment?.name ?? 'Неизвестно'}</span>
                 <span className="text-gray-600">
-                  {formatCurrency(item.daily_rate, item.equipment?.currency) } × {days}д = {formatCurrency(item.subtotal, item.equipment?.currency)}
+                  {getPricingParts(item)
+                    .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
+                    .join(' + ')}
+                  {' = '}
+                  {formatCurrency(item.subtotal, item.equipment?.currency)}
                 </span>
               </div>
             ))}

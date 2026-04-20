@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { EquipmentForm } from '@/components/equipment/EquipmentForm'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import Link from 'next/link'
-import { CalendarDays, CircleDollarSign, Layers, Package, Sun, Moon, Sparkles, TrendingUp } from 'lucide-react'
+import { CalendarDays, CircleDollarSign, Layers, Moon, Package, Sun, TrendingUp } from 'lucide-react'
 
 export default async function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -29,10 +29,6 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
     .single()
 
   const kitItems = ((item as any).kit_items ?? []) as string[]
-  const dayNight = ((item as any).day_night ?? 'both') as 'day' | 'night' | 'both'
-  const categorySlug = (item.equipment_categories as { slug?: string } | null)?.slug
-  const isCamera = categorySlug === 'cameras'
-
   const [{ data: categories }, { data: brands }] = await Promise.all([
     supabase.from('equipment_categories').select('*').order('sort_order').order('name'),
     supabase.from('brands').select('id, name, logo_url').order('sort_order').order('name'),
@@ -69,9 +65,18 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
         <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <CircleDollarSign className="w-4 h-4" />
-            Ставка аренды
+            Ставки аренды
           </div>
-          <p className="font-semibold mt-1">{formatCurrency(item.daily_rate, item.currency)}/день</p>
+          <div className="mt-2 space-y-1 text-sm">
+            <p className="font-semibold inline-flex items-center gap-2">
+              <Sun className="w-4 h-4 text-amber-500" />
+              День: {formatCurrency((item as any).day_rate ?? item.daily_rate, item.currency)}
+            </p>
+            <p className="font-semibold inline-flex items-center gap-2">
+              <Moon className="w-4 h-4 text-indigo-500" />
+              Ночь: {formatCurrency((item as any).night_rate ?? item.daily_rate, item.currency)}
+            </p>
+          </div>
         </div>
         <div className="bg-white rounded-xl border p-4">
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -89,43 +94,22 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
         </div>
       )}
 
-      {/* Комплектация и режим съёмки */}
-      {(kitItems.length > 0 || isCamera) && (
+      {/* Комплектация */}
+      {kitItems.length > 0 && (
         <div className="bg-white rounded-xl border p-4 space-y-3">
-          {isCamera && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Режим съёмки:</span>
-              <span
-                className={
-                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ' +
-                  (dayNight === 'day'
-                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                    : dayNight === 'night'
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                      : 'bg-gray-50 text-gray-700 border border-gray-200')
-                }
-              >
-                {dayNight === 'day' && <><Sun className="w-3 h-3" /> День</>}
-                {dayNight === 'night' && <><Moon className="w-3 h-3" /> Ночь</>}
-                {dayNight === 'both' && <><Sparkles className="w-3 h-3" /> День и ночь</>}
-              </span>
+          <div>
+            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+              <Package className="w-3.5 h-3.5" />
+              Комплектация
             </div>
-          )}
-          {kitItems.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                <Package className="w-3.5 h-3.5" />
-                Комплектация
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {kitItems.map(k => (
-                  <span key={k} className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                    {k}
-                  </span>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-1.5">
+              {kitItems.map(k => (
+                <span key={k} className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                  {k}
+                </span>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -171,6 +155,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             category_id: item.category_id ?? undefined,
             brand_id: (item as any).brand_id ?? undefined,
             daily_rate: item.daily_rate,
+            day_rate: (item as any).day_rate ?? item.daily_rate,
+            night_rate: (item as any).night_rate ?? item.daily_rate,
             currency: item.currency,
             brand: item.brand ?? undefined,
             specs: item.specs ?? undefined,
@@ -181,7 +167,6 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             source: item.source ?? undefined,
             sort_order: item.sort_order,
             kit_items: kitItems,
-            day_night: dayNight,
           }}
         />
       </div>

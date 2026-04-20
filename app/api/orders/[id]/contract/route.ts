@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateContract } from '@/lib/pdf/generateContract'
 import { formatDate } from '@/lib/utils'
+import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,7 +17,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (error || !order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
 
   const client = order.clients as { full_name: string; phone: string | null; passport_series: string | null; passport_number: string | null } | null
-  const items = (order.order_items as { equipment: { name: string; currency: 'UZS' | 'USD' } | null; daily_rate: number; days: number; subtotal: number }[]) ?? []
+  const items = (order.order_items as {
+    equipment: { name: string; currency: 'UZS' | 'USD' } | null
+    daily_rate: number
+    day_rate_snapshot?: number
+    night_rate_snapshot?: number
+    day_units?: number
+    night_units?: number
+    days: number
+    subtotal: number
+    shift_type?: 'day' | 'night'
+  }[]) ?? []
 
   const pdfBytes = await generateContract({
     orderNumber: order.order_number,
@@ -26,11 +37,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       ? `${client.passport_series} ${client.passport_number}` : null,
     startDate: formatDate(order.start_date),
     endDate: formatDate(order.end_date),
+    startTime: (order as any).start_time ?? '09:30',
+    endTime: (order as any).end_time ?? '23:00',
     items: items.map(i => ({
       name: i.equipment?.name ?? 'Оборудование',
       currency: i.equipment?.currency ?? 'UZS',
-      dailyRate: i.daily_rate,
-      days: i.days,
+      pricingLines: getPricingParts(i).map(part => ({
+        shiftLabel: describeShift(part.shiftType),
+        rate: part.rate,
+        unitsLabel: describeUnits(part.units, part.shiftType),
+      })),
       subtotal: i.subtotal,
     })),
     totalAmount: order.total_amount,

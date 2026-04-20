@@ -2,58 +2,33 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
-interface Equipment {
+interface CalendarOrder {
   id: string
-  name: string
-  status: string
-  category_id: string | null
-  brand: string | null
-  specs: string | null
-  equipment_categories: { name: string; is_active: boolean } | null
-}
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-  sort_order: number
-  is_active: boolean
-}
-
-interface Booking {
-  equipment_id: string
-  equipment_name: string
-  order: {
-    id: string
-    order_number: string
-    start_date: string
-    end_date: string
-    status: string
-    created_by: string | null
-    created_at: string | null
-    client: { full_name: string; phone: string | null } | null
-  }
-}
-
-interface BlockedDate {
-  id: string
-  equipment_id: string
+  order_number: string
   start_date: string
   end_date: string
-  reason: string | null
+  start_time: string
+  end_time: string
+  status: 'active' | 'overdue' | 'draft' | 'returned' | 'cancelled'
+  created_at: string | null
+  created_by_name: string | null
+  client: { full_name: string; phone: string | null } | null
+  items: {
+    id: string
+    equipment_id: string
+    name: string
+    shift_type: 'day' | 'night'
+    daily_rate: number
+  }[]
 }
 
 interface CalendarData {
-  equipment: Equipment[]
-  categories: Category[]
-  bookings: Booking[]
-  blocked: BlockedDate[]
-  profiles: Record<string, string>
+  orders: CalendarOrder[]
 }
 
 const DEFAULT_DAYS_VISIBLE = 14
@@ -76,16 +51,13 @@ function isBetween(day: string, start: string, end: string) {
 }
 
 function firstName(value?: string | null) {
-  return value?.trim().split(/\s+/)[0] ?? ''
+  return value?.trim().split(/\s+/)[0] ?? 'Клиент'
 }
 
-function toTashkentTime(iso: string | null): string {
-  if (!iso) return ''
-  return new Intl.DateTimeFormat('ru-RU', {
-    timeZone: 'Asia/Tashkent',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(iso))
+function shortEquipmentList(items: CalendarOrder['items']) {
+  const names = items.map(item => item.name)
+  if (names.length <= 2) return names.join(', ')
+  return `${names.slice(0, 2).join(', ')} +${names.length - 2}`
 }
 
 export default function CalendarPage() {
@@ -95,8 +67,7 @@ export default function CalendarPage() {
     return date
   })
   const [daysVisible, setDaysVisible] = useState(DEFAULT_DAYS_VISIBLE)
-  const [categoryId, setCategoryId] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('active')
+  const [statusFilter, setStatusFilter] = useState<'active' | 'overdue' | 'all'>('active')
   const [search, setSearch] = useState('')
   const [data, setData] = useState<CalendarData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -105,8 +76,8 @@ export default function CalendarPage() {
   const fromDateString = toDateString(startDate)
   const toDateStringValue = toDateString(endDate)
   const days = useMemo(
-    () => Array.from({ length: daysVisible }, (_, i) => addDays(startDate, i)),
-    [startDate, daysVisible]
+    () => Array.from({ length: daysVisible }, (_, index) => addDays(startDate, index)),
+    [daysVisible, startDate],
   )
   const today = toDateString(new Date())
 
@@ -122,56 +93,33 @@ export default function CalendarPage() {
       .catch(err => setError(err.message ?? 'Не удалось загрузить календарь'))
   }, [fromDateString, toDateStringValue])
 
-  const filteredEquipment = useMemo(() => {
+  const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return (data?.equipment ?? []).filter(item => {
-      const matchesCategory = categoryId === 'all' || item.category_id === categoryId
-      const matchesSearch = !term || [
-        item.name,
-        item.brand ?? '',
-        item.specs ?? '',
-        item.equipment_categories?.name ?? '',
-      ].join(' ').toLowerCase().includes(term)
-      return matchesCategory && matchesSearch
+
+    return (data?.orders ?? []).filter(order => {
+      if (statusFilter === 'overdue' && order.status !== 'overdue') return false
+      if (statusFilter === 'active' && !['active', 'overdue'].includes(order.status)) return false
+
+      if (!term) return true
+
+      return [
+        order.order_number,
+        order.client?.full_name ?? '',
+        order.client?.phone ?? '',
+        order.created_by_name ?? '',
+        shortEquipmentList(order.items),
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
     })
-  }, [categoryId, data?.equipment, search])
-
-  const groupedEquipment = useMemo(() => {
-    const groups = new Map<string, Equipment[]>()
-    for (const item of filteredEquipment) {
-      const brand = item.brand?.trim()
-      const key = brand
-        ? `${item.equipment_categories?.name ?? 'Без категории'} / ${brand}`
-        : item.equipment_categories?.name ?? 'Без категории'
-      groups.set(key, [...(groups.get(key) ?? []), item])
-    }
-    return Array.from(groups.entries()).map(([category, items]) => ({ category, items }))
-  }, [filteredEquipment])
-
-  function getBooking(equipmentId: string, day: string) {
-    const bookings = (data?.bookings ?? []).filter(booking =>
-      booking.equipment_id === equipmentId &&
-      isBetween(day, booking.order.start_date, booking.order.end_date)
-    )
-
-    if (statusFilter === 'overdue') {
-      return bookings.find(booking => booking.order.status === 'overdue') ?? null
-    }
-    return bookings[0] ?? null
-  }
-
-  function getBlocked(equipmentId: string, day: string) {
-    return (data?.blocked ?? []).find(blocked =>
-      blocked.equipment_id === equipmentId &&
-      isBetween(day, blocked.start_date, blocked.end_date)
-    ) ?? null
-  }
+  }, [data?.orders, search, statusFilter])
 
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Календарь бронирований"
-        description="Кто взял технику, на какие даты и кто оформил заказ"
+        title="Календарь заказов"
+        description="Клиенты, даты аренды, ответственный и короткий список техники"
         action={
           <div className="flex items-center gap-2">
             <Button
@@ -180,13 +128,9 @@ export default function CalendarPage() {
               onClick={() => setStartDate(date => addDays(date, -daysVisible))}
               aria-label="Предыдущий период"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
-            <Button
-              variant="outline"
-              className="min-h-[44px] px-4"
-              onClick={() => setStartDate(new Date())}
-            >
+            <Button variant="outline" className="min-h-[44px] px-4" onClick={() => setStartDate(new Date())}>
               Сегодня
             </Button>
             <Button
@@ -195,45 +139,36 @@ export default function CalendarPage() {
               onClick={() => setStartDate(date => addDays(date, daysVisible))}
               aria-label="Следующий период"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
         }
       />
 
-      <div className="bg-white rounded-xl border p-3">
-        <div className="grid grid-cols-1 md:grid-cols-[minmax(180px,1fr)_180px_160px_160px] gap-3">
+      <div className="rounded-2xl border bg-white p-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(180px,1fr)_180px_160px]">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Поиск техники"
-              className="w-full min-h-[44px] rounded-lg border bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+              placeholder="Поиск по клиенту, заказу, телефону"
+              className="min-h-[44px] w-full rounded-xl border bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
             />
           </div>
           <select
-            value={categoryId}
-            onChange={e => setCategoryId(e.target.value)}
-            className="min-h-[44px] rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
-          >
-            <option value="all">Все категории</option>
-            {(data?.categories ?? []).map(category => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-          </select>
-          <select
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="min-h-[44px] rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+            onChange={e => setStatusFilter(e.target.value as 'active' | 'overdue' | 'all')}
+            className="min-h-[44px] rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
           >
             <option value="active">Активные и просрочки</option>
             <option value="overdue">Только просрочки</option>
+            <option value="all">Все</option>
           </select>
           <select
             value={daysVisible}
             onChange={e => setDaysVisible(Number(e.target.value))}
-            className="min-h-[44px] rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
+            className="min-h-[44px] rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
           >
             <option value={7}>Неделя</option>
             <option value={14}>2 недели</option>
@@ -242,12 +177,12 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-auto">
-        <table className="w-full text-xs border-collapse" style={{ minWidth: `${260 + daysVisible * 88}px` }}>
+      <div className="overflow-auto rounded-2xl border bg-white">
+        <table className="w-full border-collapse text-xs" style={{ minWidth: `${320 + daysVisible * 96}px` }}>
           <thead>
             <tr className="border-b bg-zinc-50">
-              <th className="sticky left-0 bg-zinc-50 z-20 w-64 min-w-64 text-left px-4 py-3 font-semibold border-r text-zinc-700">
-                Техника
+              <th className="sticky left-0 z-20 w-80 min-w-80 border-r bg-zinc-50 px-4 py-3 text-left font-semibold text-zinc-700">
+                Заказ / клиент
               </th>
               {days.map(day => {
                 const value = toDateString(day)
@@ -257,9 +192,9 @@ export default function CalendarPage() {
                   <th
                     key={value}
                     className={cn(
-                      'w-[88px] min-w-[88px] py-2 font-normal text-center border-r border-zinc-100',
+                      'w-[96px] min-w-[96px] border-r border-zinc-100 py-2 text-center font-normal',
                       isToday && 'bg-zinc-900 text-white',
-                      isWeekend && !isToday && 'bg-zinc-100 text-zinc-500'
+                      isWeekend && !isToday && 'bg-zinc-100 text-zinc-500',
                     )}
                   >
                     <div className="text-sm tabular-nums">{day.getDate()}</div>
@@ -274,173 +209,127 @@ export default function CalendarPage() {
           <tbody>
             {!data && !error && (
               <>
-                {Array.from({ length: 8 }).map((_, gi) => (
-                  <tr key={`skel-group-${gi}`}>
-                    {gi % 3 === 0 ? (
-                      <td colSpan={daysVisible + 1} className="bg-zinc-50/70 px-4 py-2">
-                        <div className="h-3 w-32 rounded-full bg-zinc-200 animate-pulse" />
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <tr key={`skeleton-${index}`} className="border-b">
+                    <td className="sticky left-0 z-10 min-w-80 border-r bg-white px-4 py-4">
+                      <div className="mb-2 h-4 w-40 animate-pulse rounded-full bg-zinc-200" />
+                      <div className="mb-2 h-3 w-28 animate-pulse rounded-full bg-zinc-100" />
+                      <div className="h-3 w-52 animate-pulse rounded-full bg-zinc-100" />
+                    </td>
+                    {Array.from({ length: daysVisible }).map((_, cell) => (
+                      <td key={cell} className="h-20 border-r border-zinc-100 p-1">
+                        {cell % 7 === index % 4 ? (
+                          <div className="h-full w-full animate-pulse rounded-xl bg-zinc-100" />
+                        ) : null}
                       </td>
-                    ) : (
-                      <>
-                        <td className="sticky left-0 bg-white z-10 px-4 py-3 border-r min-w-64 border-b">
-                          <div className="h-4 w-40 rounded-full bg-zinc-200 animate-pulse mb-1.5" />
-                          <div className="h-3 w-24 rounded-full bg-zinc-100 animate-pulse" />
-                        </td>
-                        {Array.from({ length: daysVisible }).map((_, di) => (
-                          <td key={di} className="border-r border-zinc-100 border-b p-1 h-14">
-                            {di % 7 === gi % 4 ? (
-                              <div className="h-full w-full rounded-md bg-emerald-100 animate-pulse" />
-                            ) : null}
-                          </td>
-                        ))}
-                      </>
-                    )}
+                    ))}
                   </tr>
                 ))}
               </>
             )}
+
             {error && (
               <tr>
-                <td colSpan={daysVisible + 1} className="text-center py-12 text-red-600">
+                <td colSpan={daysVisible + 1} className="py-12 text-center text-red-600">
                   {error}
                 </td>
               </tr>
             )}
-            {data && groupedEquipment.length === 0 && (
+
+            {data && filteredOrders.length === 0 && (
               <tr>
-                <td colSpan={daysVisible + 1} className="text-center py-12 text-zinc-400">
+                <td colSpan={daysVisible + 1} className="py-12 text-center text-zinc-500">
                   Ничего не найдено
                 </td>
               </tr>
             )}
-            {groupedEquipment.map(group => (
-              <FragmentRows
-                key={group.category}
-                group={group}
-                days={days}
-                today={today}
-                profiles={data?.profiles ?? {}}
-                getBooking={getBooking}
-                getBlocked={getBlocked}
-              />
+
+            {filteredOrders.map(order => (
+              <tr key={order.id} className="border-b align-top hover:bg-zinc-50/60">
+                <td className="sticky left-0 z-10 min-w-80 border-r bg-white px-4 py-4">
+                  <Link href={`/orders/${order.id}`} className="block">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-zinc-900">
+                          {order.client?.full_name ?? 'Клиент'}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {order.order_number} · {order.client?.phone ?? 'Без телефона'}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
+                          {shortEquipmentList(order.items)}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-1 text-[10px] font-medium',
+                          order.status === 'overdue'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-emerald-100 text-emerald-700',
+                        )}
+                      >
+                        {order.status === 'overdue' ? 'Просрочка' : 'Активно'}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
+                      <span>{order.start_date} {order.start_time}</span>
+                      <span>{order.end_date} {order.end_time}</span>
+                      {order.created_by_name && <span>Оформил: {order.created_by_name}</span>}
+                    </div>
+                  </Link>
+                </td>
+
+                {days.map(day => {
+                  const value = toDateString(day)
+                  const visible = isBetween(value, order.start_date, order.end_date)
+                  const isToday = value === today
+                  const isOverdue = order.status === 'overdue'
+
+                  return (
+                    <td
+                      key={value}
+                      className={cn(
+                        'h-20 border-r border-zinc-100 p-1 align-top',
+                        isToday && 'ring-1 ring-inset ring-zinc-900',
+                      )}
+                    >
+                      {visible ? (
+                        <Link
+                          href={`/orders/${order.id}`}
+                          title={[
+                            order.order_number,
+                            order.client?.full_name,
+                            order.client?.phone,
+                            order.created_by_name ? `Оформил: ${order.created_by_name}` : '',
+                            `${order.start_date} ${order.start_time} – ${order.end_date} ${order.end_time}`,
+                            shortEquipmentList(order.items),
+                          ].filter(Boolean).join(' | ')}
+                          className={cn(
+                            'block h-full rounded-xl border px-2 py-1.5 transition-colors',
+                            isOverdue
+                              ? 'border-red-200 bg-red-50 text-red-900 hover:bg-red-100'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-950 hover:bg-emerald-100',
+                          )}
+                        >
+                          <span className="mb-1 block text-[9px] font-mono opacity-60">
+                            {order.order_number.replace('DA-', '#')}
+                          </span>
+                          <span className="block truncate text-[10px] font-semibold leading-tight">
+                            {firstName(order.client?.full_name)}
+                          </span>
+                          <span className="mt-1 block line-clamp-2 text-[9px] leading-tight opacity-70">
+                            {shortEquipmentList(order.items)}
+                          </span>
+                        </Link>
+                      ) : null}
+                    </td>
+                  )
+                })}
+              </tr>
             ))}
           </tbody>
         </table>
-        <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-t text-xs text-zinc-500">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-emerald-100 border border-emerald-200" /> Активная аренда
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-100 border border-red-200" /> Просрочка
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-amber-100 border border-amber-200" /> ТО / блокировка
-          </div>
-        </div>
       </div>
     </div>
-  )
-}
-
-function FragmentRows({
-  group,
-  days,
-  today,
-  profiles,
-  getBooking,
-  getBlocked,
-}: {
-  group: { category: string; items: Equipment[] }
-  days: Date[]
-  today: string
-  profiles: Record<string, string>
-  getBooking: (equipmentId: string, day: string) => Booking | null
-  getBlocked: (equipmentId: string, day: string) => BlockedDate | null
-}) {
-  return (
-    <>
-      <tr className="bg-zinc-50/70">
-        <td colSpan={days.length + 1} className="sticky left-0 z-10 px-4 py-2 text-[11px] font-semibold text-zinc-500 border-b">
-          {group.category}
-        </td>
-      </tr>
-      {group.items.map(equipment => (
-        <tr key={equipment.id} className="border-b hover:bg-zinc-50/60">
-          <td className="sticky left-0 bg-white z-10 px-4 py-3 border-r min-w-64">
-            <Link href={`/equipment/${equipment.id}`} className="hover:text-zinc-950">
-              <p className="font-medium truncate max-w-[220px] text-sm">{equipment.name}</p>
-              <p className="text-zinc-400 text-xs truncate max-w-[220px]">
-                {equipment.specs ?? equipment.brand ?? equipment.equipment_categories?.name ?? 'Без категории'}
-              </p>
-            </Link>
-          </td>
-          {days.map(day => {
-            const value = toDateString(day)
-            const booking = getBooking(equipment.id, value)
-            const blocked = getBlocked(equipment.id, value)
-            const order = booking?.order
-            const creatorName = order?.created_by ? profiles[order.created_by] : ''
-            const clientName = order?.client?.full_name ?? ''
-            const orderTime = order?.created_at ? toTashkentTime(order.created_at) : ''
-            const isToday = value === today
-            const isOverdue = order?.status === 'overdue'
-
-            return (
-              <td
-                key={value}
-                className={cn(
-                  'border-r border-zinc-100 p-1 h-14 align-top',
-                  isToday && 'ring-1 ring-inset ring-zinc-900',
-                  blocked && !booking && 'bg-amber-50'
-                )}
-              >
-                {booking && order ? (
-                  <Link
-                    href={`/orders/${order.id}`}
-                    title={[
-                      order.order_number,
-                      clientName,
-                      order.client?.phone,
-                      creatorName ? `Оформил: ${creatorName}` : '',
-                      `${order.start_date} – ${order.end_date}`,
-                      booking.equipment_name,
-                    ].filter(Boolean).join(' | ')}
-                    className={cn(
-                      'group/cell block h-full rounded-md border px-1.5 py-1 overflow-hidden transition-all',
-                      isOverdue
-                        ? 'bg-red-50 border-red-200 text-red-900 hover:bg-red-100 hover:border-red-300'
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-300'
-                    )}
-                  >
-                    {/* Номер заказа */}
-                    <span className={cn(
-                      'block text-[9px] font-mono leading-none mb-0.5 opacity-60',
-                    )}>
-                      {order.order_number.replace('DA-', '#')}
-                    </span>
-                    {/* Имя клиента + время */}
-                    <span className="block text-[10px] leading-tight font-semibold truncate">
-                      {firstName(clientName) || 'Клиент'}
-                      {orderTime ? <span className="font-normal opacity-70"> {orderTime}</span> : ''}
-                    </span>
-                    {/* Техника */}
-                    <span className="block text-[9px] leading-tight opacity-55 truncate">
-                      {booking.equipment_name}
-                    </span>
-                  </Link>
-                ) : blocked ? (
-                  <span
-                    title={blocked.reason ?? 'Заблокировано'}
-                    className="flex h-full items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-[10px] text-amber-800"
-                  >
-                    ТО
-                  </span>
-                ) : null}
-              </td>
-            )
-          })}
-        </tr>
-      ))}
-    </>
   )
 }

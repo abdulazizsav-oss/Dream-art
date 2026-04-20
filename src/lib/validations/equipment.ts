@@ -4,7 +4,9 @@ export const equipmentSchema = z.object({
   name: z.string().min(1, 'Название обязательно'),
   category_id: z.string().uuid('Выберите категорию').nullable().optional(),
   brand_id: z.string().uuid().nullable().optional(),
-  daily_rate: z.coerce.number().min(0, 'Ставка аренды обязательна'),
+  daily_rate: z.coerce.number().min(0).optional(),
+  day_rate: z.coerce.number().min(0, 'Дневная ставка обязательна'),
+  night_rate: z.coerce.number().min(0, 'Ночная ставка обязательна'),
   currency: z.enum(['UZS', 'USD']).default('UZS'),
   brand: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   specs: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
@@ -18,7 +20,6 @@ export const equipmentSchema = z.object({
   source: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   sort_order: z.coerce.number().int().min(0).default(0).optional(),
   kit_items: z.array(z.string()).default([]).optional(),
-  day_night: z.enum(['day', 'night', 'both']).default('both').optional(),
 })
 
 export type EquipmentFormInput = z.input<typeof equipmentSchema>

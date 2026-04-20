@@ -49,9 +49,14 @@ export async function POST(req: NextRequest) {
   const parsed = equipmentSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
+  const payload = {
+    ...parsed.data,
+    daily_rate: parsed.data.day_rate,
+  }
+
   const { data, error } = await supabase
     .from('equipment')
-    .insert(parsed.data)
+    .insert(payload)
     .select()
     .single()
 

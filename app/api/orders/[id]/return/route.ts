@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,5 +23,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { error } = await supabase.rpc('return_order_atomic', rpcArgs as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  revalidatePath('/orders')
+  revalidatePath(`/orders/${id}`)
+  revalidatePath('/calendar')
+  revalidatePath('/dashboard')
   return NextResponse.json({ success: true })
 }
