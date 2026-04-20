@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { Moon, Package, Sun } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 const KIT_SUGGESTIONS = [
   'Бленда',
