@@ -163,11 +163,18 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
         <Input id="specs" {...register('specs')} placeholder="Full-frame, 4K, комплект" className="min-h-[44px]" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_160px] gap-4">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-4',
+          supportsNightRate
+            ? 'sm:grid-cols-[1fr_1fr_160px]'
+            : 'sm:grid-cols-[1fr_160px]',
+        )}
+      >
         <div className="space-y-1.5">
           <Label htmlFor="day_rate" className="inline-flex items-center gap-2">
             <Sun className="w-4 h-4 text-amber-500" />
-            Дневная ставка *
+            {supportsNightRate ? 'Дневная ставка *' : 'Ставка аренды *'}
           </Label>
           <Input
             id="day_rate"
@@ -178,22 +185,29 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
             className="min-h-[44px]"
           />
           {errors.day_rate && <p className="text-xs text-red-500">{errors.day_rate.message}</p>}
+          {!supportsNightRate && (
+            <p className="text-[11px] text-zinc-400">
+              Ночная ставка используется только для камер.
+            </p>
+          )}
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="night_rate" className="inline-flex items-center gap-2">
-            <Moon className="w-4 h-4 text-indigo-500" />
-            Ночная ставка *
-          </Label>
-          <Input
-            id="night_rate"
-            type="number"
-            inputMode="decimal"
-            {...register('night_rate')}
-            placeholder="100000"
-            className="min-h-[44px]"
-          />
-          {errors.night_rate && <p className="text-xs text-red-500">{errors.night_rate.message}</p>}
-        </div>
+        {supportsNightRate && (
+          <div className="space-y-1.5">
+            <Label htmlFor="night_rate" className="inline-flex items-center gap-2">
+              <Moon className="w-4 h-4 text-indigo-500" />
+              Ночная ставка *
+            </Label>
+            <Input
+              id="night_rate"
+              type="number"
+              inputMode="decimal"
+              {...register('night_rate')}
+              placeholder="100000"
+              className="min-h-[44px]"
+            />
+            {errors.night_rate && <p className="text-xs text-red-500">{errors.night_rate.message}</p>}
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label>Валюта</Label>
           <Select
