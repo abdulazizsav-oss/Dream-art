@@ -25,7 +25,21 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHeader title={client.full_name} description="Карточка клиента" />
+      <div className="flex items-center gap-4">
+        {client.photo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={client.photo_url}
+            alt={client.full_name}
+            className="h-16 w-16 rounded-full object-cover border border-zinc-200 shadow-sm"
+          />
+        ) : (
+          <div className="h-16 w-16 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-400 text-lg font-semibold">
+            {client.full_name?.[0]?.toUpperCase() ?? '?'}
+          </div>
+        )}
+        <PageHeader title={client.full_name} description="Карточка клиента" />
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border p-4">
