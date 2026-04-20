@@ -164,25 +164,27 @@ export function EquipmentCart({
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <ShiftButton
-                      active={group.rateSource === 'auto'}
-                      onClick={() => onSetShiftMode(group.key, 'auto')}
-                      label="Авто"
-                    />
-                    <ShiftButton
-                      active={group.rateSource === 'manual' && group.shiftType === 'day'}
-                      onClick={() => onSetShiftMode(group.key, 'day')}
-                      label="День"
-                      icon={<Sun className="h-3.5 w-3.5 text-amber-500" />}
-                    />
-                    <ShiftButton
-                      active={group.rateSource === 'manual' && group.shiftType === 'night'}
-                      onClick={() => onSetShiftMode(group.key, 'night')}
-                      label="Ночь"
-                      icon={<Moon className="h-3.5 w-3.5 text-indigo-500" />}
-                    />
-                  </div>
+                  {group.equipment?.equipment_categories?.slug === 'cameras' && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <ShiftButton
+                        active={group.rateSource === 'auto'}
+                        onClick={() => onSetShiftMode(group.key, 'auto')}
+                        label="Авто"
+                      />
+                      <ShiftButton
+                        active={group.rateSource === 'manual' && group.shiftType === 'day'}
+                        onClick={() => onSetShiftMode(group.key, 'day')}
+                        label="День"
+                        icon={<Sun className="h-3.5 w-3.5 text-amber-500" />}
+                      />
+                      <ShiftButton
+                        active={group.rateSource === 'manual' && group.shiftType === 'night'}
+                        onClick={() => onSetShiftMode(group.key, 'night')}
+                        label="Ночь"
+                        icon={<Moon className="h-3.5 w-3.5 text-indigo-500" />}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {group.kitItems.length > 0 && (
