@@ -68,14 +68,23 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             Ставки аренды
           </div>
           <div className="mt-2 space-y-1 text-sm">
-            <p className="font-semibold inline-flex items-center gap-2">
-              <Sun className="w-4 h-4 text-amber-500" />
-              День: {formatCurrency((item as any).day_rate ?? item.daily_rate, item.currency)}
-            </p>
-            <p className="font-semibold inline-flex items-center gap-2">
-              <Moon className="w-4 h-4 text-indigo-500" />
-              Ночь: {formatCurrency((item as any).night_rate ?? item.daily_rate, item.currency)}
-            </p>
+            {(item.equipment_categories as { slug?: string } | null)?.slug === 'cameras' ? (
+              <>
+                <p className="font-semibold inline-flex items-center gap-2">
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  День: {formatCurrency((item as any).day_rate ?? item.daily_rate, item.currency)}
+                </p>
+                <p className="font-semibold inline-flex items-center gap-2">
+                  <Moon className="w-4 h-4 text-indigo-500" />
+                  Ночь: {formatCurrency((item as any).night_rate ?? item.daily_rate, item.currency)}
+                </p>
+              </>
+            ) : (
+              <p className="font-semibold inline-flex items-center gap-2">
+                <Sun className="w-4 h-4 text-amber-500" />
+                {formatCurrency((item as any).day_rate ?? item.daily_rate, item.currency)} / день
+              </p>
+            )}
           </div>
         </div>
         <div className="bg-white rounded-xl border p-4">
