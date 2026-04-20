@@ -142,17 +142,19 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
                       <div className="flex items-center justify-between gap-2 text-zinc-700">
                         <span className="inline-flex items-center gap-1">
                           <Sun className="h-3.5 w-3.5 text-amber-500" />
-                          День
+                          {showNightRate ? 'День' : 'Ставка'}
                         </span>
                         <span className="font-semibold">{formatCurrency(dayRate, item.currency)}</span>
                       </div>
-                      <div className="mt-1.5 flex items-center justify-between gap-2 text-zinc-700">
-                        <span className="inline-flex items-center gap-1">
-                          <Moon className="h-3.5 w-3.5 text-indigo-500" />
-                          Ночь
-                        </span>
-                        <span className="font-semibold">{formatCurrency(nightRate, item.currency)}</span>
-                      </div>
+                      {showNightRate && (
+                        <div className="mt-1.5 flex items-center justify-between gap-2 text-zinc-700">
+                          <span className="inline-flex items-center gap-1">
+                            <Moon className="h-3.5 w-3.5 text-indigo-500" />
+                            Ночь
+                          </span>
+                          <span className="font-semibold">{formatCurrency(nightRate, item.currency)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between">
