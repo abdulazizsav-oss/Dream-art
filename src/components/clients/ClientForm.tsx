@@ -15,7 +15,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
-import { UserCheck, Camera, AtSign, MapPin } from 'lucide-react'
+import { UserCheck, Camera, AtSign, MapPin, Download, User, FileText, Star, StickyNote } from 'lucide-react'
 
 interface ClientFormProps {
   defaultValues?: Partial<ClientFormValues>
