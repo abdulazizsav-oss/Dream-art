@@ -90,6 +90,8 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
               const count = selectedCounts.get(item.id) ?? 0
               const dayRate = item.day_rate ?? item.daily_rate
               const nightRate = item.night_rate ?? item.daily_rate
+              const showNightRate =
+                item.equipment_categories?.slug === 'cameras' && nightRate !== dayRate
 
               return (
                 <motion.button
