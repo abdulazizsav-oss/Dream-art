@@ -65,14 +65,22 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   const brandIdVal = watch('brand_id') as string | undefined
   const currencyVal = (watch('currency') as string | undefined) ?? 'UZS'
   const kitItems = (watch('kit_items') as string[] | undefined) ?? []
+  const dayRateVal = watch('day_rate') as number | undefined
+  const supportsNightRate =
+    (categories.find(c => c.id === categoryId)?.slug ?? '') === 'cameras'
 
   async function onSubmit(data: EquipmentFormValues) {
+    // Night-rate field is only shown for cameras; for everything else mirror
+    // the day rate so the pricing engine always has a valid value.
+    const payload = supportsNightRate
+      ? data
+      : { ...data, night_rate: data.day_rate }
     const url = equipmentId ? `/api/equipment/${equipmentId}` : '/api/equipment'
     const method = equipmentId ? 'PUT' : 'POST'
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     })
     if (!res.ok) {
       const err = await res.json()
