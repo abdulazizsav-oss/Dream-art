@@ -200,23 +200,25 @@ export function StepClient({
           </>
         ) : (
           /* ── Расширенная форма создания клиента ── */
-          <div className="bg-gray-50 rounded-xl p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-            <h3 className="font-medium text-sm text-gray-700 flex items-center gap-2">
-              <UserPlus className="w-4 h-4" /> Новый клиент
+          <div className="rounded-2xl border bg-white p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+            <h3 className="font-medium text-sm text-zinc-800 flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-blue-500" /> Новый клиент
             </h3>
 
             {/* Блок 1. Фото + основное */}
-            <div className="space-y-3">
+            <section className="rounded-2xl border border-sky-200/70 bg-sky-50/50 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-blue-500" />
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Основное</h4>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+                  <Camera className="w-4 h-4" />
+                </span>
+                <h4 className="text-sm font-semibold text-sky-900">Основное</h4>
               </div>
               <div className="w-24">
                 <ImageUpload bucket="client-photos" value={newPhoto} onChange={setNewPhoto} aspectRatio="square" />
               </div>
               <div className="space-y-1.5">
                 <Label>ФИО *</Label>
-                <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Иванов Иван Иванович" className="min-h-[44px]" autoFocus />
+                <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Иванов Иван Иванович" className="min-h-[44px] bg-white" autoFocus />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -225,68 +227,74 @@ export function StepClient({
                     value={newPhone}
                     onChange={e => setNewPhone(e.target.value)}
                     placeholder="+998 90 123-45-67"
-                    className={cn('min-h-[44px]', !newPhone.trim() && newName.trim() ? 'border-orange-300' : '')}
+                    className={cn('min-h-[44px] bg-white', !newPhone.trim() && newName.trim() ? 'border-orange-300' : '')}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Дата рождения</Label>
-                  <Input type="date" value={newBirthDate} onChange={e => setNewBirthDate(e.target.value)} className="min-h-[44px]" />
+                  <Input type="date" value={newBirthDate} onChange={e => setNewBirthDate(e.target.value)} className="min-h-[44px] bg-white" />
                 </div>
               </div>
-            </div>
+            </section>
 
             {/* Блок 2. Контакты */}
-            <div className="border-t pt-3 space-y-3">
+            <section className="rounded-2xl border border-violet-200/70 bg-violet-50/40 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <AtSign className="w-4 h-4 text-blue-500" />
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Контакты</h4>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+                  <AtSign className="w-4 h-4" />
+                </span>
+                <h4 className="text-sm font-semibold text-violet-900">Контакты</h4>
               </div>
               <div className="space-y-1.5">
                 <Label>Email</Label>
-                <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="client@example.com" className="min-h-[44px]" />
+                <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="client@example.com" className="min-h-[44px] bg-white" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Telegram *</Label>
-                  <Input value={newTelegram} onChange={e => setNewTelegram(e.target.value)} placeholder="@username" className="min-h-[44px]" />
+                  <Input value={newTelegram} onChange={e => setNewTelegram(e.target.value)} placeholder="@username" className="min-h-[44px] bg-white" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Instagram *</Label>
-                  <Input value={newInstagram} onChange={e => setNewInstagram(e.target.value)} placeholder="@username" className="min-h-[44px]" />
+                  <Input value={newInstagram} onChange={e => setNewInstagram(e.target.value)} placeholder="@username" className="min-h-[44px] bg-white" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label>Facebook</Label>
-                <Input value={newFacebook} onChange={e => setNewFacebook(e.target.value)} placeholder="fb.com/username" className="min-h-[44px]" />
+                <Input value={newFacebook} onChange={e => setNewFacebook(e.target.value)} placeholder="fb.com/username" className="min-h-[44px] bg-white" />
               </div>
-            </div>
+            </section>
 
             {/* Блок 3. Адреса */}
-            <div className="border-t pt-3 space-y-3">
+            <section className="rounded-2xl border border-emerald-200/70 bg-emerald-50/40 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-blue-500" />
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Адреса</h4>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                  <MapPin className="w-4 h-4" />
+                </span>
+                <h4 className="text-sm font-semibold text-emerald-900">Адреса</h4>
               </div>
               <div className="space-y-1.5">
                 <Label>Адрес фактический *</Label>
-                <Textarea value={newAddressActual} onChange={e => setNewAddressActual(e.target.value)} rows={2} placeholder="Город, улица, дом, квартира" />
+                <Textarea value={newAddressActual} onChange={e => setNewAddressActual(e.target.value)} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white" />
               </div>
               <div className="space-y-1.5">
                 <Label>Адрес по прописке *</Label>
-                <Textarea value={newAddressRegistered} onChange={e => setNewAddressRegistered(e.target.value)} rows={2} placeholder="Город, улица, дом, квартира" />
+                <Textarea value={newAddressRegistered} onChange={e => setNewAddressRegistered(e.target.value)} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white" />
               </div>
-            </div>
+            </section>
 
             {/* Блок 4. Документ */}
-            <div className="border-t pt-3 space-y-3">
+            <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-500" />
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Документ</h4>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-slate-700">
+                  <FileText className="w-4 h-4" />
+                </span>
+                <h4 className="text-sm font-semibold text-slate-900">Документ</h4>
               </div>
               <div className="space-y-1.5">
                 <Label>Вид документа</Label>
                 <Select value={newDocType} onValueChange={setNewDocType}>
-                  <SelectTrigger className="min-h-[44px]">
+                  <SelectTrigger className="min-h-[44px] bg-white">
                     <SelectValue>{DOCUMENT_TYPE_LABELS[newDocType]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -299,30 +307,35 @@ export function StepClient({
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Серия</Label>
-                  <Input value={newPassportSeries} onChange={e => setNewPassportSeries(e.target.value)} placeholder="AA" className="min-h-[44px]" />
+                  <Input value={newPassportSeries} onChange={e => setNewPassportSeries(e.target.value)} placeholder="AA" className="min-h-[44px] bg-white" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Номер</Label>
-                  <Input value={newPassportNumber} onChange={e => setNewPassportNumber(e.target.value)} placeholder="1234567" className="min-h-[44px]" />
+                  <Input value={newPassportNumber} onChange={e => setNewPassportNumber(e.target.value)} placeholder="1234567" className="min-h-[44px] bg-white" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label>Кем выдан</Label>
-                <Input value={newPassportIssuedBy} onChange={e => setNewPassportIssuedBy(e.target.value)} className="min-h-[44px]" />
+                <Input value={newPassportIssuedBy} onChange={e => setNewPassportIssuedBy(e.target.value)} className="min-h-[44px] bg-white" />
               </div>
               <div className="space-y-1.5">
                 <Label>Дата выдачи</Label>
-                <Input type="date" value={newPassportIssuedDate} onChange={e => setNewPassportIssuedDate(e.target.value)} className="min-h-[44px]" />
+                <Input type="date" value={newPassportIssuedDate} onChange={e => setNewPassportIssuedDate(e.target.value)} className="min-h-[44px] bg-white" />
               </div>
-            </div>
+            </section>
 
             {/* Блок 5. Сегмент + заметки */}
-            <div className="border-t pt-3 space-y-3">
-              <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Сегмент и заметки</h4>
+            <section className="rounded-2xl border border-amber-200/70 bg-amber-50/40 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                  <FileText className="w-4 h-4" />
+                </span>
+                <h4 className="text-sm font-semibold text-amber-900">Сегмент и заметки</h4>
+              </div>
               <div className="space-y-1.5">
                 <Label>Сегмент</Label>
                 <Select value={newSegment} onValueChange={setNewSegment}>
-                  <SelectTrigger className="min-h-[44px]">
+                  <SelectTrigger className="min-h-[44px] bg-white">
                     <SelectValue>{CLIENT_SEGMENT_LABELS[newSegment]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -334,11 +347,11 @@ export function StepClient({
               </div>
               <div className="space-y-1.5">
                 <Label>Заметки</Label>
-                <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} rows={2} />
+                <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} rows={2} className="bg-white" />
               </div>
-            </div>
+            </section>
 
-            <div className="flex gap-2 pt-2 border-t sticky bottom-0 bg-gray-50 -mx-4 -mb-4 px-4 pb-4">
+            <div className="flex gap-2 pt-2 border-t sticky bottom-0 bg-white -mx-4 -mb-4 px-4 pb-4">
               <Button
                 type="button"
                 onClick={handleCreateClient}
