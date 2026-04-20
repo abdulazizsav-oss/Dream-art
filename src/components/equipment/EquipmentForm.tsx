@@ -66,7 +66,6 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   const brandIdVal = watch('brand_id') as string | undefined
   const currencyVal = (watch('currency') as string | undefined) ?? 'UZS'
   const kitItems = (watch('kit_items') as string[] | undefined) ?? []
-  const dayRateVal = watch('day_rate') as number | undefined
   const supportsNightRate =
     (categories.find(c => c.id === categoryId)?.slug ?? '') === 'cameras'
 
