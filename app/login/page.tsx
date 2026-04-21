@@ -16,6 +16,7 @@ const PIN_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
 export default function LoginPage() {
   const [nickname, setNickname] = useState('')
   const [pin, setPin] = useState('')
+  const [mode, setMode] = useState<'pin' | 'password'>('pin')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
