@@ -76,7 +76,7 @@ export function EquipmentCart({
   const groups = groupByEquipment(selectedItems, equipment)
 
   return (
-    <div className="rounded-2xl border bg-white p-4 md:p-5">
+    <div className="rounded-2xl border bg-white p-3 md:p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ShoppingCart className="h-4 w-4 text-zinc-700" />
