@@ -7,6 +7,7 @@ export interface UserProfile {
   id: string
   full_name: string
   role: UserRole
+  nickname: string
 }
 
 // React cache() memoizes per-request so layout + page + API route in the same
@@ -17,7 +18,7 @@ export const getMyProfile = cache(async (): Promise<UserProfile | null> => {
   if (!user) return null
   const { data } = await supabase
     .from('user_profiles')
-    .select('id, full_name, role')
+    .select('id, full_name, role, nickname')
     .eq('id', user.id)
     .single()
   return data as UserProfile | null
