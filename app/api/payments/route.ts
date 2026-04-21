@@ -46,11 +46,28 @@ export async function POST(req: NextRequest) {
   const parsed = paymentSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { data, error } = await supabase
-    .from('payments')
-    .insert({ ...parsed.data, created_by: user.id })
-    .select()
-    .single()
+  const { order_id, payment_type, notes, splits, amount, payment_method } = parsed.data
+
+  // Normalize to array of rows (supports both legacy single-payment body and new splits array)
+  const rows = (splits && splits.length > 0
+    ? splits
+    : amount != null
+      ? [{ amount, payment_method }]
+      : []
+  ).map(s => ({
+    order_id,
+    amount: s.amount,
+    payment_method: s.payment_method,
+    payment_type,
+    notes: notes ?? null,
+    created_by: user.id,
+  }))
+
+  if (rows.length === 0) {
+    return NextResponse.json({ error: 'Укажите сумму платежа' }, { status: 400 })
+  }
+
+  const { data, error } = await supabase.from('payments').insert(rows).select()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
