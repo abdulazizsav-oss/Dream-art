@@ -85,41 +85,65 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* PIN display */}
+          {/* PIN / Password input */}
           <div className="space-y-1.5">
-            <Label className="text-zinc-700">PIN / Пароль</Label>
-            <Input
-              type="password"
-              inputMode="numeric"
-              value={pin}
-              onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-              placeholder="••••"
-              className="min-h-[48px] text-base text-center tracking-[0.5em] rounded-xl"
-            />
+            <div className="flex items-center justify-between">
+              <Label className="text-zinc-700">
+                {mode === 'pin' ? 'PIN' : 'Пароль'}
+              </Label>
+              <button
+                type="button"
+                onClick={() => { setMode(m => (m === 'pin' ? 'password' : 'pin')); setPin('') }}
+                className="text-xs font-medium text-blue-600 hover:text-blue-700"
+              >
+                {mode === 'pin' ? 'Войти паролем' : 'Войти по PIN'}
+              </button>
+            </div>
+            {mode === 'pin' ? (
+              <Input
+                type="password"
+                inputMode="numeric"
+                value={pin}
+                onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                placeholder="••••"
+                className="min-h-[48px] text-base text-center tracking-[0.5em] rounded-xl"
+              />
+            ) : (
+              <Input
+                type="password"
+                autoComplete="current-password"
+                value={pin}
+                onChange={e => setPin(e.target.value)}
+                placeholder="Введите пароль"
+                className="min-h-[48px] text-base rounded-xl"
+              />
+            )}
           </div>
 
-          {/* Numpad */}
-          <div className="grid grid-cols-3 gap-2">
-            {PIN_DIGITS.map((d, i) => (
-              d === '' ? (
-                <div key={i} />
-              ) : (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleDigit(d)}
-                  className={cn(
-                    'flex items-center justify-center rounded-2xl min-h-[52px] text-lg font-semibold transition-all active:scale-95',
-                    d === '⌫'
-                      ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                      : 'bg-zinc-50 text-zinc-900 hover:bg-zinc-100 border border-zinc-200',
-                  )}
-                >
-                  {d === '⌫' ? <Delete className="w-5 h-5" /> : d}
-                </button>
-              )
-            ))}
-          </div>
+          {/* Numpad — only in PIN mode */}
+          {mode === 'pin' && (
+            <div className="grid grid-cols-3 gap-2">
+              {PIN_DIGITS.map((d, i) => (
+                d === '' ? (
+                  <div key={i} />
+                ) : (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleDigit(d)}
+                    className={cn(
+                      'flex items-center justify-center rounded-2xl min-h-[52px] text-lg font-semibold transition-all active:scale-95',
+                      d === '⌫'
+                        ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                        : 'bg-zinc-50 text-zinc-900 hover:bg-zinc-100 border border-zinc-200',
+                    )}
+                  >
+                    {d === '⌫' ? <Delete className="w-5 h-5" /> : d}
+                  </button>
+                )
+              ))}
+            </div>
+          )}
 
           <Button
             type="submit"
