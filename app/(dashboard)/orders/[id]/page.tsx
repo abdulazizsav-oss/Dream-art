@@ -101,8 +101,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             {formatDate(order.start_date)} — {formatDate(order.end_date)}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            {(order as any).start_time ?? '09:30'} — {(order as any).end_time ?? '23:00'}
+            План: {(order as any).start_time ?? '09:30'} — {(order as any).end_time ?? '23:00'}
           </p>
+          {((order as any).actual_start_at || (order as any).actual_end_at) && (
+            <p className="text-[11px] text-gray-400 mt-1">
+              Факт: {(order as any).actual_start_at ? formatDateTime((order as any).actual_start_at) : '—'}
+              {' → '}
+              {(order as any).actual_end_at ? formatDateTime((order as any).actual_end_at) : '…'}
+            </p>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Сумма аренды</p>
