@@ -84,7 +84,7 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
           Ничего не найдено
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
           <AnimatePresence initial={false}>
             {filtered.map(item => {
               const count = selectedCounts.get(item.id) ?? 0
