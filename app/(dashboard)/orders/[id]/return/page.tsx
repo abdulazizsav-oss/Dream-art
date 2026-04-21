@@ -16,6 +16,7 @@ interface OrderItem {
   daily_rate: number
   days: number
   condition_on_issue: string | null
+  selected_kit_items: string[] | null
   equipment: { name: string } | null
 }
 
@@ -25,6 +26,8 @@ export default function ReturnPage() {
   const id = params.id as string
   const [items, setItems] = useState<OrderItem[]>([])
   const [returns, setReturns] = useState<Record<string, string>>({})
+  // Per order_item_id: set of kit items that were returned (checked by default)
+  const [returnedKit, setReturnedKit] = useState<Record<string, Set<string>>>({})
   const [actualReturnDate, setActualReturnDate] = useState('')
   const [orderEndDate, setOrderEndDate] = useState('')
   const [orderStartDate, setOrderStartDate] = useState('')
@@ -35,17 +38,33 @@ export default function ReturnPage() {
     fetch(`/api/orders/${id}`)
       .then(r => r.json())
       .then(order => {
-        const oi = order.order_items ?? []
+        const oi: OrderItem[] = order.order_items ?? []
         setItems(oi)
         setOrderEndDate(order.end_date ?? '')
         setOrderStartDate(order.start_date ?? '')
         setActualReturnDate(order.end_date ?? '')
-        const initial: Record<string, string> = {}
-        oi.forEach((i: OrderItem) => { initial[i.id] = 'Хорошее' })
-        setReturns(initial)
+        const initialReturns: Record<string, string> = {}
+        const initialKit: Record<string, Set<string>> = {}
+        oi.forEach((i) => {
+          initialReturns[i.id] = 'Хорошее'
+          initialKit[i.id] = new Set(i.selected_kit_items ?? [])
+        })
+        setReturns(initialReturns)
+        setReturnedKit(initialKit)
         setLoading(false)
       })
   }, [id])
+
+  function toggleKit(orderItemId: string, kitItem: string) {
+    setReturnedKit(prev => {
+      const next = { ...prev }
+      const set = new Set(next[orderItemId] ?? [])
+      if (set.has(kitItem)) set.delete(kitItem)
+      else set.add(kitItem)
+      next[orderItemId] = set
+      return next
+    })
+  }
 
   // Calculate expected new total if actual_return_date differs from end_date
   const isEarlyReturn = actualReturnDate && orderEndDate && actualReturnDate < orderEndDate
