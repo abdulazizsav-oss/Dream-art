@@ -90,7 +90,7 @@ export function EquipmentCart({
           Выбери технику слева, и она появится здесь
         </div>
       ) : (
-        <div className="mt-4 space-y-3 max-h-[34rem] overflow-y-auto pr-1">
+        <div className="mt-4 space-y-3 max-h-[34rem] lg:max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
           <AnimatePresence initial={false}>
             {groups.map(group => (
               <motion.div
