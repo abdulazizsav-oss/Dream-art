@@ -3,12 +3,21 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+const methodEnum = z.enum(['cash', 'transfer', 'card'])
+const typeEnum = z.enum(['rental', 'deposit', 'deposit_return', 'extra', 'fine'])
+
+const splitSchema = z.object({
+  amount: z.coerce.number().min(0.01),
+  payment_method: methodEnum,
+})
+
 const paymentSchema = z.object({
   order_id: z.string().uuid(),
-  amount: z.coerce.number().min(0.01),
-  payment_method: z.enum(['cash', 'transfer', 'card']).default('cash'),
-  payment_type: z.enum(['rental', 'deposit', 'deposit_return', 'extra', 'fine']).default('rental'),
+  amount: z.coerce.number().min(0.01).optional(),
+  payment_method: methodEnum.default('cash'),
+  payment_type: typeEnum.default('rental'),
   notes: z.string().nullable().optional(),
+  splits: z.array(splitSchema).min(1).optional(),
 })
 
 export async function GET(req: NextRequest) {
