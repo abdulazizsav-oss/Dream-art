@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     full_name,
     role: role ?? 'admin',
     nickname: cleanNickname,
-  })
+  } as any)
 
   if (profileError) {
     // Rollback auth user if profile insert failed
