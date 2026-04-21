@@ -317,6 +317,8 @@ export type Database = {
           start_time: string
           end_time: string
           actual_return_date: string | null
+          actual_start_at: string | null
+          actual_end_at: string | null
           total_amount: number
           deposit_amount: number
           deposit_returned: boolean
@@ -338,6 +340,8 @@ export type Database = {
           start_time?: string
           end_time?: string
           actual_return_date?: string | null
+          actual_start_at?: string | null
+          actual_end_at?: string | null
           total_amount?: number
           deposit_amount?: number
           deposit_returned?: boolean
@@ -359,6 +363,8 @@ export type Database = {
           start_time?: string
           end_time?: string
           actual_return_date?: string | null
+          actual_start_at?: string | null
+          actual_end_at?: string | null
           total_amount?: number
           deposit_amount?: number
           deposit_returned?: boolean
