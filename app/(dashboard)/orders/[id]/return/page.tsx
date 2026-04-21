@@ -132,26 +132,68 @@ export default function ReturnPage() {
           )}
         </div>
 
-        {items.map(item => (
-          <div key={item.id} className="border-b pb-4 last:border-0">
-            <div className="flex justify-between items-start mb-2">
-              <p className="font-medium text-sm">{item.equipment?.name}</p>
-              <span className="text-xs text-gray-500">{formatCurrency(item.subtotal)}</span>
+        {items.map(item => {
+          const kit = item.selected_kit_items ?? []
+          const returned = returnedKit[item.id] ?? new Set<string>()
+          const missingCount = kit.length - returned.size
+          return (
+            <div key={item.id} className="border-b pb-4 last:border-0">
+              <div className="flex justify-between items-start mb-2">
+                <p className="font-medium text-sm">{item.equipment?.name}</p>
+                <span className="text-xs text-gray-500">{formatCurrency(item.subtotal)}</span>
+              </div>
+              {item.condition_on_issue && (
+                <p className="text-xs text-gray-400 mb-2">При выдаче: {item.condition_on_issue}</p>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs">Состояние при возврате</Label>
+                <Textarea
+                  rows={2}
+                  value={returns[item.id] ?? ''}
+                  onChange={e => setReturns(r => ({ ...r, [item.id]: e.target.value }))}
+                  placeholder="Хорошее / царапины / требует ремонта..."
+                />
+              </div>
+
+              {kit.length > 0 && (
+                <div className="mt-3 rounded-lg border bg-zinc-50 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs">Комплектация</Label>
+                    <span className={`text-[11px] font-medium ${missingCount > 0 ? 'text-amber-600' : 'text-zinc-500'}`}>
+                      {missingCount > 0
+                        ? `Не возвращено: ${missingCount} из ${kit.length}`
+                        : `Все на месте (${kit.length})`}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {kit.map(kitItem => {
+                      const isReturned = returned.has(kitItem)
+                      return (
+                        <button
+                          key={kitItem}
+                          type="button"
+                          onClick={() => toggleKit(item.id, kitItem)}
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                            isReturned
+                              ? 'border-zinc-900 bg-zinc-900 text-white'
+                              : 'border-amber-300 bg-amber-50 text-amber-700 line-through'
+                          }`}
+                        >
+                          {kitItem}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {missingCount > 0 && (
+                    <p className="mt-2 text-[11px] text-amber-700">
+                      ⚠ Отмеченные позиции будут зафиксированы как невозвращённые. Заказ всё равно закроется.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-            {item.condition_on_issue && (
-              <p className="text-xs text-gray-400 mb-2">При выдаче: {item.condition_on_issue}</p>
-            )}
-            <div className="space-y-1">
-              <Label className="text-xs">Состояние при возврате</Label>
-              <Textarea
-                rows={2}
-                value={returns[item.id] ?? ''}
-                onChange={e => setReturns(r => ({ ...r, [item.id]: e.target.value }))}
-                placeholder="Хорошее / царапины / требует ремонта..."
-              />
-            </div>
-          </div>
-        ))}
+          )
+        })}
 
         <div className="flex gap-3 pt-2">
           <Button onClick={handleSubmit} disabled={submitting}>
