@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const service = await createServiceClient()
 
   // Update profile fields
-  const profileUpdate: Record<string, string> = {}
+  const profileUpdate: Record<string, unknown> = {}
   if (role) profileUpdate.role = role
   if (full_name) profileUpdate.full_name = full_name
   if (nickname) {
