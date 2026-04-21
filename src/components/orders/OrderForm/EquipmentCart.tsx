@@ -99,7 +99,7 @@ export function EquipmentCart({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="rounded-2xl border bg-zinc-50/70 p-3"
+                className="rounded-2xl border bg-zinc-50/70 p-2.5"
               >
                 {(() => {
                   const sampleItem = group.entries[0]?.item
