@@ -137,7 +137,7 @@ export function StepEquipment({
         Позицию можно добавить повторно. Дневная или ночная ставка пересчитается автоматически после выбора даты и времени.
       </p>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(340px,0.9fr)] mb-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)] mb-5">
         <div>
           <EquipmentGrid
             equipment={equipmentRows}
@@ -146,7 +146,7 @@ export function StepEquipment({
           />
         </div>
 
-        <div className="xl:sticky xl:top-4 self-start">
+        <div className="lg:sticky lg:top-4 self-start">
           <EquipmentCart
             selectedItems={selectedItems}
             equipment={equipmentRows}
