@@ -161,24 +161,32 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold mb-3">Техника</h2>
         <div className="space-y-2">
-          {items.map(item => (
-            <div key={item.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
-              <div>
-                <p className="font-medium">{item.equipment?.name}</p>
-                <p className="text-xs text-gray-400">
-                  {item.condition_on_issue && `Состояние при выдаче: ${item.condition_on_issue}`}
-                  {item.condition_on_return && ` · При возврате: ${item.condition_on_return}`}
-                </p>
+          {items.map(item => {
+            const missing = item.missing_kit_items ?? []
+            return (
+              <div key={item.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
+                <div>
+                  <p className="font-medium">{item.equipment?.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {item.condition_on_issue && `Состояние при выдаче: ${item.condition_on_issue}`}
+                    {item.condition_on_return && ` · При возврате: ${item.condition_on_return}`}
+                  </p>
+                  {missing.length > 0 && (
+                    <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      ⚠ Не возвращено: {missing.join(', ')}
+                    </div>
+                  )}
+                </div>
+                <span className="text-gray-700">
+                  {getPricingParts(item)
+                    .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
+                    .join(' + ')}
+                  {' = '}
+                  {formatCurrency(item.subtotal, item.equipment?.currency)}
+                </span>
               </div>
-              <span className="text-gray-700">
-                {getPricingParts(item)
-                  .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
-                  .join(' + ')}
-                {' = '}
-                {formatCurrency(item.subtotal, item.equipment?.currency)}
-              </span>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
