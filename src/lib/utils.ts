@@ -30,6 +30,27 @@ export function formatDateTime(date: string | Date): string {
   }).format(new Date(date))
 }
 
+// "Now" in Asia/Tashkent as YYYY-MM-DD (for <input type="date"> defaults)
+export function getTashkentDate(d: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tashkent',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d)
+  return parts // en-CA gives YYYY-MM-DD
+}
+
+// "Now" in Asia/Tashkent as HH:mm (for <input type="time"> defaults)
+export function getTashkentTime(d: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Tashkent',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(d)
+}
+
 export function formatTime(date: string | Date): string {
   return new Intl.DateTimeFormat('ru-RU', {
     timeZone: 'Asia/Tashkent',
