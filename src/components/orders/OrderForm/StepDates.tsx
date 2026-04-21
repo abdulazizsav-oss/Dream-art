@@ -76,7 +76,16 @@ export function StepDates({
 
       <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>Время выдачи</Label>
+          <div className="flex items-center justify-between">
+            <Label>Время выдачи</Label>
+            <button
+              type="button"
+              onClick={() => { setIssueTime(getTashkentTime()); setStart(getTashkentDate()) }}
+              className="text-xs font-medium text-blue-600 hover:text-blue-700"
+            >
+              Сейчас (Ташкент)
+            </button>
+          </div>
           <Input type="time" value={issueTime} onChange={e => setIssueTime(e.target.value)} />
         </div>
         <div className="space-y-1.5">
