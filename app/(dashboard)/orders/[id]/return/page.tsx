@@ -79,11 +79,18 @@ export default function ReturnPage() {
 
   async function handleSubmit() {
     setSubmitting(true)
-    const payload = items.map(i => ({
-      order_item_id: i.id,
-      condition_on_return: returns[i.id] ?? 'Хорошее',
-      return_photo_urls: [],
-    }))
+    const payload = items.map(i => {
+      const original = i.selected_kit_items ?? []
+      const returned = Array.from(returnedKit[i.id] ?? new Set<string>())
+      const missing = original.filter(k => !returned.includes(k))
+      return {
+        order_item_id: i.id,
+        condition_on_return: returns[i.id] ?? 'Хорошее',
+        return_photo_urls: [],
+        returned_kit_items: returned,
+        missing_kit_items: missing,
+      }
+    })
     const body: Record<string, unknown> = { items: payload }
     if (actualReturnDate && actualReturnDate !== orderEndDate) {
       body.actual_return_date = actualReturnDate
