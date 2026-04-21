@@ -59,7 +59,16 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="flex gap-2 flex-wrap">
             {order.status === 'active' || order.status === 'overdue' ? (
               <>
-                <CloseOrderButton orderId={id} debt={Math.max(0, debt)} variant="default" />
+                <CloseOrderButton
+                  orderId={id}
+                  debt={Math.max(0, debt)}
+                  variant="default"
+                  items={items.map(it => ({
+                    id: it.id,
+                    name: it.equipment?.name ?? '—',
+                    selected_kit_items: it.selected_kit_items ?? [],
+                  }))}
+                />
                 <Link href={`/orders/${id}/return`}>
                   <Button variant="outline">
                     <RotateCcw className="w-4 h-4 mr-2" />
