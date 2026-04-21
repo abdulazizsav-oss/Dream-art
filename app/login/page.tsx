@@ -31,7 +31,7 @@ export default function LoginPage() {
   async function handleLogin(e?: React.FormEvent) {
     e?.preventDefault()
     if (!nickname.trim() || !pin) {
-      toast.error('Введите никнейм и PIN')
+      toast.error(mode === 'pin' ? 'Введите никнейм и PIN' : 'Введите никнейм и пароль')
       return
     }
     setLoading(true)
