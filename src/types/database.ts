@@ -412,6 +412,8 @@ export type Database = {
           issue_photo_urls: string[]
           return_photo_urls: string[]
           selected_kit_items: string[]
+          returned_kit_items: string[]
+          missing_kit_items: string[]
         }
         Insert: {
           id?: string
@@ -431,6 +433,8 @@ export type Database = {
           issue_photo_urls?: string[]
           return_photo_urls?: string[]
           selected_kit_items?: string[]
+          returned_kit_items?: string[]
+          missing_kit_items?: string[]
         }
         Update: {
           id?: string
@@ -450,6 +454,8 @@ export type Database = {
           issue_photo_urls?: string[]
           return_photo_urls?: string[]
           selected_kit_items?: string[]
+          returned_kit_items?: string[]
+          missing_kit_items?: string[]
         }
         Relationships: [
           {
