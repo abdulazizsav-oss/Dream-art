@@ -41,6 +41,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     shift_type: 'day' | 'night'
     condition_on_issue: string | null
     condition_on_return: string | null
+    selected_kit_items?: string[] | null
+    returned_kit_items?: string[] | null
+    missing_kit_items?: string[] | null
   }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
 
