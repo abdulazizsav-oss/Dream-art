@@ -22,6 +22,7 @@ export default async function AdminUsersPage() {
   const users = (profiles ?? []).map(p => ({
     ...p,
     email: emailMap[p.id] ?? '',
+    nickname: (p as any).nickname ?? '',
   }))
 
   return (
