@@ -74,7 +74,7 @@ export default function LoginPage() {
 
           {/* Nickname */}
           <div className="space-y-1.5">
-            <Label htmlFor="nickname" className="text-zinc-700">Никнейм</Label>
+            <Label htmlFor="nickname" className="text-zinc-700">Никнейм или email</Label>
             <Input
               id="nickname"
               type="text"
@@ -85,6 +85,9 @@ export default function LoginPage() {
               placeholder="admin"
               className="min-h-[48px] text-base rounded-xl"
             />
+            <p className="text-[11px] text-zinc-400">
+              Email автоматически сокращается до никнейма (admin@… → admin)
+            </p>
           </div>
 
           {/* PIN / Password input */}
