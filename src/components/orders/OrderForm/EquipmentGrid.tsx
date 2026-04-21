@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Plus, Search, Sun, Moon } from 'lucide-react'
+import { Camera, Search, Sun, Moon } from 'lucide-react'
 import type { Equipment, EquipmentCategory } from '@/types/database'
 import { cn, formatCurrency } from '@/lib/utils'
 
