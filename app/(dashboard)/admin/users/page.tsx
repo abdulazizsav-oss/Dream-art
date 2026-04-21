@@ -19,11 +19,17 @@ export default async function AdminUsersPage() {
     (authUsers?.users ?? []).map(u => [u.id, u.email ?? ''])
   )
 
-  const users = (profiles ?? []).map(p => ({
-    ...p,
-    email: emailMap[p.id] ?? '',
-    nickname: (p as any).nickname ?? '',
-  }))
+  const users = (profiles ?? []).map(p => {
+    const row = p as any
+    return {
+      id: row.id as string,
+      full_name: row.full_name as string,
+      role: row.role as string,
+      nickname: (row.nickname ?? '') as string,
+      created_at: row.created_at as string,
+      email: emailMap[row.id] ?? '',
+    }
+  })
 
   return (
     <div className="max-w-2xl space-y-6">
