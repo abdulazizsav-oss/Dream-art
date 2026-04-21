@@ -25,6 +25,7 @@ export type Database = {
           id: string
           full_name: string
           role: UserRole
+          nickname: string
           created_at: string
           updated_at: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           id: string
           full_name: string
           role?: UserRole
+          nickname: string
           created_at?: string
           updated_at?: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           id?: string
           full_name?: string
           role?: UserRole
+          nickname?: string
           created_at?: string
           updated_at?: string
         }
