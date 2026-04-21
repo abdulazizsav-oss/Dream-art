@@ -36,10 +36,12 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
+      // If user pasted/autofilled an email like admin@dreamart.uz, take only the part before '@'
+      const cleanNickname = nickname.trim().toLowerCase().split('@')[0]
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nickname.trim().toLowerCase(), password: pin }),
+        body: JSON.stringify({ nickname: cleanNickname, password: pin }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
