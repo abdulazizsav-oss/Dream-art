@@ -62,13 +62,15 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Сохраняем доверенное лицо (не входит в RPC)
-  if (trusted_person || trusted_person_doc_type) {
-    await supabase.from('orders').update({
-      trusted_person: trusted_person ?? null,
-      trusted_person_doc_type: trusted_person_doc_type ?? null,
-    }).eq('id', orderId as string)
+  // Сохраняем доверенное лицо + фактическое время открытия заказа
+  const updatePayload: Record<string, unknown> = {
+    actual_start_at: new Date().toISOString(),
   }
+  if (trusted_person || trusted_person_doc_type) {
+    updatePayload.trusted_person = trusted_person ?? null
+    updatePayload.trusted_person_doc_type = trusted_person_doc_type ?? null
+  }
+  await supabase.from('orders').update(updatePayload as never).eq('id', orderId as string)
 
   // Fetch created order for response + notifications
   const { data: order } = await supabase
