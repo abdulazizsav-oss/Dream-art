@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (Object.keys(profileUpdate).length > 0) {
-    const { error } = await supabase.from('user_profiles').update(profileUpdate).eq('id', id)
+    const { error } = await supabase.from('user_profiles').update(profileUpdate as any).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
