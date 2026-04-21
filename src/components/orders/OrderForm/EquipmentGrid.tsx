@@ -128,43 +128,26 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
                     )}
                   </div>
 
-                  <div className="space-y-3 p-3">
-                    <div className="min-h-[3.5rem]">
-                      <p className="line-clamp-2 text-sm font-semibold leading-tight text-zinc-900">
-                        {item.name}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
-                        {item.specs ?? item.brand ?? item.equipment_categories?.name ?? 'Позиция каталога'}
-                      </p>
+                  <div className="space-y-1.5 p-2.5">
+                    <p className="line-clamp-1 text-xs font-semibold leading-tight text-zinc-900">
+                      {item.name}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-700">
+                      <span className="inline-flex items-center gap-1">
+                        <Sun className="h-3 w-3 text-amber-500" />
+                        {showNightRate ? 'День' : 'Ставка'}
+                      </span>
+                      <span className="font-semibold tabular-nums">{formatCurrency(dayRate, item.currency)}</span>
                     </div>
-
-                    <div className="rounded-xl bg-zinc-50 p-2.5 text-xs">
-                      <div className="flex items-center justify-between gap-2 text-zinc-700">
+                    {showNightRate && (
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-700">
                         <span className="inline-flex items-center gap-1">
-                          <Sun className="h-3.5 w-3.5 text-amber-500" />
-                          {showNightRate ? 'День' : 'Ставка'}
+                          <Moon className="h-3 w-3 text-indigo-500" />
+                          Ночь
                         </span>
-                        <span className="font-semibold">{formatCurrency(dayRate, item.currency)}</span>
+                        <span className="font-semibold tabular-nums">{formatCurrency(nightRate, item.currency)}</span>
                       </div>
-                      {showNightRate && (
-                        <div className="mt-1.5 flex items-center justify-between gap-2 text-zinc-700">
-                          <span className="inline-flex items-center gap-1">
-                            <Moon className="h-3.5 w-3.5 text-indigo-500" />
-                            Ночь
-                          </span>
-                          <span className="font-semibold">{formatCurrency(nightRate, item.currency)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-zinc-500">
-                        {item.equipment_categories?.name ?? 'Без категории'}
-                      </span>
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-white">
-                        <Plus className="h-4 w-4" />
-                      </span>
-                    </div>
+                    )}
                   </div>
                 </motion.button>
               )
