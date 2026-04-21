@@ -28,9 +28,10 @@ interface StepDatesProps {
 export function StepDates({
   startDate, endDate, startTime, endTime, depositAmount, notes, selectedItems, equipment, onUpdate, onNext, onBack,
 }: StepDatesProps) {
-  const [start, setStart] = useState(startDate || new Date().toISOString().split('T')[0])
-  const [end, setEnd] = useState(endDate || new Date().toISOString().split('T')[0])
-  const [issueTime, setIssueTime] = useState(startTime || DEFAULT_START_TIME)
+  // Defaults use Asia/Tashkent "now" — UTC-based toISOString was wrong late at night
+  const [start, setStart] = useState(startDate || getTashkentDate())
+  const [end, setEnd] = useState(endDate || getTashkentDate())
+  const [issueTime, setIssueTime] = useState(startTime || getTashkentTime())
   const [returnTime, setReturnTime] = useState(endTime || DEFAULT_END_TIME)
   const [deposit, setDeposit] = useState(depositAmount)
   const [note, setNote] = useState(notes)
