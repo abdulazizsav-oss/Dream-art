@@ -7,14 +7,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { email, password, full_name, role } = await req.json()
-  if (!email || !password || !full_name) {
+  const { nickname, password, full_name, role } = await req.json()
+
+  if (!nickname || !password || !full_name) {
     return NextResponse.json({ error: 'Заполните все поля' }, { status: 400 })
+  }
+
+  const cleanNickname = nickname.trim().toLowerCase()
+
+  // Validate nickname: only latin letters, digits, underscore
+  if (!/^[a-z0-9_]{2,30}$/.test(cleanNickname)) {
+    return NextResponse.json(
+      { error: 'Никнейм: только латиница, цифры и _ (2–30 символов)' },
+      { status: 400 },
+    )
+  }
+
+  // Validate PIN for admin role
+  if (role !== 'super_admin' && !/^\d{4,8}$/.test(password)) {
+    return NextResponse.json(
+      { error: 'PIN для администратора: 4–8 цифр' },
+      { status: 400 },
+    )
   }
 
   const supabase = await createServiceClient()
 
-  // Create auth user via admin API
+  // Generate internal email
+  const email = `${cleanNickname}@dreamart.local`
+
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
@@ -25,14 +46,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: authError?.message ?? 'Ошибка создания' }, { status: 400 })
   }
 
-  // Insert profile
   const { error: profileError } = await supabase.from('user_profiles').insert({
     id: authData.user.id,
     full_name,
     role: role ?? 'admin',
+    nickname: cleanNickname,
   })
 
   if (profileError) {
+    // Rollback auth user if profile insert failed
+    await supabase.auth.admin.deleteUser(authData.user.id)
     return NextResponse.json({ error: profileError.message }, { status: 500 })
   }
 
