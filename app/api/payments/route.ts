@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   revalidatePath('/finance')
   revalidatePath('/orders')
-  revalidatePath(`/orders/${parsed.data.order_id}`)
+  revalidatePath(`/orders/${order_id}`)
   revalidatePath('/dashboard')
 
   return NextResponse.json(data, { status: 201 })
