@@ -162,7 +162,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <h2 className="font-semibold mb-3">Техника</h2>
         <div className="space-y-2">
           {items.map(item => {
+            const kit = item.selected_kit_items ?? []
+            const returned = item.returned_kit_items ?? []
             const missing = item.missing_kit_items ?? []
+            const isClosed = order.status === 'returned'
             return (
               <div key={item.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
                 <div>
@@ -171,6 +174,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     {item.condition_on_issue && `Состояние при выдаче: ${item.condition_on_issue}`}
                     {item.condition_on_return && ` · При возврате: ${item.condition_on_return}`}
                   </p>
+                  {kit.length > 0 && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+                      <span className="text-gray-500">Комплект:</span>
+                      {kit.map(k => {
+                        const wasReturned = returned.includes(k)
+                        const wasMissing = missing.includes(k)
+                        const cls = isClosed
+                          ? wasMissing
+                            ? 'bg-amber-50 text-amber-700 line-through'
+                            : wasReturned
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-gray-100 text-gray-700'
+                          : 'bg-gray-100 text-gray-700'
+                        return (
+                          <span key={k} className={cn('inline-flex items-center rounded-md px-1.5 py-0.5 font-medium', cls)}>
+                            {k}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
                   {missing.length > 0 && (
                     <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                       ⚠ Не возвращено: {missing.join(', ')}
