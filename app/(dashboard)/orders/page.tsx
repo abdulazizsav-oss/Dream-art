@@ -4,14 +4,14 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDateRange, formatDateTime, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Plus, ClipboardList } from 'lucide-react'
+import { Plus, ClipboardList, AlertTriangle } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 
 export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type)')
+    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, selected_kit_items, missing_kit_items, equipment(name))')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -61,11 +61,32 @@ export default async function OrdersPage() {
   )
 }
 
-function OrderRow({ order }: { order: { id: string; order_number: string; status: string; start_date: string; end_date: string; total_amount: number; created_at: string | null; clients: { full_name: string } | null; created_by_profile?: { full_name: string } | null; payments?: { amount: number; payment_type: string }[] | null } }) {
+function OrderRow({ order }: { order: {
+  id: string; order_number: string; status: string; start_date: string; end_date: string;
+  total_amount: number; created_at: string | null;
+  clients: { full_name: string } | null;
+  created_by_profile?: { full_name: string } | null;
+  payments?: { amount: number; payment_type: string }[] | null;
+  order_items?: { id: string; selected_kit_items: string[] | null; missing_kit_items: string[] | null; equipment: { name: string } | null }[] | null;
+} }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
+  const isClosed = order.status === 'returned'
   const paidRental = (order.payments ?? []).filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
   const debt = Math.max(0, order.total_amount - paidRental)
   const createdBy = order.created_by_profile?.full_name
+
+  // Prepare items for CloseOrderButton (with kit data)
+  const closeItems = (order.order_items ?? []).map(it => ({
+    id: it.id,
+    name: it.equipment?.name ?? '—',
+    selected_kit_items: it.selected_kit_items ?? [],
+  }))
+
+  // Check for missing kit items in closed orders
+  const allMissing = isClosed
+    ? (order.order_items ?? []).flatMap(it => (it.missing_kit_items ?? []))
+    : []
+
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors min-h-[64px] gap-2">
       <Link href={`/orders/${order.id}`} className="flex-1 min-w-0">
@@ -76,6 +97,12 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
         </p>
         {createdBy && (
           <p className="text-[11px] text-gray-400 truncate mt-0.5">Оформил: {createdBy}</p>
+        )}
+        {allMissing.length > 0 && (
+          <p className="text-[11px] text-amber-600 font-medium mt-0.5 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            Не возвращено: {allMissing.join(', ')}
+          </p>
         )}
       </Link>
       <div className="flex items-center gap-2 flex-shrink-0">
@@ -91,7 +118,7 @@ function OrderRow({ order }: { order: { id: string; order_number: string; status
           {ORDER_STATUS_LABELS[order.status]}
         </span>
         {isActive && (
-          <CloseOrderButton orderId={order.id} debt={debt} variant="outline" size="sm" className="text-xs" />
+          <CloseOrderButton orderId={order.id} debt={debt} items={closeItems} variant="outline" size="sm" className="text-xs" />
         )}
       </div>
     </div>

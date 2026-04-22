@@ -31,13 +31,12 @@ export async function GET(req: NextRequest) {
     `)
     .lte('start_date', to)
     .gte('end_date', from)
-    .not('status', 'in', '(returned,cancelled)')
     .order('start_date')
     .order('created_at')
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const orders = (data ?? []).map(order => {
+  const orders = (data ?? []).map((order: any) => {
     const items = (order.order_items ?? []) as {
       id: string
       equipment_id: string

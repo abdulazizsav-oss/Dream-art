@@ -33,6 +33,22 @@ interface CalendarData {
 
 const DEFAULT_DAYS_VISIBLE = 14
 
+const STATUS_CONFIG: Record<string, { label: string; bg: string; border: string; text: string }> = {
+  active:    { label: 'Активно',    bg: 'bg-emerald-50',  border: 'border-emerald-200', text: 'text-emerald-950' },
+  overdue:   { label: 'Просрочка',  bg: 'bg-red-50',      border: 'border-red-200',     text: 'text-red-900' },
+  returned:  { label: 'Завершён',   bg: 'bg-zinc-100',    border: 'border-zinc-200',    text: 'text-zinc-600' },
+  cancelled: { label: 'Отменён',    bg: 'bg-orange-50',   border: 'border-orange-200',  text: 'text-orange-700' },
+  draft:     { label: 'Черновик',   bg: 'bg-blue-50',     border: 'border-blue-200',    text: 'text-blue-700' },
+}
+
+const STATUS_BADGE: Record<string, string> = {
+  active:    'bg-emerald-100 text-emerald-700',
+  overdue:   'bg-red-100 text-red-700',
+  returned:  'bg-zinc-200 text-zinc-600',
+  cancelled: 'bg-orange-100 text-orange-700',
+  draft:     'bg-blue-100 text-blue-700',
+}
+
 function addDays(date: Date, days: number) {
   const next = new Date(date)
   next.setDate(next.getDate() + days)
@@ -67,7 +83,7 @@ export default function CalendarPage() {
     return date
   })
   const [daysVisible, setDaysVisible] = useState(DEFAULT_DAYS_VISIBLE)
-  const [statusFilter, setStatusFilter] = useState<'active' | 'overdue' | 'all'>('active')
+  const [statusFilter, setStatusFilter] = useState<string>('active')
   const [search, setSearch] = useState('')
   const [data, setData] = useState<CalendarData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -97,8 +113,11 @@ export default function CalendarPage() {
     const term = search.trim().toLowerCase()
 
     return (data?.orders ?? []).filter(order => {
-      if (statusFilter === 'overdue' && order.status !== 'overdue') return false
       if (statusFilter === 'active' && !['active', 'overdue'].includes(order.status)) return false
+      if (statusFilter === 'overdue' && order.status !== 'overdue') return false
+      if (statusFilter === 'returned' && order.status !== 'returned') return false
+      if (statusFilter === 'cancelled' && order.status !== 'cancelled') return false
+      // 'all' shows everything
 
       if (!term) return true
 
@@ -115,11 +134,23 @@ export default function CalendarPage() {
     })
   }, [data?.orders, search, statusFilter])
 
+  // Count by status for badges
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { active: 0, overdue: 0, returned: 0, cancelled: 0, all: 0 }
+    for (const o of data?.orders ?? []) {
+      counts[o.status] = (counts[o.status] ?? 0) + 1
+      counts.all++
+    }
+    // active filter includes overdue
+    counts.active += counts.overdue
+    return counts
+  }, [data?.orders])
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="Календарь заказов"
-        description="Клиенты, даты аренды, ответственный и короткий список техники"
+        description="Все заказы на временной шкале"
         action={
           <div className="flex items-center gap-2">
             <Button
@@ -146,7 +177,7 @@ export default function CalendarPage() {
       />
 
       <div className="rounded-2xl border bg-white p-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(180px,1fr)_180px_160px]">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(180px,1fr)_200px_160px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
@@ -158,12 +189,14 @@ export default function CalendarPage() {
           </div>
           <select
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value as 'active' | 'overdue' | 'all')}
+            onChange={e => setStatusFilter(e.target.value)}
             className="min-h-[44px] rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
           >
-            <option value="active">Активные и просрочки</option>
-            <option value="overdue">Только просрочки</option>
-            <option value="all">Все</option>
+            <option value="active">Активные ({statusCounts.active})</option>
+            <option value="overdue">Просрочки ({statusCounts.overdue})</option>
+            <option value="returned">Завершённые ({statusCounts.returned})</option>
+            <option value="cancelled">Отменённые ({statusCounts.cancelled})</option>
+            <option value="all">Все ({statusCounts.all})</option>
           </select>
           <select
             value={daysVisible}
@@ -244,89 +277,88 @@ export default function CalendarPage() {
               </tr>
             )}
 
-            {filteredOrders.map(order => (
-              <tr key={order.id} className="border-b align-top hover:bg-zinc-50/60">
-                <td className="sticky left-0 z-10 min-w-80 border-r bg-white px-4 py-4">
-                  <Link href={`/orders/${order.id}`} className="block">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-zinc-900">
-                          {order.client?.full_name ?? 'Клиент'}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {order.order_number} · {order.client?.phone ?? 'Без телефона'}
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
-                          {shortEquipmentList(order.items)}
-                        </p>
+            {filteredOrders.map(order => {
+              const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.active
+              const badgeCls = STATUS_BADGE[order.status] ?? STATUS_BADGE.active
+
+              return (
+                <tr key={order.id} className="border-b align-top hover:bg-zinc-50/60">
+                  <td className="sticky left-0 z-10 min-w-80 border-r bg-white px-4 py-4">
+                    <Link href={`/orders/${order.id}`} className="block">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-zinc-900">
+                            {order.client?.full_name ?? 'Клиент'}
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            {order.order_number} · {order.client?.phone ?? 'Без телефона'}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
+                            {shortEquipmentList(order.items)}
+                          </p>
+                        </div>
+                        <span className={cn('rounded-full px-2 py-1 text-[10px] font-medium whitespace-nowrap', badgeCls)}>
+                          {cfg.label}
+                        </span>
                       </div>
-                      <span
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
+                        <span>{order.start_date} {order.start_time}</span>
+                        <span>{order.end_date} {order.end_time}</span>
+                        {order.created_by_name && <span>Оформил: {order.created_by_name}</span>}
+                      </div>
+                    </Link>
+                  </td>
+
+                  {days.map(day => {
+                    const value = toDateString(day)
+                    const visible = isBetween(value, order.start_date, order.end_date)
+                    const isToday = value === today
+
+                    return (
+                      <td
+                        key={value}
                         className={cn(
-                          'rounded-full px-2 py-1 text-[10px] font-medium',
-                          order.status === 'overdue'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-emerald-100 text-emerald-700',
+                          'h-20 border-r border-zinc-100 p-1 align-top',
+                          isToday && 'ring-1 ring-inset ring-zinc-900',
                         )}
                       >
-                        {order.status === 'overdue' ? 'Просрочка' : 'Активно'}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
-                      <span>{order.start_date} {order.start_time}</span>
-                      <span>{order.end_date} {order.end_time}</span>
-                      {order.created_by_name && <span>Оформил: {order.created_by_name}</span>}
-                    </div>
-                  </Link>
-                </td>
-
-                {days.map(day => {
-                  const value = toDateString(day)
-                  const visible = isBetween(value, order.start_date, order.end_date)
-                  const isToday = value === today
-                  const isOverdue = order.status === 'overdue'
-
-                  return (
-                    <td
-                      key={value}
-                      className={cn(
-                        'h-20 border-r border-zinc-100 p-1 align-top',
-                        isToday && 'ring-1 ring-inset ring-zinc-900',
-                      )}
-                    >
-                      {visible ? (
-                        <Link
-                          href={`/orders/${order.id}`}
-                          title={[
-                            order.order_number,
-                            order.client?.full_name,
-                            order.client?.phone,
-                            order.created_by_name ? `Оформил: ${order.created_by_name}` : '',
-                            `${order.start_date} ${order.start_time} – ${order.end_date} ${order.end_time}`,
-                            shortEquipmentList(order.items),
-                          ].filter(Boolean).join(' | ')}
-                          className={cn(
-                            'block h-full rounded-xl border px-2 py-1.5 transition-colors',
-                            isOverdue
-                              ? 'border-red-200 bg-red-50 text-red-900 hover:bg-red-100'
-                              : 'border-emerald-200 bg-emerald-50 text-emerald-950 hover:bg-emerald-100',
-                          )}
-                        >
-                          <span className="mb-1 block text-[9px] font-mono opacity-60">
-                            {order.order_number.replace('DA-', '#')}
-                          </span>
-                          <span className="block truncate text-[10px] font-semibold leading-tight">
-                            {firstName(order.client?.full_name)}
-                          </span>
-                          <span className="mt-1 block line-clamp-2 text-[9px] leading-tight opacity-70">
-                            {shortEquipmentList(order.items)}
-                          </span>
-                        </Link>
-                      ) : null}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
+                        {visible ? (
+                          <Link
+                            href={`/orders/${order.id}`}
+                            title={[
+                              order.order_number,
+                              order.client?.full_name,
+                              order.client?.phone,
+                              order.created_by_name ? `Оформил: ${order.created_by_name}` : '',
+                              `${order.start_date} ${order.start_time} – ${order.end_date} ${order.end_time}`,
+                              shortEquipmentList(order.items),
+                            ].filter(Boolean).join(' | ')}
+                            className={cn(
+                              'block h-full rounded-xl border px-2 py-1.5 transition-colors',
+                              cfg.border, cfg.bg, cfg.text,
+                              order.status === 'active' && 'hover:bg-emerald-100',
+                              order.status === 'overdue' && 'hover:bg-red-100',
+                              order.status === 'returned' && 'hover:bg-zinc-200',
+                              order.status === 'cancelled' && 'hover:bg-orange-100',
+                            )}
+                          >
+                            <span className="mb-1 block text-[9px] font-mono opacity-60">
+                              {order.order_number.replace('DA-', '#')}
+                            </span>
+                            <span className="block truncate text-[10px] font-semibold leading-tight">
+                              {firstName(order.client?.full_name)}
+                            </span>
+                            <span className="mt-1 block line-clamp-2 text-[9px] leading-tight opacity-70">
+                              {shortEquipmentList(order.items)}
+                            </span>
+                          </Link>
+                        ) : null}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
