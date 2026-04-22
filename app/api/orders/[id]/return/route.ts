@@ -12,15 +12,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { items, actual_return_date } = body
   // items: [{order_item_id, condition_on_return, return_photo_urls}]
 
-  const rpcArgs: Record<string, unknown> = {
+  const { error } = await supabase.rpc('return_order_atomic', {
     p_order_id: id,
     p_items: items,
-  }
-  if (actual_return_date) {
-    rpcArgs.p_actual_return_date = actual_return_date
-  }
-
-  const { error } = await supabase.rpc('return_order_atomic', rpcArgs as any)
+    p_actual_return_date: actual_return_date ?? null,
+  } as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   revalidatePath('/orders')

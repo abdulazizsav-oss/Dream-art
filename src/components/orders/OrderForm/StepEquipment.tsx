@@ -69,7 +69,7 @@ export function StepEquipment({
         shift_type: shiftType,
         rate_source: 'auto',
         condition_on_issue: 'Хорошее',
-        selected_kit_items: kitItems,
+        selected_kit_items: [],
       },
     ])
   }
