@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Укажите сумму платежа' }, { status: 400 })
   }
 
-  const { data, error } = await supabase.from('payments').insert(rows).select()
+  const { data, error } = await supabase.from('payments').insert(rows as never).select()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
