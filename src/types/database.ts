@@ -678,6 +678,14 @@ export type Database = {
         Args: { p_order_id: string; p_items: Json; p_actual_return_date?: string | null }
         Returns: void
       }
+      return_order_items_atomic: {
+        Args: { p_order_id: string; p_items: Json }
+        Returns: void
+      }
+      add_order_items_atomic: {
+        Args: { p_order_id: string; p_items: Json; p_added_by: string }
+        Returns: string[]
+      }
       mark_overdue_orders: {
         Args: Record<PropertyKey, never>
         Returns: void
