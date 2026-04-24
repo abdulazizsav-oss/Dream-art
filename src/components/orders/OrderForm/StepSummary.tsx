@@ -22,7 +22,10 @@ interface StepSummaryProps {
 export function StepSummary({ values, clients, equipment, trustedPerson, onBack, onSubmit, submitting }: StepSummaryProps) {
   const client = clients.find(c => c.id === values.client_id)
 
-  const itemsWithDetails = recalculateOrderItems(values.items, equipment, values).map(item => ({
+  const itemsWithDetails = recalculateOrderItems(values.items, equipment, {
+    start_date: values.start_date,
+    end_date: values.end_date,
+  }).map(item => ({
     ...item,
     equipment: equipment.find(e => e.id === item.equipment_id),
   }))
