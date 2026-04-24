@@ -17,8 +17,6 @@ export interface OrderTotal {
 export function useOrderTotal(
   startDate: string | undefined | null,
   endDate: string | undefined | null,
-  startTime: string | undefined | null,
-  endTime: string | undefined | null,
   items: OrderItemFormValue[],
   equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate'>[],
 ): OrderTotal {
@@ -26,10 +24,8 @@ export function useOrderTotal(
     const pricedItems = recalculateOrderItems(items, equipment, {
       start_date: startDate,
       end_date: endDate,
-      start_time: startTime,
-      end_time: endTime,
     })
-    const breakdown = getAutoBillingBreakdown(startDate, endDate, startTime, endTime)
+    const breakdown = getAutoBillingBreakdown(startDate, endDate)
     const total = pricedItems.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)
 
     const firstItem = pricedItems[0]
@@ -43,5 +39,5 @@ export function useOrderTotal(
       total,
       currency,
     }
-  }, [endDate, endTime, equipment, items, startDate, startTime])
+  }, [endDate, equipment, items, startDate])
 }
