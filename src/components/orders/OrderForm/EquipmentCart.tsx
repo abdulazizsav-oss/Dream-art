@@ -227,8 +227,6 @@ export function EquipmentCart({
         <LiveTotal
           startDate={startDate}
           endDate={endDate}
-          startTime={startTime}
-          endTime={endTime}
           items={selectedItems}
           equipment={equipment}
           className="mt-4"
