@@ -6,12 +6,13 @@ import { formatCurrency, formatDateRange, formatDateTime, ORDER_STATUS_LABELS, O
 import { cn } from '@/lib/utils'
 import { Plus, ClipboardList, AlertTriangle } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
+import { computeOrderBilling, type BillingItemInput } from '@/lib/billing'
 
 export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, selected_kit_items, missing_kit_items, equipment(name))')
+    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, selected_kit_items, missing_kit_items, equipment(name, day_rate, night_rate, daily_rate))')
     .order('created_at', { ascending: false })
     .limit(100)
 
