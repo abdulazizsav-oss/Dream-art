@@ -50,18 +50,25 @@ export async function POST(req: NextRequest) {
   const { order_id, payment_type, notes, splits, amount, payment_method } = parsed.data
 
   // Normalize to array of rows (supports both legacy single-payment body and new splits array)
-  const rows = (splits && splits.length > 0
+  const normalized = splits && splits.length > 0
     ? splits
     : amount != null
       ? [{ amount, payment_method }]
       : []
-  ).map(s => ({
+
+  // Единый payment_group_id на весь сплит — чтобы потом группировать в UI/отчётах
+  const groupId = normalized.length > 1 ? randomUUID() : null
+  const paidAt = new Date().toISOString()
+
+  const rows = normalized.map(s => ({
     order_id,
     amount: s.amount,
     payment_method: s.payment_method,
     payment_type,
     notes: notes ?? null,
     created_by: user.id,
+    payment_group_id: groupId,
+    paid_at: paidAt,
   }))
 
   if (rows.length === 0) {
