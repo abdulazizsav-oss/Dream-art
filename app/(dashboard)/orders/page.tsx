@@ -94,22 +94,32 @@ function OrderRow({ order }: { order: {
   const isClosed = order.status === 'returned'
   const paidRental = (order.payments ?? []).filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
 
-  // ── Live-сумма для активных: от actual_start_at до now() через единую формулу ──
+  // ── Per-item live-сумма (учитывает partial-returned + mid-order additions) ──
   let effectiveTotal = order.total_amount
-  if (isActive && order.actual_start_at && (order.order_items?.length ?? 0) > 0) {
-    const autos = (order.order_items ?? []).filter(it => it.rate_source !== 'manual')
-    const manuals = (order.order_items ?? []).filter(it => it.rate_source === 'manual')
-    const billingInputs: BillingItemInput[] = autos.map(it => {
+  if (isActive && (order.order_items?.length ?? 0) > 0) {
+    const inputs: ActiveItemInput[] = (order.order_items ?? []).map(it => {
       const eq = it.equipment
       const dayRate = eq?.day_rate ?? it.day_rate_snapshot ?? eq?.daily_rate ?? it.daily_rate ?? 0
-      const nightRate = eq?.night_rate ?? it.night_rate_snapshot ?? dayRate
-      return { equipment_id: it.equipment_id, day_rate: dayRate, night_rate: nightRate }
+      const nightRate = eq?.night_rate ?? it.night_rate_snapshot ?? null
+      return {
+        id: it.id,
+        equipment_id: it.equipment_id,
+        rate_source: it.rate_source ?? null,
+        actual_start_at: it.actual_start_at ?? order.actual_start_at ?? null,
+        actual_end_at: it.actual_end_at ?? null,
+        final_subtotal: it.final_subtotal ?? null,
+        final_day_units: it.final_day_units ?? null,
+        final_night_units: it.final_night_units ?? null,
+        day_rate: dayRate,
+        night_rate: nightRate,
+        subtotal: it.subtotal ?? 0,
+        day_units: it.day_units ?? 0,
+        night_units: it.night_units ?? 0,
+        shift_type: (it.shift_type as 'day' | 'night') ?? 'day',
+      }
     })
-    const live = billingInputs.length > 0
-      ? computeOrderBilling({ start: new Date(order.actual_start_at), end: new Date(), items: billingInputs })
-      : null
-    const manualSum = manuals.reduce((s, it) => s + (it.subtotal ?? 0), 0)
-    if (live) effectiveTotal = live.total_amount + manualSum
+    const live = computeActiveOrderTotal({ now: new Date(), items: inputs })
+    effectiveTotal = live.total_amount
   }
 
   const debt = Math.max(0, effectiveTotal - paidRental)
