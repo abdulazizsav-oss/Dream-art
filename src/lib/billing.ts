@@ -23,6 +23,10 @@ const NIGHT_END_MIN = 10 * 60
 /** Вечерний extended: взял ≥20:00, вернул до 23:00 следующего — 1 день */
 const EVENING_EXTENDED_END = 23 * 60
 
+/** Дефолты для preview-расчёта, когда фактическое время ещё не известно */
+export const DEFAULT_START_TIME = '09:30'
+export const DEFAULT_END_TIME = '23:00'
+
 /* ──────── Типы ──────── */
 
 export interface ShiftBreakdown {
