@@ -12,7 +12,7 @@ import { StepSummary } from './StepSummary'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Check } from 'lucide-react'
-import { DEFAULT_END_TIME, DEFAULT_START_TIME, recalculateOrderItems } from '@/lib/rental'
+import { recalculateOrderItems } from '@/lib/rental'
 
 interface OrderFormProps {
   clients: Client[]
