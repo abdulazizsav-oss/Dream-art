@@ -40,8 +40,11 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   function update(patch: Partial<OrderFormValues>) {
     setValues(prev => {
       const next = { ...prev, ...patch }
-      if (patch.items || patch.start_date || patch.end_date || patch.start_time || patch.end_time) {
-        next.items = recalculateOrderItems(next.items ?? [], equipment, next)
+      if (patch.items || patch.start_date || patch.end_date) {
+        next.items = recalculateOrderItems(next.items ?? [], equipment, {
+          start_date: next.start_date,
+          end_date: next.end_date,
+        })
       }
       return next
     })
