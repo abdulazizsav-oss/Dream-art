@@ -225,7 +225,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Сумма аренды</p>
-          <p className="font-semibold mt-1">{formatCurrency(order.total_amount)}</p>
+          <p className="font-semibold mt-1">{formatCurrency(effectiveTotal)}</p>
+          {liveBilling && (
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              По факту: {liveBilling.explanation}
+            </p>
+          )}
         </div>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Задолженность</p>
