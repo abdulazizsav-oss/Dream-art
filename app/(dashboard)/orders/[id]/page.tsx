@@ -98,8 +98,51 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     return tb.localeCompare(ta)
   })
 
+  // ── Live-пересчёт для активных заказов: сумма считается от actual_start_at до now() ──
+  // Это то, сколько клиент должен «прямо сейчас». При закрытии заказа
+  // `POST /api/orders/[id]/return` зафиксирует точно ту же цифру.
+  const isActive = order.status === 'active' || order.status === 'overdue'
+  const actualStart = (order as any).actual_start_at as string | null
+
+  const billingInputs: BillingItemInput[] = items
+    .filter(it => it.rate_source !== 'manual')
+    .map(it => {
+      const eq = it.equipment
+      const dayRate = eq?.day_rate ?? it.day_rate_snapshot ?? eq?.daily_rate ?? it.daily_rate ?? 0
+      const nightRate = eq?.night_rate ?? it.night_rate_snapshot ?? dayRate
+      return { equipment_id: it.equipment_id, day_rate: dayRate, night_rate: nightRate }
+    })
+
+  const liveBilling = isActive && actualStart && billingInputs.length > 0
+    ? computeOrderBilling({ start: new Date(actualStart), end: new Date(), items: billingInputs })
+    : null
+
+  // Сумма manual-позиций (не пересчитываются) + live-авто
+  const manualSubtotal = items
+    .filter(it => it.rate_source === 'manual')
+    .reduce((s, it) => s + (it.subtotal ?? 0), 0)
+  const effectiveTotal = liveBilling
+    ? liveBilling.total_amount + manualSubtotal
+    : order.total_amount
+
+  // Per-item live breakdown для отображения
+  const itemBillingById = new Map<string, { day_units: number; night_units: number; subtotal: number; day_rate: number; night_rate: number }>()
+  if (liveBilling) {
+    const autoItems = items.filter(it => it.rate_source !== 'manual')
+    autoItems.forEach((it, idx) => {
+      const calc = liveBilling.items[idx]
+      if (calc) itemBillingById.set(it.id, {
+        day_units: calc.day_units,
+        night_units: calc.night_units,
+        subtotal: calc.subtotal,
+        day_rate: calc.day_rate,
+        night_rate: calc.night_rate,
+      })
+    })
+  }
+
   const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
-  const debt = order.total_amount - payments.filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
+  const debt = effectiveTotal - payments.filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
 
   return (
     <div className="max-w-4xl space-y-6">
