@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { randomUUID } from 'crypto'
 
 const methodEnum = z.enum(['cash', 'transfer', 'card'])
 const typeEnum = z.enum(['rental', 'deposit', 'deposit_return', 'extra', 'fine'])
