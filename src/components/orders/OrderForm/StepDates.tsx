@@ -100,10 +100,10 @@ export function StepDates({
             Период: <strong>{days} {days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}</strong>
           </p>
           <p className="mt-1 text-zinc-500">
-            Автоматический расчет сейчас: <strong>{describeBreakdown(autoBreakdown.dayUnits, autoBreakdown.nightUnits)}</strong>
+            Предварительный расчет: <strong>{describeBreakdown(autoBreakdown.dayUnits, autoBreakdown.nightUnits)}</strong>
           </p>
-          <p className="mt-1 text-zinc-500">
-            Время подставлено автоматически, но его можно скорректировать вручную под конкретный заказ.
+          <p className="mt-1 text-[11px] text-zinc-400">
+            Итоговая сумма пересчитается автоматически при закрытии заказа — по фактическому времени возврата.
           </p>
         </div>
       )}
