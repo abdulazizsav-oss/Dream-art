@@ -319,11 +319,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   )}
                 </div>
                 <span className="text-gray-700">
-                  {getPricingParts(item)
-                    .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
-                    .join(' + ')}
-                  {' = '}
-                  {formatCurrency(item.subtotal, item.equipment?.currency)}
+                  {(() => {
+                    const live = itemBillingById.get(item.id)
+                    const displayItem = live
+                      ? {
+                          day_units: live.day_units,
+                          night_units: live.night_units,
+                          day_rate_snapshot: live.day_rate,
+                          night_rate_snapshot: live.night_rate,
+                        }
+                      : item
+                    const displaySubtotal = live ? live.subtotal : item.subtotal
+                    return (
+                      <>
+                        {getPricingParts(displayItem)
+                          .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
+                          .join(' + ')}
+                        {' = '}
+                        {formatCurrency(displaySubtotal, item.equipment?.currency)}
+                      </>
+                    )
+                  })()}
                 </span>
               </div>
             )
