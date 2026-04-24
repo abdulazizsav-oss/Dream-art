@@ -155,7 +155,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   orderId={id}
                   debt={Math.max(0, debt)}
                   variant="default"
-                  items={items.map(it => ({
+                  items={items.filter(it => !it.returned).map(it => ({
                     id: it.id,
                     name: it.equipment?.name ?? '—',
                     selected_kit_items: it.selected_kit_items ?? [],
