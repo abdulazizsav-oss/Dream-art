@@ -162,6 +162,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     selected_kit_items: it.selected_kit_items ?? [],
                   }))}
                 />
+                <PartialReturnModal
+                  orderId={id}
+                  items={items.filter(it => !it.returned).map(it => ({
+                    id: it.id,
+                    name: it.equipment?.name ?? '—',
+                    selected_kit_items: it.selected_kit_items ?? [],
+                  }))}
+                />
                 <Link href={`/orders/${id}/return`}>
                   <Button variant="outline">
                     <RotateCcw className="w-4 h-4 mr-2" />
