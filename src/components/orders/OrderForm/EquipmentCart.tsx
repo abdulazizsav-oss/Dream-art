@@ -63,8 +63,6 @@ export function EquipmentCart({
   equipment,
   startDate,
   endDate,
-  startTime,
-  endTime,
   onIncrement,
   onDecrement,
   onRemoveAll,
