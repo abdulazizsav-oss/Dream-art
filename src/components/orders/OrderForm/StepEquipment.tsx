@@ -12,8 +12,6 @@ interface StepEquipmentProps {
   equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
   startDate?: string
   endDate?: string
-  startTime?: string
-  endTime?: string
   selectedItems: OrderItemFormValue[]
   onUpdate: (items: OrderItemFormValue[]) => void
   onNext: () => void
@@ -24,8 +22,6 @@ export function StepEquipment({
   equipment,
   startDate,
   endDate,
-  startTime,
-  endTime,
   selectedItems,
   onUpdate,
   onNext,
