@@ -76,6 +76,15 @@ function OrderRow({ order }: { order: {
     daily_rate?: number | null;
     day_rate_snapshot?: number | null;
     night_rate_snapshot?: number | null;
+    day_units?: number | null;
+    night_units?: number | null;
+    shift_type?: 'day' | 'night' | null;
+    actual_start_at?: string | null;
+    actual_end_at?: string | null;
+    final_subtotal?: number | null;
+    final_day_units?: number | null;
+    final_night_units?: number | null;
+    returned?: boolean | null;
     selected_kit_items: string[] | null;
     missing_kit_items: string[] | null;
     equipment: { name: string; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null;
