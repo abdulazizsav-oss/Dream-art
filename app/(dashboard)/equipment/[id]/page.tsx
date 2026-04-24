@@ -124,14 +124,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
       {/* ROI / Заработано */}
       {utilization && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border p-4">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <TrendingUp className="w-4 h-4" />
-              Всего аренд
-            </div>
-            <p className="text-2xl font-bold mt-1">{utilization.total_rentals ?? 0}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <CircleDollarSign className="w-4 h-4" />
