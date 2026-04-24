@@ -10,8 +10,6 @@ import { describeBreakdown } from '@/lib/rental'
 interface LiveTotalProps {
   startDate: string | undefined | null
   endDate: string | undefined | null
-  startTime?: string | undefined | null
-  endTime?: string | undefined | null
   items: OrderItemFormValue[]
   equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate'>[]
   variant?: 'compact' | 'card'
@@ -21,8 +19,6 @@ interface LiveTotalProps {
 export function LiveTotal({
   startDate,
   endDate,
-  startTime,
-  endTime,
   items,
   equipment,
   variant = 'card',
@@ -31,8 +27,6 @@ export function LiveTotal({
   const { dayUnits, nightUnits, itemsCount, total, currency } = useOrderTotal(
     startDate,
     endDate,
-    startTime,
-    endTime,
     items,
     equipment,
   )
