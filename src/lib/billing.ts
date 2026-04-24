@@ -241,6 +241,131 @@ export function computeOrderBilling(input: {
   }
 }
 
+/* ──────── Per-item active-order billing ──────── */
+
+export interface ActiveItemInput {
+  id: string
+  equipment_id: string
+  rate_source: RateSource | null
+  /** ISO timestamp когда позиция стала биллиться (inherit от заказа или now() для дозаказа) */
+  actual_start_at: string | null
+  /** Если не null — позиция уже сдана, используем final_subtotal */
+  actual_end_at: string | null
+  /** Замороженная сумма при частичной сдаче; null = считать live */
+  final_subtotal: number | null
+  final_day_units: number | null
+  final_night_units: number | null
+  /** Ставки для live-расчёта auto-позиций */
+  day_rate: number
+  night_rate: number | null
+  /** Fallback / manual subtotal, если manual rate_source или нет actual_start_at */
+  subtotal: number
+  day_units: number
+  night_units: number
+  shift_type: ShiftType
+}
+
+export interface ActiveItemResult {
+  id: string
+  subtotal: number
+  day_units: number
+  night_units: number
+  shift_type: ShiftType
+  frozen: boolean
+}
+
+export interface ActiveOrderTotalResult {
+  total_amount: number
+  perItem: Map<string, ActiveItemResult>
+}
+
+/**
+ * Для активных/просроченных заказов — считает текущий итог заказа с учётом того,
+ * что часть позиций уже могла быть сдана (final_subtotal) или добавлена позже
+ * (actual_start_at отличается от остальных).
+ */
+export function computeActiveOrderTotal(args: {
+  now: Date
+  items: ActiveItemInput[]
+}): ActiveOrderTotalResult {
+  const perItem = new Map<string, ActiveItemResult>()
+  let total = 0
+
+  for (const it of args.items) {
+    // 1) Уже сданная позиция — берём замороженные значения
+    if (it.final_subtotal != null || it.actual_end_at != null) {
+      const subtotal = it.final_subtotal ?? it.subtotal
+      const dayU = it.final_day_units ?? it.day_units ?? 0
+      const nightU = it.final_night_units ?? it.night_units ?? 0
+      perItem.set(it.id, {
+        id: it.id,
+        subtotal,
+        day_units: dayU,
+        night_units: nightU,
+        shift_type: nightU > dayU ? 'night' : 'day',
+        frozen: true,
+      })
+      total += subtotal
+      continue
+    }
+
+    // 2) Manual rate_source — сохранённый subtotal как есть
+    if (it.rate_source === 'manual') {
+      perItem.set(it.id, {
+        id: it.id,
+        subtotal: it.subtotal,
+        day_units: it.day_units,
+        night_units: it.night_units,
+        shift_type: it.shift_type,
+        frozen: false,
+      })
+      total += it.subtotal
+      continue
+    }
+
+    // 3) Auto live-расчёт от actual_start_at до now()
+    if (it.actual_start_at) {
+      const billing = computeOrderBilling({
+        start: new Date(it.actual_start_at),
+        end: args.now,
+        items: [{
+          equipment_id: it.equipment_id,
+          day_rate: it.day_rate,
+          night_rate: it.night_rate,
+        }],
+      })
+      const sub = billing.items[0]?.subtotal ?? it.subtotal
+      perItem.set(it.id, {
+        id: it.id,
+        subtotal: sub,
+        day_units: billing.day_units,
+        night_units: billing.night_units,
+        shift_type: getDominantShiftType({
+          day_units: billing.day_units,
+          night_units: billing.night_units,
+          total_units: billing.total_units,
+        }),
+        frozen: false,
+      })
+      total += sub
+      continue
+    }
+
+    // 4) Fallback — сохранённый subtotal
+    perItem.set(it.id, {
+      id: it.id,
+      subtotal: it.subtotal,
+      day_units: it.day_units,
+      night_units: it.night_units,
+      shift_type: it.shift_type,
+      frozen: false,
+    })
+    total += it.subtotal
+  }
+
+  return { total_amount: total, perItem }
+}
+
 /* ──────── Вспомогательные для отображения ──────── */
 
 /** Вернуть ставку по типу смены (учитывает equipment без ночной ставки) */
