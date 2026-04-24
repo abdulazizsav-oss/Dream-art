@@ -1,0 +1,283 @@
+/**
+ * Dream Art — единая функция биллинга заказа.
+ *
+ * Single source of truth: одна формула, которая:
+ *  1) В preview на форме получает планируемые даты + дефолтное время (09:30 → 23:00)
+ *  2) На закрытии заказа получает фактические timestamps (actual_start_at → now())
+ * и в обоих случаях возвращает {day_units, night_units, subtotal per item, total}.
+ *
+ * Все правила «+-» Dream Art в одной функции `computeShifts`.
+ */
+
+import { getTashkentDate, getTashkentTime } from './utils'
+
+export type ShiftType = 'day' | 'night'
+export type RateSource = 'auto' | 'manual'
+
+/* ──────── Константы ──────── */
+
+/** Ночная смена начинается в 20:00 */
+const NIGHT_START_MIN = 20 * 60
+/** Ночная смена заканчивается в 10:00 следующего дня */
+const NIGHT_END_MIN = 10 * 60
+/** Вечерний extended: взял ≥20:00, вернул до 23:00 следующего — 1 день */
+const EVENING_EXTENDED_END = 23 * 60
+
+/* ──────── Типы ──────── */
+
+export interface ShiftBreakdown {
+  day_units: number
+  night_units: number
+  total_units: number
+}
+
+export interface BillingItemInput {
+  equipment_id: string
+  day_rate: number
+  night_rate: number | null
+  /** Если `manual` — все смены уходят в указанный shift_type */
+  override?: ShiftType | null
+}
+
+export interface BillingItemResult {
+  equipment_id: string
+  day_rate: number
+  night_rate: number
+  day_units: number
+  night_units: number
+  subtotal: number
+  shift_type: ShiftType
+  rate_source: RateSource
+}
+
+export interface BillingResult {
+  day_units: number
+  night_units: number
+  total_units: number
+  total_amount: number
+  items: BillingItemResult[]
+  /** "1 день + 1 ночь" для отображения */
+  explanation: string
+}
+
+/* ──────── Utilities ──────── */
+
+interface LocalParts {
+  date: string   // YYYY-MM-DD (Asia/Tashkent)
+  time: string   // HH:MM (Asia/Tashkent)
+  minutes: number
+}
+
+function toTashkentLocal(d: Date): LocalParts {
+  const date = getTashkentDate(d)
+  const time = getTashkentTime(d)
+  const [h, m] = time.split(':').map(Number)
+  return { date, time, minutes: h * 60 + m }
+}
+
+function calendarDaysBetween(aDate: string, bDate: string): number {
+  const a = new Date(`${aDate}T00:00:00Z`)
+  const b = new Date(`${bDate}T00:00:00Z`)
+  return Math.round((b.getTime() - a.getTime()) / 86400000)
+}
+
+function pack(day: number, night: number): ShiftBreakdown {
+  return { day_units: day, night_units: night, total_units: day + night }
+}
+
+/**
+ * Из "YYYY-MM-DD" + "HH:MM" в Asia/Tashkent → Date (UTC).
+ * Используется в preview для превращения дат формы в Date для `computeOrderBilling`.
+ */
+export function buildTashkentDate(dateStr: string, timeStr: string = '09:30'): Date {
+  const [hStr = '00', mStr = '00'] = timeStr.split(':')
+  const h = hStr.padStart(2, '0')
+  const m = mStr.padStart(2, '0')
+  return new Date(`${dateStr}T${h}:${m}:00+05:00`)
+}
+
+/* ──────── Основная формула смен ──────── */
+
+/**
+ * Правила Dream Art:
+ *   • Тот же день                                      → 1 день
+ *   • Сутки · взял ≥20:00 · вернул ≤10:00              → 1 ночь
+ *   • Сутки · взял <20:00 · вернул ≤10:00              → 1 день  (утренний переход бесплатно)
+ *   • Сутки · взял <20:00 · вернул >10:00              → 1 день + 1 ночь
+ *   • Сутки · взял ≥20:00 · вернул ≤23:00              → 1 день  (вечерний extended)
+ *   • Сутки · взял ≥20:00 · вернул >23:00              → 2 дня
+ *   • ≥2 дней                                          → span дней + коррекция по последнему времени
+ */
+export function computeShifts(start: Date, end: Date): ShiftBreakdown {
+  const s = toTashkentLocal(start)
+  const e = toTashkentLocal(end)
+  const span = calendarDaysBetween(s.date, e.date)
+
+  // Тот же день (или возврат «в прошлое» — защитно)
+  if (span <= 0) return pack(1, 0)
+
+  // Сутки
+  if (span === 1) {
+    const startedEvening = s.minutes >= NIGHT_START_MIN
+    const endBeforeMorning = e.minutes <= NIGHT_END_MIN
+
+    if (startedEvening && endBeforeMorning) return pack(0, 1)
+    if (!startedEvening && endBeforeMorning) return pack(1, 0)
+    if (!startedEvening && !endBeforeMorning) return pack(1, 1)
+    // startedEvening && !endBeforeMorning
+    return e.minutes <= EVENING_EXTENDED_END ? pack(1, 0) : pack(2, 0)
+  }
+
+  // ≥2 дней: каждый 24ч блок = 1 день + 1 ночь, последний отрезок по времени
+  const fullDays = span
+  const fullNights = span - 1
+  const lastNight = e.minutes > NIGHT_END_MIN ? 1 : 0
+  const dayAdjust = e.minutes <= NIGHT_END_MIN ? -1 : 0
+  return pack(Math.max(1, fullDays + dayAdjust), fullNights + lastNight)
+}
+
+export function getDominantShiftType(b: ShiftBreakdown): ShiftType {
+  return b.night_units > b.day_units ? 'night' : 'day'
+}
+
+/* ──────── Человекочитаемое описание ──────── */
+
+export function describeShift(shift: ShiftType): string {
+  return shift === 'night' ? 'Ночная смена' : 'Дневная смена'
+}
+
+export function describeUnits(count: number, shift: ShiftType): string {
+  if (shift === 'night') {
+    return `${count} ${count === 1 ? 'ночь' : count < 5 ? 'ночи' : 'ночей'}`
+  }
+  return `${count} ${count === 1 ? 'день' : count < 5 ? 'дня' : 'дней'}`
+}
+
+export function describeBreakdown(dayUnits: number, nightUnits: number): string {
+  const parts: string[] = []
+  if (dayUnits > 0) {
+    parts.push(`${dayUnits} ${dayUnits === 1 ? 'день' : dayUnits < 5 ? 'дня' : 'дней'}`)
+  }
+  if (nightUnits > 0) {
+    parts.push(`${nightUnits} ${nightUnits === 1 ? 'ночь' : nightUnits < 5 ? 'ночи' : 'ночей'}`)
+  }
+  return parts.join(' + ') || '1 день'
+}
+
+/* ──────── Главная функция ──────── */
+
+/**
+ * Единая точка входа биллинга.
+ *
+ * @example Preview в форме
+ *   computeOrderBilling({
+ *     start: buildTashkentDate('2026-04-18', '09:30'),
+ *     end:   buildTashkentDate('2026-04-19', '23:00'),
+ *     items: [...]
+ *   })
+ *
+ * @example Закрытие заказа (авто по фактическим timestamps)
+ *   computeOrderBilling({
+ *     start: new Date(order.actual_start_at),
+ *     end:   new Date(),
+ *     items: orderItems.map(toBillingInput)
+ *   })
+ */
+export function computeOrderBilling(input: {
+  start: Date
+  end: Date
+  items: BillingItemInput[]
+}): BillingResult {
+  const autoBreakdown = computeShifts(input.start, input.end)
+
+  const items: BillingItemResult[] = input.items.map(it => {
+    const nightRate = it.night_rate ?? it.day_rate
+
+    let dayUnits = autoBreakdown.day_units
+    let nightUnits = autoBreakdown.night_units
+    let rateSource: RateSource = 'auto'
+    let shiftType: ShiftType = getDominantShiftType(autoBreakdown)
+
+    // Manual override: все единицы уходят в выбранный тип
+    if (it.override === 'day') {
+      dayUnits = autoBreakdown.total_units
+      nightUnits = 0
+      rateSource = 'manual'
+      shiftType = 'day'
+    } else if (it.override === 'night') {
+      dayUnits = 0
+      nightUnits = autoBreakdown.total_units
+      rateSource = 'manual'
+      shiftType = 'night'
+    }
+
+    const subtotal = it.day_rate * dayUnits + nightRate * nightUnits
+
+    return {
+      equipment_id: it.equipment_id,
+      day_rate: it.day_rate,
+      night_rate: nightRate,
+      day_units: dayUnits,
+      night_units: nightUnits,
+      subtotal,
+      shift_type: shiftType,
+      rate_source: rateSource,
+    }
+  })
+
+  const total_amount = items.reduce((sum, it) => sum + it.subtotal, 0)
+
+  return {
+    day_units: autoBreakdown.day_units,
+    night_units: autoBreakdown.night_units,
+    total_units: autoBreakdown.total_units,
+    total_amount,
+    items,
+    explanation: describeBreakdown(autoBreakdown.day_units, autoBreakdown.night_units),
+  }
+}
+
+/* ──────── Вспомогательные для отображения ──────── */
+
+/** Вернуть ставку по типу смены (учитывает equipment без ночной ставки) */
+export function getEquipmentRate(
+  eq: { day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null },
+  shift: ShiftType,
+): number {
+  const dayRate = eq.day_rate ?? eq.daily_rate ?? 0
+  if (shift === 'night') return eq.night_rate ?? dayRate
+  return dayRate
+}
+
+/**
+ * Из сохранённой позиции заказа собрать массив частей для строки
+ *  «Дневная 150 000 × 2 дня + Ночная 100 000 × 1 ночь»
+ */
+export function getPricingParts(item: {
+  day_units?: number | null
+  night_units?: number | null
+  days?: number | null
+  shift_type?: ShiftType | null
+  daily_rate?: number | null
+  day_rate_snapshot?: number | null
+  night_rate_snapshot?: number | null
+}): { shiftType: ShiftType; units: number; rate: number }[] {
+  const dayRate = item.day_rate_snapshot ?? item.daily_rate ?? 0
+  const nightRate = item.night_rate_snapshot ?? item.day_rate_snapshot ?? item.daily_rate ?? 0
+
+  const explicitDay = item.day_units ?? 0
+  const explicitNight = item.night_units ?? 0
+
+  if (explicitDay > 0 || explicitNight > 0) {
+    const parts: { shiftType: ShiftType; units: number; rate: number }[] = []
+    if (explicitDay > 0) parts.push({ shiftType: 'day', units: explicitDay, rate: dayRate })
+    if (explicitNight > 0) parts.push({ shiftType: 'night', units: explicitNight, rate: nightRate })
+    return parts
+  }
+
+  // Legacy: только days + shift_type
+  const fallbackDays = Math.max(1, item.days ?? 1)
+  return item.shift_type === 'night'
+    ? [{ shiftType: 'night', units: fallbackDays, rate: nightRate }]
+    : [{ shiftType: 'day', units: fallbackDays, rate: dayRate }]
+}
