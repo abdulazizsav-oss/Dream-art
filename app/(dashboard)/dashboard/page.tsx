@@ -169,7 +169,7 @@ export default async function DashboardPage() {
                       <span className="text-gray-400 text-xs w-4">{i + 1}</span>
                       <div>
                         <p className="text-sm">{e.name}</p>
-                        <p className="text-xs text-gray-400">{e.total_rentals} аренд · {e.total_rental_days} дней</p>
+                        <p className="text-xs text-gray-400">{e.total_rental_days} дней в аренде</p>
                       </div>
                     </div>
                     <span className="text-sm text-green-700">{formatCurrency(e.total_revenue)}</span>
