@@ -21,6 +21,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     .from('orders')
     .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
     .eq('id', id)
+    .order('paid_at', { referencedTable: 'payments', ascending: false })
     .single()
 
   if (!order) notFound()
