@@ -125,8 +125,6 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
             equipment={equipment}
             startDate={values.start_date}
             endDate={values.end_date}
-            startTime={values.start_time}
-            endTime={values.end_time}
             selectedItems={values.items ?? []}
             onUpdate={items => update({ items })}
             onNext={() => setStep(2)}
@@ -137,8 +135,6 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
           <StepDates
             startDate={values.start_date ?? ''}
             endDate={values.end_date ?? ''}
-            startTime={values.start_time ?? DEFAULT_START_TIME}
-            endTime={values.end_time ?? DEFAULT_END_TIME}
             depositAmount={values.deposit_amount ?? 0}
             notes={values.notes ?? ''}
             selectedItems={values.items ?? []}
