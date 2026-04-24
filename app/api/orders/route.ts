@@ -39,8 +39,6 @@ export async function POST(req: NextRequest) {
     client_id,
     start_date,
     end_date,
-    start_time,
-    end_time,
     deposit_amount,
     notes,
     items,
@@ -48,12 +46,14 @@ export async function POST(req: NextRequest) {
     trusted_person_doc_type,
   } = parsed.data
 
+  // Время не собираем на форме — расчёт суммы идёт от actual_start_at → now() при закрытии.
+  // Для RPC передаём пустые строки: внутри COALESCE(NULLIF(...,'')::time, '09:30'/'23:00'::time)
   const { data: orderId, error } = await supabase.rpc('create_order_atomic', {
     p_client_id: client_id,
     p_start_date: start_date,
     p_end_date: end_date,
-    p_start_time: start_time,
-    p_end_time: end_time,
+    p_start_time: '',
+    p_end_time: '',
     p_deposit_amount: deposit_amount ?? 0,
     p_notes: notes ?? '',
     p_created_by: user.id,
