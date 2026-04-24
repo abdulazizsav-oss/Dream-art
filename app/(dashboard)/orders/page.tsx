@@ -6,7 +6,7 @@ import { formatCurrency, formatDateRange, formatDateTime, ORDER_STATUS_LABELS, O
 import { cn } from '@/lib/utils'
 import { Plus, ClipboardList, AlertTriangle } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
-import { computeOrderBilling, type BillingItemInput } from '@/lib/billing'
+import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 
 export default async function OrdersPage() {
   const supabase = await createClient()
