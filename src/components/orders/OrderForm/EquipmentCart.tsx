@@ -25,8 +25,6 @@ interface EquipmentCartProps {
   equipment: EquipmentRow[]
   startDate?: string
   endDate?: string
-  startTime?: string
-  endTime?: string
   onIncrement: (equipmentId: string) => void
   onDecrement: (equipmentId: string) => void
   onRemoveAll: (equipmentId: string) => void
