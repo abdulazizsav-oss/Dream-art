@@ -138,7 +138,7 @@ export function StepDates({
 
       <div className="flex gap-3">
         <Button type="button" variant="outline" onClick={onBack}>Назад</Button>
-        <Button type="button" onClick={handleNext} disabled={!start || !end || !issueTime || !returnTime}>
+        <Button type="button" onClick={handleNext} disabled={!start || !end}>
           Далее
         </Button>
       </div>
