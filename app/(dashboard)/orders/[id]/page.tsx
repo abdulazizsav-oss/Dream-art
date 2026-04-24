@@ -226,7 +226,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="font-semibold mt-1">{formatCurrency(effectiveTotal)}</p>
           {liveBilling && (
             <p className="text-[11px] text-gray-400 mt-0.5">
-              По факту: {liveBilling.explanation}
+              По факту на сейчас
             </p>
           )}
         </div>
