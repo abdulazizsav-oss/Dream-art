@@ -316,25 +316,35 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </div>
                   )}
                 </div>
-                <span className="text-gray-700">
+                <span className="text-gray-700 text-right">
                   {(() => {
                     const live = itemBillingById.get(item.id)
+                    const eq = item.equipment
+                    const dayRate = item.day_rate_snapshot ?? eq?.day_rate ?? eq?.daily_rate ?? item.daily_rate ?? 0
+                    const nightRate = item.night_rate_snapshot ?? eq?.night_rate ?? dayRate
                     const displayItem = live
                       ? {
                           day_units: live.day_units,
                           night_units: live.night_units,
-                          day_rate_snapshot: live.day_rate,
-                          night_rate_snapshot: live.night_rate,
+                          day_rate_snapshot: dayRate,
+                          night_rate_snapshot: nightRate,
                         }
                       : item
                     const displaySubtotal = live ? live.subtotal : item.subtotal
                     return (
                       <>
-                        {getPricingParts(displayItem)
-                          .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
-                          .join(' + ')}
-                        {' = '}
-                        {formatCurrency(displaySubtotal, item.equipment?.currency)}
+                        <div>
+                          {getPricingParts(displayItem)
+                            .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
+                            .join(' + ')}
+                          {' = '}
+                          {formatCurrency(displaySubtotal, item.equipment?.currency)}
+                        </div>
+                        {live?.frozen && item.actual_end_at && (
+                          <div className="text-[11px] text-emerald-700 mt-0.5">
+                            Сдано: {formatDateTime(item.actual_end_at)}
+                          </div>
+                        )}
                       </>
                     )
                   })()}
