@@ -24,7 +24,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
   const { data: utilization } = await supabase
     .from('v_equipment_utilization')
-    .select('total_rentals, total_revenue, roi_percent')
+    .select('total_revenue, roi_percent')
     .eq('id', id)
     .single()
 
