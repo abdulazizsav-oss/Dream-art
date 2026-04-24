@@ -47,7 +47,53 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     returned_kit_items?: string[] | null
     missing_kit_items?: string[] | null
   }[]) ?? []
-  const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
+  const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; payment_group_id?: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
+
+  // Группируем сплит-платежи: если у группы >1 строки с одним payment_group_id — показываем как один платёж с разбивкой по методам
+  type PaymentGroup =
+    | { kind: 'single'; payment: typeof payments[number] }
+    | {
+        kind: 'split'
+        group_id: string
+        paid_at: string
+        payment_type: string
+        notes: string | null
+        created_by_profile?: { full_name: string } | null
+        parts: { method: string; amount: number }[]
+        total: number
+      }
+  const paymentGroups: PaymentGroup[] = []
+  const splitsByGroup = new Map<string, typeof payments>()
+  for (const p of payments) {
+    if (p.payment_group_id) {
+      const arr = splitsByGroup.get(p.payment_group_id) ?? []
+      arr.push(p)
+      splitsByGroup.set(p.payment_group_id, arr)
+    } else {
+      paymentGroups.push({ kind: 'single', payment: p })
+    }
+  }
+  for (const [gid, rows] of splitsByGroup.entries()) {
+    if (rows.length === 1) {
+      paymentGroups.push({ kind: 'single', payment: rows[0] })
+    } else {
+      paymentGroups.push({
+        kind: 'split',
+        group_id: gid,
+        paid_at: rows[0].paid_at,
+        payment_type: rows[0].payment_type,
+        notes: rows[0].notes,
+        created_by_profile: rows[0].created_by_profile,
+        parts: rows.map(r => ({ method: r.payment_method, amount: r.amount })),
+        total: rows.reduce((s, r) => s + r.amount, 0),
+      })
+    }
+  }
+  paymentGroups.sort((a, b) => {
+    const ta = a.kind === 'single' ? a.payment.paid_at : a.paid_at
+    const tb = b.kind === 'single' ? b.payment.paid_at : b.paid_at
+    return tb.localeCompare(ta)
+  })
 
   const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
   const debt = order.total_amount - payments.filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
