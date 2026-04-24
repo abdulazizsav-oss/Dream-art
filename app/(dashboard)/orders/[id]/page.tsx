@@ -12,6 +12,7 @@ import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
+import { computeOrderBilling, type BillingItemInput } from '@/lib/billing'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
