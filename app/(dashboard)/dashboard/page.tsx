@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     supabase.from('v_dashboard_stats').select('*').single(),
     supabase
       .from('v_equipment_utilization')
-      .select('id, name, total_rentals, total_revenue, total_rental_days')
+      .select('id, name, total_revenue, total_rental_days')
       .order('total_revenue', { ascending: false })
       .limit(5),
     supabase
