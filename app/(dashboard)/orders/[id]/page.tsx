@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
+import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
