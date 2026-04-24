@@ -77,8 +77,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           <p className="font-medium">
             {formatDate(values.start_date)} — {formatDate(values.end_date)}
           </p>
-          <p className="text-sm text-gray-600">
-            {values.start_time} — {values.end_time}
+          <p className="text-xs text-gray-500 mt-1">
+            Время выдачи/возврата — фактические, фиксируются автоматически
           </p>
         </div>
 
