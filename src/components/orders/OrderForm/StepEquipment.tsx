@@ -109,7 +109,7 @@ export function StepEquipment({
         return {
           ...item,
           rate_source: 'auto' as const,
-          shift_type: getAutoShiftType(startDate, endDate, startTime, endTime),
+          shift_type: getAutoShiftType(startDate, endDate),
         }
       }
 
