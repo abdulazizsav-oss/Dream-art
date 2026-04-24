@@ -40,8 +40,6 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         <LiveTotal
           startDate={values.start_date}
           endDate={values.end_date}
-          startTime={values.start_time}
-          endTime={values.end_time}
           items={values.items}
           equipment={equipment}
         />
