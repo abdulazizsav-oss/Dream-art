@@ -125,12 +125,14 @@ function OrderRow({ order }: { order: {
   const debt = Math.max(0, effectiveTotal - paidRental)
   const createdBy = order.created_by_profile?.full_name
 
-  // Prepare items for CloseOrderButton (with kit data)
-  const closeItems = (order.order_items ?? []).map(it => ({
-    id: it.id,
-    name: it.equipment?.name ?? '—',
-    selected_kit_items: it.selected_kit_items ?? [],
-  }))
+  // Prepare items for CloseOrderButton (only still-active positions)
+  const closeItems = (order.order_items ?? [])
+    .filter(it => !it.returned)
+    .map(it => ({
+      id: it.id,
+      name: it.equipment?.name ?? '—',
+      selected_kit_items: it.selected_kit_items ?? [],
+    }))
 
   // Check for missing kit items in closed orders
   const allMissing = isClosed
