@@ -44,6 +44,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     subtotal: number
     shift_type: 'day' | 'night'
     rate_source?: 'auto' | 'manual' | null
+    actual_start_at?: string | null
+    actual_end_at?: string | null
+    final_subtotal?: number | null
+    final_day_units?: number | null
+    final_night_units?: number | null
+    returned?: boolean | null
     condition_on_issue: string | null
     condition_on_return: string | null
     selected_kit_items?: string[] | null
