@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
+import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
