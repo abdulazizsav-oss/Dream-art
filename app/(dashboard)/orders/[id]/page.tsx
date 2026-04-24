@@ -78,6 +78,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 </Link>
               </>
             ) : null}
+            {order.status === 'returned' && (
+              <ReturnMissingKitButton
+                orderId={id}
+                items={items
+                  .filter(it => (it.missing_kit_items ?? []).length > 0)
+                  .map(it => ({
+                    order_item_id: it.id,
+                    equipment_name: it.equipment?.name ?? '—',
+                    missing_kit_items: it.missing_kit_items ?? [],
+                  }))}
+              />
+            )}
             <a href={`/api/orders/${id}/contract`} target="_blank">
               <Button variant="outline">
                 <FileText className="w-4 h-4 mr-2" />
