@@ -52,7 +52,10 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
 
   async function submit() {
     setSubmitting(true)
-    const recalculatedItems = recalculateOrderItems(values.items ?? [], equipment, values)
+    const recalculatedItems = recalculateOrderItems(values.items ?? [], equipment, {
+      start_date: values.start_date,
+      end_date: values.end_date,
+    })
     // Формируем строку: "Иван Иванов (Брат) +998901234567"
     const tpParts = [
       trustedPerson.name,
