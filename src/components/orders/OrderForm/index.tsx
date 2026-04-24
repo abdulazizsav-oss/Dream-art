@@ -28,8 +28,6 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   const [values, setValues] = useState<Partial<OrderFormValues>>({
     items: [],
     deposit_amount: 0,
-    start_time: DEFAULT_START_TIME,
-    end_time: DEFAULT_END_TIME,
   })
   const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>({
     name: '',
