@@ -145,8 +145,6 @@ export function StepEquipment({
             equipment={equipmentRows}
             startDate={startDate}
             endDate={endDate}
-            startTime={startTime}
-            endTime={endTime}
             onIncrement={handleCartIncrement}
             onDecrement={removeLastOfPosition}
             onRemoveAll={removeAllOfPosition}
