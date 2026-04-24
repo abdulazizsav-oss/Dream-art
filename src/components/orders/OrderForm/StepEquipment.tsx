@@ -41,14 +41,11 @@ export function StepEquipment({
     onUpdate(recalculateOrderItems(nextItems, equipment, {
       start_date: startDate,
       end_date: endDate,
-      start_time: startTime,
-      end_time: endTime,
     }))
   }
 
   function addUnit(item: Equipment) {
-    const kitItems = (item.kit_items ?? []) as string[]
-    const shiftType = getAutoShiftType(startDate, endDate, startTime, endTime)
+    const shiftType = getAutoShiftType(startDate, endDate)
     const rate = getEquipmentRate(item, shiftType)
 
     syncItems([
