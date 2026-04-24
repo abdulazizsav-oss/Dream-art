@@ -65,15 +65,45 @@ export default async function OrdersPage() {
 function OrderRow({ order }: { order: {
   id: string; order_number: string; status: string; start_date: string; end_date: string;
   total_amount: number; created_at: string | null;
+  actual_start_at?: string | null;
   clients: { full_name: string } | null;
   created_by_profile?: { full_name: string } | null;
   payments?: { amount: number; payment_type: string }[] | null;
-  order_items?: { id: string; selected_kit_items: string[] | null; missing_kit_items: string[] | null; equipment: { name: string } | null }[] | null;
+  order_items?: {
+    id: string; equipment_id: string;
+    rate_source?: 'auto' | 'manual' | null;
+    subtotal?: number | null;
+    daily_rate?: number | null;
+    day_rate_snapshot?: number | null;
+    night_rate_snapshot?: number | null;
+    selected_kit_items: string[] | null;
+    missing_kit_items: string[] | null;
+    equipment: { name: string; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null;
+  }[] | null;
 } }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
   const isClosed = order.status === 'returned'
   const paidRental = (order.payments ?? []).filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
-  const debt = Math.max(0, order.total_amount - paidRental)
+
+  // ── Live-сумма для активных: от actual_start_at до now() через единую формулу ──
+  let effectiveTotal = order.total_amount
+  if (isActive && order.actual_start_at && (order.order_items?.length ?? 0) > 0) {
+    const autos = (order.order_items ?? []).filter(it => it.rate_source !== 'manual')
+    const manuals = (order.order_items ?? []).filter(it => it.rate_source === 'manual')
+    const billingInputs: BillingItemInput[] = autos.map(it => {
+      const eq = it.equipment
+      const dayRate = eq?.day_rate ?? it.day_rate_snapshot ?? eq?.daily_rate ?? it.daily_rate ?? 0
+      const nightRate = eq?.night_rate ?? it.night_rate_snapshot ?? dayRate
+      return { equipment_id: it.equipment_id, day_rate: dayRate, night_rate: nightRate }
+    })
+    const live = billingInputs.length > 0
+      ? computeOrderBilling({ start: new Date(order.actual_start_at), end: new Date(), items: billingInputs })
+      : null
+    const manualSum = manuals.reduce((s, it) => s + (it.subtotal ?? 0), 0)
+    if (live) effectiveTotal = live.total_amount + manualSum
+  }
+
+  const debt = Math.max(0, effectiveTotal - paidRental)
   const createdBy = order.created_by_profile?.full_name
 
   // Prepare items for CloseOrderButton (with kit data)
