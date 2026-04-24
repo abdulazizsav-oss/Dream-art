@@ -33,7 +33,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const trustedDocType = (order as any).trusted_person_doc_type as string | null
   const items = (order.order_items as {
     id: string
-    equipment: { name: string; currency: 'UZS' | 'USD' } | null
+    equipment_id: string
+    equipment: { name: string; currency: 'UZS' | 'USD'; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null
     daily_rate: number
     day_rate_snapshot?: number
     night_rate_snapshot?: number
@@ -42,6 +43,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     days: number
     subtotal: number
     shift_type: 'day' | 'night'
+    rate_source?: 'auto' | 'manual' | null
     condition_on_issue: string | null
     condition_on_return: string | null
     selected_kit_items?: string[] | null
