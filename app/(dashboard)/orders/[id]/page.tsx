@@ -291,23 +291,58 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <Button size="sm" variant="outline">+ Добавить платёж</Button>
           </Link>
         </div>
-        {payments.length > 0 ? (
+        {paymentGroups.length > 0 ? (
           <div className="space-y-2">
-            {payments.map(p => (
-              <div key={p.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
-                <div>
-                  <p>{PAYMENT_TYPE_LABELS[p.payment_type]} · {PAYMENT_METHOD_LABELS[p.payment_method]}</p>
-                  <p className="text-xs text-gray-400">
-                    {formatDate(p.paid_at)}
-                    {p.created_by_profile?.full_name && ` · Принял: ${p.created_by_profile.full_name}`}
-                  </p>
-                  {p.notes && <p className="text-xs text-gray-400">{p.notes}</p>}
+            {paymentGroups.map(g => {
+              if (g.kind === 'single') {
+                const p = g.payment
+                return (
+                  <div key={p.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
+                    <div>
+                      <p>{PAYMENT_TYPE_LABELS[p.payment_type]} · {PAYMENT_METHOD_LABELS[p.payment_method]}</p>
+                      <p className="text-xs text-gray-400">
+                        {formatDate(p.paid_at)}
+                        {p.created_by_profile?.full_name && ` · Принял: ${p.created_by_profile.full_name}`}
+                      </p>
+                      {p.notes && <p className="text-xs text-gray-400">{p.notes}</p>}
+                    </div>
+                    <span className={cn('font-medium', p.payment_type === 'deposit_return' ? 'text-red-600' : 'text-green-700')}>
+                      {formatCurrency(p.amount)}
+                    </span>
+                  </div>
+                )
+              }
+              return (
+                <div key={g.group_id} className="border-b pb-2 last:border-0">
+                  <div className="flex justify-between text-sm">
+                    <div>
+                      <p className="flex items-center gap-1.5">
+                        <span>{PAYMENT_TYPE_LABELS[g.payment_type]}</span>
+                        <span className="inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                          Сплит · {g.parts.length}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatDate(g.paid_at)}
+                        {g.created_by_profile?.full_name && ` · Принял: ${g.created_by_profile.full_name}`}
+                      </p>
+                      {g.notes && <p className="text-xs text-gray-400">{g.notes}</p>}
+                    </div>
+                    <span className="font-medium text-green-700">
+                      {formatCurrency(g.total)}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {g.parts.map((part, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 rounded-md bg-zinc-50 border border-zinc-200 px-2 py-0.5 text-[11px]">
+                        <span className="text-zinc-500">{PAYMENT_METHOD_LABELS[part.method]}:</span>
+                        <span className="font-medium tabular-nums">{formatCurrency(part.amount)}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <span className={cn('font-medium', p.payment_type === 'deposit_return' ? 'text-red-600' : 'text-green-700')}>
-                  {formatCurrency(p.amount)}
-                </span>
-              </div>
-            ))}
+              )
+            })}
             <div className="flex justify-between text-sm font-semibold pt-1">
               <span>Итого получено</span>
               <span>{formatCurrency(totalPaid)}</span>
