@@ -138,7 +138,7 @@ function OrderRow({ order }: { order: {
       </Link>
       <div className="flex items-center gap-2 flex-shrink-0">
         <div className="hidden sm:flex flex-col items-end leading-tight">
-          <span className="text-sm text-gray-700">{formatCurrency(order.total_amount)}</span>
+          <span className="text-sm text-gray-700">{formatCurrency(effectiveTotal)}</span>
           {paidRental > 0 && (
             <span className="text-[11px] text-green-600 font-medium">
               Заработано: {formatCurrency(paidRental)}
