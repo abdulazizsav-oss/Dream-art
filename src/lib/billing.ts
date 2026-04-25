@@ -128,12 +128,13 @@ export function computeShifts(start: Date, end: Date): ShiftBreakdown {
     return pack(1, 1)
   }
 
-  // ≥2 дней: каждый 24ч блок = 1 день + 1 ночь, последний отрезок по времени
+  // ≥2 дней: каждая ночь между календарными датами считается с 20:00.
+  // Если клиент держит технику после полуночи, текущая ночь уже должна идти,
+  // даже если 10:00 ещё не наступило.
   const fullDays = span
-  const fullNights = span - 1
-  const lastNight = e.minutes > NIGHT_END_MIN ? 1 : 0
+  const fullNights = span
   const dayAdjust = e.minutes <= NIGHT_END_MIN ? -1 : 0
-  return pack(Math.max(1, fullDays + dayAdjust), fullNights + lastNight)
+  return pack(Math.max(1, fullDays + dayAdjust), fullNights)
 }
 
 export function getDominantShiftType(b: ShiftBreakdown): ShiftType {

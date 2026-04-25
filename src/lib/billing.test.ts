@@ -75,6 +75,38 @@ test('manual active items keep growing by elapsed units instead of freezing subt
   })
 })
 
+test('ongoing second night is billed immediately after midnight', () => {
+  const result = computeActiveOrderTotal({
+    now: buildTashkentDate('2026-04-26', '00:11'),
+    items: [{
+      id: 'da-2026-0004',
+      equipment_id: 'canon-r5c',
+      rate_source: 'auto',
+      actual_start_at: buildTashkentDate('2026-04-24', '15:09').toISOString(),
+      actual_end_at: null,
+      final_subtotal: null,
+      final_day_units: null,
+      final_night_units: null,
+      day_rate: 200_000,
+      night_rate: 200_000,
+      subtotal: 400_000,
+      day_units: 1,
+      night_units: 1,
+      shift_type: 'day',
+    }],
+  })
+
+  assert.equal(result.total_amount, 600_000)
+  assert.deepEqual(result.perItem.get('da-2026-0004'), {
+    id: 'da-2026-0004',
+    subtotal: 600_000,
+    day_units: 1,
+    night_units: 2,
+    shift_type: 'night',
+    frozen: false,
+  })
+})
+
 test('partial return freezes returned items while open items keep billing live', () => {
   const result = computeActiveOrderTotal({
     now: buildTashkentDate('2026-04-25', '18:26'),
