@@ -48,11 +48,11 @@ ssh root@138.249.7.36
 
 ### Supabase (локальный)
 ```
-ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzc2ODg5MTg3LCJleHAiOjIwOTIyNDkxODd9.79UnDlFKWPZMPasWpPzEy9WbifIW1-ggBRZ70Fbdy6U
+ANON_KEY=<supabase_anon_key>
 
-SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NzY4ODkxODcsImV4cCI6MjA5MjI0OTE4N30.ieSC7P2C4dZPP5m5oFBRYPFisTeJSXBY20bSb6asSeY
+SERVICE_ROLE_KEY=<supabase_service_role_key>
 
-POSTGRES_PASSWORD=tz0wnJQtE2HK59W4_local
+POSTGRES_PASSWORD=<postgres_password>
 ```
 
 ### CRM App (.env.local)

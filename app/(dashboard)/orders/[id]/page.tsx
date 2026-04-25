@@ -12,6 +12,7 @@ import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
+import { AddItemsModal } from '@/components/orders/AddItemsModal'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 
@@ -27,6 +28,16 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     .single()
 
   if (!order) notFound()
+
+  const isOrderOpen = order.status === 'active' || order.status === 'overdue'
+  const { data: availableEquipment } = isOrderOpen
+    ? await supabase
+        .from('equipment')
+        .select('id, name, daily_rate, day_rate, night_rate, currency, brand, kit_items, equipment_categories(name), brands(name)')
+        .eq('status', 'free')
+        .order('sort_order')
+        .order('name')
+    : { data: [] }
 
   const client = order.clients as { full_name: string; phone: string | null; telegram_username: string | null; document_type: string | null; passport_series: string | null; passport_number: string | null } | null
   const createdByProfile = (order as any).created_by_profile as { full_name: string; role?: string } | null
@@ -106,7 +117,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   })
 
   // ── Per-item live-пересчёт (учитывает частичные сдачи + дозаказы) ──
-  const isActive = order.status === 'active' || order.status === 'overdue'
+  const isActive = isOrderOpen
   const orderActualStart = (order as any).actual_start_at as string | null
 
   const activeInputs: ActiveItemInput[] = items.map(it => {
@@ -152,6 +163,21 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="flex gap-2 flex-wrap">
             {order.status === 'active' || order.status === 'overdue' ? (
               <>
+                <AddItemsModal
+                  orderId={id}
+                  equipment={(availableEquipment ?? []).map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    daily_rate: item.daily_rate,
+                    day_rate: (item as any).day_rate,
+                    night_rate: (item as any).night_rate,
+                    currency: item.currency,
+                    brand: (item as any).brand,
+                    kit_items: (item as any).kit_items ?? [],
+                    equipment_categories: (item as any).equipment_categories ?? null,
+                    brands: (item as any).brands ?? null,
+                  }))}
+                />
                 <CloseOrderButton
                   orderId={id}
                   debt={Math.max(0, debt)}

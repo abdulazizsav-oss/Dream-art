@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { isSuperAdmin } from '@/lib/supabase/getRole'
+
+const roleValues = new Set(['admin', 'super_admin'])
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!(await isSuperAdmin())) {
@@ -9,13 +11,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const { role, full_name, nickname, password } = await req.json()
 
-  const supabase = await createClient()
   const service = await createServiceClient()
 
   // Update profile fields
   const profileUpdate: Record<string, unknown> = {}
-  if (role) profileUpdate.role = role
-  if (full_name) profileUpdate.full_name = full_name
+  if (role) {
+    if (!roleValues.has(role)) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+    }
+    profileUpdate.role = role
+  }
+  if (full_name) profileUpdate.full_name = String(full_name).trim()
   if (nickname) {
     const clean = nickname.trim().toLowerCase()
     if (!/^[a-z0-9_]{2,30}$/.test(clean)) {
@@ -24,11 +30,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     profileUpdate.nickname = clean
     // Also update auth email to keep in sync
     const newEmail = `${clean}@dreamart.local`
-    await service.auth.admin.updateUserById(id, { email: newEmail })
+    const { error: emailError } = await service.auth.admin.updateUserById(id, { email: newEmail })
+    if (emailError) {
+      return NextResponse.json({ error: emailError.message }, { status: 500 })
+    }
   }
 
   if (Object.keys(profileUpdate).length > 0) {
-    const { error } = await supabase.from('user_profiles').update(profileUpdate as any).eq('id', id)
+    const { error } = await service.from('user_profiles').update(profileUpdate as any).eq('id', id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

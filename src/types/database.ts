@@ -414,6 +414,12 @@ export type Database = {
           selected_kit_items: string[]
           returned_kit_items: string[]
           missing_kit_items: string[]
+          actual_start_at: string | null
+          actual_end_at: string | null
+          final_subtotal: number | null
+          final_day_units: number | null
+          final_night_units: number | null
+          returned: boolean
         }
         Insert: {
           id?: string
@@ -435,6 +441,12 @@ export type Database = {
           selected_kit_items?: string[]
           returned_kit_items?: string[]
           missing_kit_items?: string[]
+          actual_start_at?: string | null
+          actual_end_at?: string | null
+          final_subtotal?: number | null
+          final_day_units?: number | null
+          final_night_units?: number | null
+          returned?: boolean
         }
         Update: {
           id?: string
@@ -456,6 +468,12 @@ export type Database = {
           selected_kit_items?: string[]
           returned_kit_items?: string[]
           missing_kit_items?: string[]
+          actual_start_at?: string | null
+          actual_end_at?: string | null
+          final_subtotal?: number | null
+          final_day_units?: number | null
+          final_night_units?: number | null
+          returned?: boolean
         }
         Relationships: [
           {
@@ -656,6 +674,17 @@ export type Database = {
           p_equipment_id: string
           p_start_date: string
           p_end_date: string
+          p_exclude_order_id?: string | null
+        }
+        Returns: boolean
+      }
+      check_equipment_availability_tr: {
+        Args: {
+          p_equipment_id: string
+          p_start_date: string
+          p_start_time: string
+          p_end_date: string
+          p_end_time: string
           p_exclude_order_id?: string | null
         }
         Returns: boolean
