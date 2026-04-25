@@ -20,8 +20,6 @@ export type RateSource = 'auto' | 'manual'
 const NIGHT_START_MIN = 20 * 60
 /** Ночная смена заканчивается в 10:00 следующего дня */
 const NIGHT_END_MIN = 10 * 60
-/** Вечерний extended: взял ≥20:00, вернул до 23:00 следующего — 1 день */
-const EVENING_EXTENDED_END = 23 * 60
 
 /** Дефолты для preview-расчёта, когда фактическое время ещё не известно */
 export const DEFAULT_START_TIME = '09:30'
@@ -108,8 +106,7 @@ export function buildTashkentDate(dateStr: string, timeStr: string = '09:30'): D
  *   • Сутки · взял ≥20:00 · вернул ≤10:00              → 1 ночь
  *   • Сутки · взял <20:00 · вернул ≤10:00              → 1 день  (утренний переход бесплатно)
  *   • Сутки · взял <20:00 · вернул >10:00              → 1 день + 1 ночь
- *   • Сутки · взял ≥20:00 · вернул ≤23:00              → 1 день  (вечерний extended)
- *   • Сутки · взял ≥20:00 · вернул >23:00              → 2 дня
+ *   • Сутки · взял ≥20:00 · вернул >10:00              → 1 ночь + 1 день
  *   • ≥2 дней                                          → span дней + коррекция по последнему времени
  */
 export function computeShifts(start: Date, end: Date): ShiftBreakdown {
@@ -128,8 +125,7 @@ export function computeShifts(start: Date, end: Date): ShiftBreakdown {
     if (startedEvening && endBeforeMorning) return pack(0, 1)
     if (!startedEvening && endBeforeMorning) return pack(1, 0)
     if (!startedEvening && !endBeforeMorning) return pack(1, 1)
-    // startedEvening && !endBeforeMorning
-    return e.minutes <= EVENING_EXTENDED_END ? pack(1, 0) : pack(2, 0)
+    return pack(1, 1)
   }
 
   // ≥2 дней: каждый 24ч блок = 1 день + 1 ночь, последний отрезок по времени
@@ -309,21 +305,8 @@ export function computeActiveOrderTotal(args: {
       continue
     }
 
-    // 2) Manual rate_source — сохранённый subtotal как есть
-    if (it.rate_source === 'manual') {
-      perItem.set(it.id, {
-        id: it.id,
-        subtotal: it.subtotal,
-        day_units: it.day_units,
-        night_units: it.night_units,
-        shift_type: it.shift_type,
-        frozen: false,
-      })
-      total += it.subtotal
-      continue
-    }
-
-    // 3) Auto live-расчёт от actual_start_at до now()
+    // 2) Live-расчёт от actual_start_at до now().
+    // Manual rate_source меняет только ставку/тип смены, но не замораживает активный заказ.
     if (it.actual_start_at) {
       const billing = computeOrderBilling({
         start: new Date(it.actual_start_at),
@@ -332,15 +315,17 @@ export function computeActiveOrderTotal(args: {
           equipment_id: it.equipment_id,
           day_rate: it.day_rate,
           night_rate: it.night_rate,
+          override: it.rate_source === 'manual' ? it.shift_type : null,
         }],
       })
-      const sub = billing.items[0]?.subtotal ?? it.subtotal
+      const billed = billing.items[0]
+      const sub = billed?.subtotal ?? it.subtotal
       perItem.set(it.id, {
         id: it.id,
         subtotal: sub,
-        day_units: billing.day_units,
-        night_units: billing.night_units,
-        shift_type: getDominantShiftType({
+        day_units: billed?.day_units ?? billing.day_units,
+        night_units: billed?.night_units ?? billing.night_units,
+        shift_type: billed?.shift_type ?? getDominantShiftType({
           day_units: billing.day_units,
           night_units: billing.night_units,
           total_units: billing.total_units,

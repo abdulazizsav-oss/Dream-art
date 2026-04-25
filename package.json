@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "test:billing": "tsx --test src/lib/billing.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "next build",
     "start": "next start"
@@ -42,6 +43,7 @@
     "@types/react-calendar-timeline": "^0.28.6",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

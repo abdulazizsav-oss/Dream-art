@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { orderSchema } from '@/lib/validations/order'
 import { sendOrderConfirmation } from '@/lib/bot/notifications'
 import type { OrderStatus } from '@/types/database'
+import { normalizeOrderItemsForBilling, OrderPricingError } from '@/lib/orders/pricing'
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -45,10 +46,26 @@ export async function POST(req: NextRequest) {
     trusted_person,
     trusted_person_doc_type,
   } = parsed.data
+  const service = await createServiceClient()
+
+  let normalizedItems
+  try {
+    normalizedItems = await normalizeOrderItemsForBilling(service, items, {
+      start_date,
+      end_date,
+      start_time: '',
+      end_time: '',
+    })
+  } catch (error) {
+    if (error instanceof OrderPricingError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    return NextResponse.json({ error: 'Ошибка пересчёта суммы заказа' }, { status: 500 })
+  }
 
   // Время не собираем на форме — расчёт суммы идёт от actual_start_at → now() при закрытии.
   // Для RPC передаём пустые строки: внутри COALESCE(NULLIF(...,'')::time, '09:30'/'23:00'::time)
-  const { data: orderId, error } = await supabase.rpc('create_order_atomic', {
+  const { data: orderId, error } = await service.rpc('create_order_atomic', {
     p_client_id: client_id,
     p_start_date: start_date,
     p_end_date: end_date,
@@ -57,7 +74,7 @@ export async function POST(req: NextRequest) {
     p_deposit_amount: deposit_amount ?? 0,
     p_notes: notes ?? '',
     p_created_by: user.id,
-    p_items: items,
+    p_items: normalizedItems,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -70,10 +87,11 @@ export async function POST(req: NextRequest) {
     updatePayload.trusted_person = trusted_person ?? null
     updatePayload.trusted_person_doc_type = trusted_person_doc_type ?? null
   }
-  await supabase.from('orders').update(updatePayload as never).eq('id', orderId as string)
+  const { error: updateError } = await service.from('orders').update(updatePayload as never).eq('id', orderId as string)
+  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
   // Fetch created order for response + notifications
-  const { data: order } = await supabase
+  const { data: order } = await service
     .from('orders')
     .select('*, clients(*), order_items(*, equipment(name))')
     .eq('id', orderId as string)

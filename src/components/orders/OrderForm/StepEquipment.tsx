@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
 import type { Equipment, EquipmentCategory } from '@/types/database'
 import type { OrderItemFormValue } from '@/lib/validations/order'
 import { Button } from '@/components/ui/button'
@@ -28,14 +27,7 @@ export function StepEquipment({
   onBack,
 }: StepEquipmentProps) {
   const equipmentRows = equipment as EquipmentRow[]
-
-  const selectedCounts = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const item of selectedItems) {
-      counts.set(item.equipment_id, (counts.get(item.equipment_id) ?? 0) + 1)
-    }
-    return counts
-  }, [selectedItems])
+  const selectedIds = new Set(selectedItems.map(item => item.equipment_id))
 
   function syncItems(nextItems: OrderItemFormValue[]) {
     onUpdate(recalculateOrderItems(nextItems, equipment, {
@@ -44,7 +36,12 @@ export function StepEquipment({
     }))
   }
 
-  function addUnit(item: Equipment) {
+  function toggleItem(item: Equipment) {
+    if (selectedIds.has(item.id)) {
+      syncItems(selectedItems.filter(selected => selected.equipment_id !== item.id))
+      return
+    }
+
     const shiftType = getAutoShiftType(startDate, endDate)
     const rate = getEquipmentRate(item, shiftType)
 
@@ -67,22 +64,8 @@ export function StepEquipment({
     ])
   }
 
-  function removeLastOfPosition(equipmentId: string) {
-    const next = [...selectedItems]
-    const index = next.map(item => item.equipment_id).lastIndexOf(equipmentId)
-    if (index === -1) return
-    next.splice(index, 1)
-    syncItems(next)
-  }
-
-  function removeAllOfPosition(equipmentId: string) {
+  function removePosition(equipmentId: string) {
     syncItems(selectedItems.filter(item => item.equipment_id !== equipmentId))
-  }
-
-  function handleCartIncrement(equipmentId: string) {
-    const item = equipment.find(candidate => candidate.id === equipmentId)
-    if (!item) return
-    addUnit(item)
   }
 
   function handleToggleKitItem(index: number, kitItem: string, included: boolean) {
@@ -127,15 +110,15 @@ export function StepEquipment({
     <div>
       <h2 className="mb-1 text-lg font-semibold">Выберите технику</h2>
       <p className="mb-4 text-sm text-zinc-500">
-        Позицию можно добавить повторно. Дневная или ночная ставка пересчитается автоматически после выбора даты и времени.
+        Каждая строка техники — отдельная физическая единица. Позицию можно выбрать только один раз.
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,1fr)] mb-5">
         <div>
           <EquipmentGrid
             equipment={equipmentRows}
-            selectedCounts={selectedCounts}
-            onAdd={addUnit}
+            selectedIds={selectedIds}
+            onToggle={toggleItem}
           />
         </div>
 
@@ -145,9 +128,7 @@ export function StepEquipment({
             equipment={equipmentRows}
             startDate={startDate}
             endDate={endDate}
-            onIncrement={handleCartIncrement}
-            onDecrement={removeLastOfPosition}
-            onRemoveAll={removeAllOfPosition}
+            onRemove={removePosition}
             onToggleKitItem={handleToggleKitItem}
             onSetShiftMode={handleSetShiftMode}
           />

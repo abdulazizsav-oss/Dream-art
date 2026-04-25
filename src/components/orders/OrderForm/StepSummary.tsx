@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
 import { OrderFormValues } from '@/lib/validations/order'
 import { Client, Equipment, EquipmentCategory } from '@/types/database'
 import { Button } from '@/components/ui/button'
@@ -19,7 +20,15 @@ interface StepSummaryProps {
   submitting: boolean
 }
 
+type AvailabilityState = Record<string, {
+  available: boolean
+  message?: string
+  order_number?: string
+}>
+
 export function StepSummary({ values, clients, equipment, trustedPerson, onBack, onSubmit, submitting }: StepSummaryProps) {
+  const [availability, setAvailability] = useState<AvailabilityState>({})
+  const [checkingAvailability, setCheckingAvailability] = useState(false)
   const client = clients.find(c => c.id === values.client_id)
 
   const itemsWithDetails = recalculateOrderItems(values.items, equipment, {
@@ -30,7 +39,46 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
     equipment: equipment.find(e => e.id === item.equipment_id),
   }))
 
-  const total = itemsWithDetails.reduce((s, i) => s + i.subtotal, 0)
+  const unavailableItems = itemsWithDetails.filter(item => availability[item.equipment_id]?.available === false)
+  const availableItems = itemsWithDetails.filter(item => availability[item.equipment_id]?.available !== false)
+  const total = availableItems.reduce((s, i) => s + i.subtotal, 0)
+  const canSubmit = !submitting && !checkingAvailability && unavailableItems.length === 0
+
+  const equipmentIds = useMemo(
+    () => Array.from(new Set(values.items.map(item => item.equipment_id))),
+    [values.items],
+  )
+
+  useEffect(() => {
+    if (!values.start_date || !values.end_date || equipmentIds.length === 0) return
+
+    let cancelled = false
+    setCheckingAvailability(true)
+
+    fetch('/api/equipment/availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        equipment_ids: equipmentIds,
+        start_date: values.start_date,
+        end_date: values.end_date,
+      }),
+    })
+      .then(res => res.ok ? res.json() : Promise.reject(new Error('availability failed')))
+      .then((payload: { results?: AvailabilityState }) => {
+        if (!cancelled) setAvailability(payload.results ?? {})
+      })
+      .catch(() => {
+        if (!cancelled) setAvailability({})
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingAvailability(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [equipmentIds, values.end_date, values.start_date])
 
   return (
     <div>
@@ -40,10 +88,26 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         <LiveTotal
           startDate={values.start_date}
           endDate={values.end_date}
-          items={values.items}
+          items={availableItems}
           equipment={equipment}
         />
       </div>
+
+      {unavailableItems.length > 0 && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <p className="font-medium">Нужно убрать занятую технику перед созданием заказа</p>
+          <div className="mt-2 space-y-1">
+            {unavailableItems.map(item => (
+              <p key={item.equipment_id}>
+                {availability[item.equipment_id]?.message ?? `${item.equipment?.name ?? 'Техника'} недоступна на выбранные даты`}
+              </p>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-red-600">
+            Эти позиции не входят в предварительный итог выше.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="bg-gray-50 rounded-lg p-4">
@@ -85,10 +149,15 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-xs text-gray-500 mb-2">Техника</p>
           <div className="space-y-2">
-            {itemsWithDetails.map((item, index) => (
-              <div key={`${item.equipment_id}-${index}`} className="flex justify-between text-sm">
-                <span>{item.equipment?.name ?? 'Неизвестно'}</span>
-                <span className="text-gray-600">
+            {itemsWithDetails.map(item => {
+              const unavailable = availability[item.equipment_id]?.available === false
+              return (
+              <div key={item.equipment_id} className="flex justify-between gap-3 text-sm">
+                <span className={unavailable ? 'text-red-700' : undefined}>
+                  {item.equipment?.name ?? 'Неизвестно'}
+                  {unavailable && <span className="ml-2 text-xs font-medium">(занята)</span>}
+                </span>
+                <span className={unavailable ? 'text-red-600 line-through decoration-red-500' : 'text-gray-600'}>
                   {getPricingParts(item)
                     .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
                     .join(' + ')}
@@ -96,7 +165,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
                   {formatCurrency(item.subtotal, item.equipment?.currency)}
                 </span>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -121,8 +191,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         <Button type="button" variant="outline" onClick={onBack} disabled={submitting}>
           Назад
         </Button>
-        <Button type="button" onClick={onSubmit} disabled={submitting} className="flex-1">
-          {submitting ? 'Создание...' : 'Создать заказ'}
+        <Button type="button" onClick={onSubmit} disabled={!canSubmit} className="flex-1">
+          {submitting ? 'Создание...' : checkingAvailability ? 'Проверяем технику...' : 'Создать заказ'}
         </Button>
       </div>
     </div>

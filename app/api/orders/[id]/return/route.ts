@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 
 /**
@@ -17,6 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const service = await createServiceClient()
 
   const body = await req.json() as {
     items: {
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // 1. Загружаем заказ + все позиции с equipment-ставками
-  const { data: order, error: orderErr } = await supabase
+  const { data: order, error: orderErr } = await service
     .from('orders')
     .select('id, actual_start_at, order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, equipment(day_rate, night_rate, daily_rate))')
     .eq('id', id)
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Нет валидных позиций для сдачи' }, { status: 400 })
   }
 
-  const { error: rpcErr } = await supabase.rpc('return_order_items_atomic', {
+  const { error: rpcErr } = await service.rpc('return_order_items_atomic', {
     p_order_id: id,
     p_items: itemsForRpc,
   } as never)
