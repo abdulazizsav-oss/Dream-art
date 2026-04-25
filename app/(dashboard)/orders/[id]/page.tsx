@@ -34,7 +34,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     ? await supabase
         .from('equipment')
         .select('id, name, daily_rate, day_rate, night_rate, currency, brand, kit_items, equipment_categories(name), brands(name)')
-        .eq('status', 'free')
         .order('sort_order')
         .order('name')
     : { data: [] }

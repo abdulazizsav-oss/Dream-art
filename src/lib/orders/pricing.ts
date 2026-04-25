@@ -19,16 +19,6 @@ export class OrderPricingError extends Error {
   }
 }
 
-function assertUniqueEquipment(items: OrderItemFormValue[]) {
-  const seen = new Set<string>()
-  for (const item of items) {
-    if (seen.has(item.equipment_id)) {
-      throw new OrderPricingError('Одна и та же техника не может быть добавлена в заказ дважды')
-    }
-    seen.add(item.equipment_id)
-  }
-}
-
 function toNumber(value: number | null | undefined) {
   return Number(value ?? 0)
 }
@@ -45,8 +35,6 @@ export async function normalizeOrderItemsForBilling(
     end_time?: string | null
   },
 ): Promise<OrderItemFormValue[]> {
-  assertUniqueEquipment(items)
-
   const equipmentIds = Array.from(new Set(items.map(item => item.equipment_id)))
   const { data, error } = await supabase
     .from('equipment')
