@@ -502,6 +502,7 @@ export type Database = {
           paid_at: string
           notes: string | null
           created_by: string | null
+          payment_group_id: string | null
         }
         Insert: {
           id?: string
@@ -512,6 +513,7 @@ export type Database = {
           paid_at?: string
           notes?: string | null
           created_by?: string | null
+          payment_group_id?: string | null
         }
         Update: {
           id?: string
@@ -522,6 +524,7 @@ export type Database = {
           paid_at?: string
           notes?: string | null
           created_by?: string | null
+          payment_group_id?: string | null
         }
         Relationships: [
           {
@@ -536,6 +539,45 @@ export type Database = {
             columns: ['order_id']
             isOneToOne: false
             referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      order_item_payment_allocations: {
+        Row: {
+          id: string
+          order_item_id: string
+          payment_id: string
+          amount: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_item_id: string
+          payment_id: string
+          amount: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_item_id?: string
+          payment_id?: string
+          amount?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'order_item_payment_allocations_order_item_id_fkey'
+            columns: ['order_item_id']
+            isOneToOne: false
+            referencedRelation: 'order_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_item_payment_allocations_payment_id_fkey'
+            columns: ['payment_id']
+            isOneToOne: false
+            referencedRelation: 'payments'
             referencedColumns: ['id']
           },
         ]
@@ -711,6 +753,26 @@ export type Database = {
         Args: { p_order_id: string; p_items: Json }
         Returns: void
       }
+      return_order_items_with_payments_atomic: {
+        Args: {
+          p_order_id: string
+          p_items: Json
+          p_payment_splits?: Json
+          p_created_by?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
+      pay_order_item_atomic: {
+        Args: {
+          p_order_id: string
+          p_order_item_id: string
+          p_payment_splits: Json
+          p_created_by?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
       add_order_items_atomic: {
         Args: { p_order_id: string; p_items: Json; p_added_by: string }
         Returns: string[]
@@ -735,5 +797,6 @@ export type Client = Tables<'clients'>
 export type Order = Tables<'orders'>
 export type OrderItem = Tables<'order_items'>
 export type Payment = Tables<'payments'>
+export type OrderItemPaymentAllocation = Tables<'order_item_payment_allocations'>
 export type BlockedDate = Tables<'blocked_dates'>
 export type UserProfile = Tables<'user_profiles'>

@@ -20,6 +20,8 @@ interface CloseOrderItem {
   id: string
   name: string
   selected_kit_items: string[]
+  current_subtotal: number
+  currency?: 'UZS' | 'USD'
 }
 
 interface CloseOrderButtonProps {
@@ -57,7 +59,12 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
     () => splits.reduce((s, sp) => s + (Number(sp.amount) || 0), 0),
     [splits],
   )
+  const closingItemsTotal = useMemo(
+    () => items.reduce((sum, it) => sum + (Number(it.current_subtotal) || 0), 0),
+    [items],
+  )
   const remainingDebt = Math.max(0, debt - paidNow)
+  const paymentIsTooLarge = paidNow > closingItemsTotal + 0.01
 
   const missingTotals = useMemo(() => {
     let total = 0
@@ -98,47 +105,40 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
     e.preventDefault()
     setLoading(true)
     try {
-      // 1) Record payments (split-aware) if any amount entered
       const validSplits = splits
         .map(s => ({ payment_method: s.method, amount: Number(s.amount) }))
         .filter(s => s.amount > 0)
 
-      if (validSplits.length > 0) {
-        const payRes = await fetch('/api/payments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            order_id: orderId,
-            payment_type: 'rental',
-            notes: notes || null,
-            splits: validSplits,
-          }),
-        })
-        if (!payRes.ok) {
-          const err = await payRes.json().catch(() => ({}))
-          toast.error(err.error ?? 'Не удалось записать платёж')
-          setLoading(false)
-          return
-        }
+      if (paymentIsTooLarge) {
+        toast.error('Сумма оплаты больше суммы закрываемых позиций')
+        setLoading(false)
+        return
       }
 
-      // 2) Close via return endpoint so kit items + actual_end_at are persisted
+      let remainingPaidForItems = paidNow
       const returnItems = items.map(it => {
         const returned = Array.from(returnedKit[it.id] ?? new Set<string>())
         const missing = it.selected_kit_items.filter(k => !returned.includes(k))
+        const paidAmount = Math.min(it.current_subtotal, Math.max(remainingPaidForItems, 0))
+        remainingPaidForItems -= paidAmount
         return {
           order_item_id: it.id,
           condition_on_return: 'Хорошее',
           return_photo_urls: [],
           returned_kit_items: returned,
           missing_kit_items: missing,
+          paid_amount: paidAmount,
         }
       })
 
       const closeRes = await fetch(`/api/orders/${orderId}/return`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: returnItems }),
+        body: JSON.stringify({
+          items: returnItems,
+          payment_splits: validSplits,
+          payment_notes: notes || null,
+        }),
       })
       if (!closeRes.ok) {
         const err = await closeRes.json().catch(() => ({}))
@@ -186,6 +186,12 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
             <span className="text-gray-600">Задолженность по заказу</span>
             <span className={debt > 0 ? 'font-semibold text-red-600' : 'font-semibold text-green-700'}>
               {formatCurrency(Math.max(0, debt))}
+            </span>
+          </div>
+          <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
+            <span className="text-gray-600">Сумма закрываемых позиций</span>
+            <span className="font-semibold text-gray-900">
+              {formatCurrency(Math.max(0, closingItemsTotal))}
             </span>
           </div>
 
@@ -306,6 +312,11 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
               Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, debt))}</span>.
               Можно вписать меньше — остаток уйдёт в долг.
             </p>
+            {paymentIsTooLarge && (
+              <p className="text-xs font-medium text-red-600">
+                Нельзя принять больше {formatCurrency(closingItemsTotal)} по позициям, которые закрываются сейчас.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -338,7 +349,7 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
             </Button>
             <Button
               type="submit"
-              disabled={loading || (remainingDebt > 0 && !leaveDebt && paidNow < debt)}
+              disabled={loading || paymentIsTooLarge || (remainingDebt > 0 && !leaveDebt && paidNow < debt)}
             >
               {loading ? 'Закрытие...' : paidNow > 0 ? 'Провести оплату и закрыть' : 'Закрыть заказ'}
             </Button>

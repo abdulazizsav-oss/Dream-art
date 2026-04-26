@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
+import { PayReturnedItemButton } from '@/components/orders/PayReturnedItemButton'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import { AddItemsModal } from '@/components/orders/AddItemsModal'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
@@ -22,7 +23,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { data: order } = await supabase
     .from('orders')
-    .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
+    .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate), order_item_payment_allocations(amount)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
     .eq('id', id)
     .order('paid_at', { referencedTable: 'payments', ascending: false })
     .single()
@@ -66,6 +67,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     selected_kit_items?: string[] | null
     returned_kit_items?: string[] | null
     missing_kit_items?: string[] | null
+    order_item_payment_allocations?: { amount: number }[] | null
   }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; payment_group_id?: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
 
@@ -185,6 +187,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     id: it.id,
                     name: it.equipment?.name ?? '—',
                     selected_kit_items: it.selected_kit_items ?? [],
+                    current_subtotal: itemBillingById.get(it.id)?.subtotal ?? it.subtotal ?? 0,
+                    currency: it.equipment?.currency ?? 'UZS',
                   }))}
                 />
                 <PartialReturnModal
@@ -193,6 +197,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     id: it.id,
                     name: it.equipment?.name ?? '—',
                     selected_kit_items: it.selected_kit_items ?? [],
+                    current_subtotal: itemBillingById.get(it.id)?.subtotal ?? it.subtotal ?? 0,
+                    currency: it.equipment?.currency ?? 'UZS',
                   }))}
                 />
                 <Link href={`/orders/${id}/return`}>
@@ -314,7 +320,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             const kit = item.selected_kit_items ?? []
             const returned = item.returned_kit_items ?? []
             const missing = item.missing_kit_items ?? []
-            const isClosed = order.status === 'returned'
+            const isClosed = Boolean(item.returned) || order.status === 'returned'
             return (
               <div key={item.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
                 <div>
@@ -365,6 +371,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                         }
                       : item
                     const displaySubtotal = live ? live.subtotal : item.subtotal
+                    const paidForItem = (item.order_item_payment_allocations ?? [])
+                      .reduce((sum, allocation) => sum + Number(allocation.amount ?? 0), 0)
+                    const isReturned = Boolean(item.returned) || Boolean(live?.frozen)
+                    const remainingByItem = Math.max(0, displaySubtotal - paidForItem)
+                    const badge = !isReturned
+                      ? { label: 'Считается', cls: 'bg-blue-50 text-blue-700 border-blue-100' }
+                      : paidForItem >= displaySubtotal - 0.01
+                        ? { label: 'Сдано · оплачено', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' }
+                        : paidForItem > 0
+                          ? { label: 'Сдано · частично', cls: 'bg-amber-50 text-amber-700 border-amber-100' }
+                          : { label: 'Сдано · не оплачено', cls: 'bg-red-50 text-red-700 border-red-100' }
                     return (
                       <>
                         <div>
@@ -374,9 +391,30 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                           {' = '}
                           {formatCurrency(displaySubtotal, item.equipment?.currency)}
                         </div>
+                        <div className="mt-1 flex justify-end">
+                          <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium', badge.cls)}>
+                            {badge.label}
+                          </span>
+                        </div>
+                        {isReturned && paidForItem > 0 && (
+                          <div className="text-[11px] text-gray-500 mt-0.5">
+                            Оплачено по позиции: {formatCurrency(paidForItem, item.equipment?.currency)}
+                          </div>
+                        )}
                         {live?.frozen && item.actual_end_at && (
                           <div className="text-[11px] text-emerald-700 mt-0.5">
                             Сдано: {formatDateTime(item.actual_end_at)}
+                          </div>
+                        )}
+                        {isReturned && remainingByItem > 0.01 && (
+                          <div className="mt-2 flex justify-end">
+                            <PayReturnedItemButton
+                              orderId={id}
+                              itemId={item.id}
+                              itemName={item.equipment?.name ?? '—'}
+                              remainingDue={remainingByItem}
+                              currency={item.equipment?.currency ?? 'UZS'}
+                            />
                           </div>
                         )}
                       </>

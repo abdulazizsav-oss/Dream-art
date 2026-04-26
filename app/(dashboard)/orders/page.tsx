@@ -12,7 +12,7 @@ export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, day_rate, night_rate, daily_rate))')
+    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate))')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -87,7 +87,7 @@ function OrderRow({ order }: { order: {
     returned?: boolean | null;
     selected_kit_items: string[] | null;
     missing_kit_items: string[] | null;
-    equipment: { name: string; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null;
+    equipment: { name: string; currency?: 'UZS' | 'USD' | null; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null;
   }[] | null;
 } }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
@@ -96,6 +96,7 @@ function OrderRow({ order }: { order: {
 
   // ── Per-item live-сумма (учитывает partial-returned + mid-order additions) ──
   let effectiveTotal = order.total_amount
+  let itemBillingById = new Map<string, { subtotal: number }>()
   if (isActive && (order.order_items?.length ?? 0) > 0) {
     const inputs: ActiveItemInput[] = (order.order_items ?? []).map(it => {
       const eq = it.equipment
@@ -120,6 +121,7 @@ function OrderRow({ order }: { order: {
     })
     const live = computeActiveOrderTotal({ now: new Date(), items: inputs })
     effectiveTotal = live.total_amount
+    itemBillingById = live.perItem
   }
 
   const debt = Math.max(0, effectiveTotal - paidRental)
@@ -132,6 +134,8 @@ function OrderRow({ order }: { order: {
       id: it.id,
       name: it.equipment?.name ?? '—',
       selected_kit_items: it.selected_kit_items ?? [],
+      current_subtotal: itemBillingById.get(it.id)?.subtotal ?? it.subtotal ?? 0,
+      currency: it.equipment?.currency ?? 'UZS',
     }))
 
   // Check for missing kit items in closed orders

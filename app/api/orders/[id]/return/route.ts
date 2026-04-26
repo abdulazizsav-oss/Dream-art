@@ -6,10 +6,11 @@ import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 /**
  * POST /api/orders/[id]/return
  *
- * Закрывает выбранные позиции заказа (или все) через RPC `return_order_items_atomic`.
+ * Закрывает выбранные позиции заказа (или все) через RPC `return_order_items_with_payments_atomic`.
  * Для каждой позиции рассчитывает final_subtotal по правилам computeActiveOrderTotal:
  *   - manual → сохранённый subtotal
  *   - auto   → computeOrderBilling(actual_start_at → now())
+ * Если передана оплата, платежи сразу распределяются по закрываемым позициям.
  * Заказ переводится в `returned` только когда все позиции закрыты.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +27,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return_photo_urls?: string[]
       returned_kit_items?: string[]
       missing_kit_items?: string[]
+      payment_intent?: 'paid' | 'unpaid' | 'partial'
+      paid_amount?: number
     }[]
+    payment_splits?: {
+      payment_method: 'cash' | 'transfer' | 'card'
+      amount: number
+    }[]
+    payment_notes?: string | null
   }
 
   if (!Array.isArray(body.items) || body.items.length === 0) {
@@ -91,12 +99,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // 3. Готовим payload для RPC — только для тех позиций, что сдаются сейчас
   const requestedIds = new Set(body.items.map(i => i.order_item_id))
+  let expectedPaidTotal = 0
   const itemsForRpc = body.items
     .map(req => {
       const src = allItems.find(it => it.id === req.order_item_id)
       if (!src || src.returned) return null
       const calc = live.perItem.get(req.order_item_id)
       if (!calc) return null
+      const rawPaidAmount =
+        req.payment_intent === 'paid'
+          ? calc.subtotal
+          : req.payment_intent === 'unpaid'
+            ? 0
+            : Number(req.paid_amount ?? 0)
+      const paidAmount = Math.max(0, Math.min(calc.subtotal, rawPaidAmount))
+      expectedPaidTotal += paidAmount
       return {
         order_item_id: req.order_item_id,
         condition_on_return: req.condition_on_return ?? null,
@@ -107,6 +124,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         final_day_units: calc.day_units,
         final_night_units: calc.night_units,
         shift_type: calc.shift_type,
+        paid_amount: paidAmount,
       }
     })
     .filter(Boolean)
@@ -115,9 +133,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Нет валидных позиций для сдачи' }, { status: 400 })
   }
 
-  const { error: rpcErr } = await service.rpc('return_order_items_atomic', {
+  const paymentSplits = (body.payment_splits ?? [])
+    .map(split => ({
+      payment_method: split.payment_method,
+      amount: Number(split.amount),
+    }))
+    .filter(split => split.amount > 0)
+
+  const splitTotal = paymentSplits.reduce((sum, split) => sum + split.amount, 0)
+  if (Math.abs(splitTotal - expectedPaidTotal) > 0.01) {
+    return NextResponse.json(
+      {
+        error: expectedPaidTotal > 0
+          ? 'Сумма оплаты не совпадает с выбранными позициями'
+          : 'Для неоплаченной сдачи не нужно передавать платежи',
+      },
+      { status: 400 },
+    )
+  }
+
+  const { data: rpcData, error: rpcErr } = await service.rpc('return_order_items_with_payments_atomic', {
     p_order_id: id,
     p_items: itemsForRpc,
+    p_payment_splits: paymentSplits,
+    p_created_by: user.id,
+    p_notes: body.payment_notes ?? null,
   } as never)
 
   if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
@@ -132,7 +172,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const remaining = allItems.filter(it => !it.returned && !requestedIds.has(it.id)).length
   return NextResponse.json({
     success: true,
-    closed: itemsForRpc.length,
-    order_closed: remaining === 0,
+    closed: (rpcData as any)?.closed ?? itemsForRpc.length,
+    order_closed: (rpcData as any)?.order_closed ?? remaining === 0,
+    paid_total: (rpcData as any)?.paid_total ?? expectedPaidTotal,
   })
 }
