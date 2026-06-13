@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "test:billing": "tsx --test src/lib/billing.test.ts",
+    "test:lib": "tsx --test src/lib/*.test.ts src/lib/*/*.test.ts",
     "typecheck": "tsc --noEmit",
     "build": "next build",
     "start": "next start"

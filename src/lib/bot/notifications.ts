@@ -1,6 +1,16 @@
 import { bot } from './index'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
+export function escapeTelegramHtml(value: unknown): string {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[char] ?? char)
+}
+
 interface OrderForNotification {
   order_number: string
   start_date: string
@@ -22,24 +32,24 @@ export async function sendOrderConfirmation(order: OrderForNotification) {
   if (!chatId) return
 
   const items = order.order_items
-    ?.map(i => `• ${i.equipment?.name ?? 'Оборудование'} — ${formatCurrency(i.subtotal)}`)
+    ?.map(i => `• ${escapeTelegramHtml(i.equipment?.name ?? 'Оборудование')} — ${escapeTelegramHtml(formatCurrency(i.subtotal))}`)
     .join('\n') ?? ''
 
   const text = [
-    `✅ *Заказ подтверждён*`,
+    `✅ <b>Заказ подтверждён</b>`,
     ``,
-    `Номер: \`${order.order_number}\``,
-    `Период: ${formatDate(order.start_date)} — ${formatDate(order.end_date)}`,
+    `Номер: <code>${escapeTelegramHtml(order.order_number)}</code>`,
+    `Период: ${escapeTelegramHtml(formatDate(order.start_date))} — ${escapeTelegramHtml(formatDate(order.end_date))}`,
     ``,
-    `*Техника:*`,
+    `<b>Техника:</b>`,
     items,
     ``,
-    `*Итого: ${formatCurrency(order.total_amount)}*`,
+    `<b>Итого: ${escapeTelegramHtml(formatCurrency(order.total_amount))}</b>`,
     ``,
     `Спасибо, что выбрали Dream Art! 🎥`,
   ].join('\n')
 
-  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' })
+  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'HTML' })
   console.log(`[BOT] Confirmation sent to ${chatId}`)
 }
 
@@ -51,20 +61,20 @@ export async function sendReturnReminder(
   items: string[]
 ) {
   const text = [
-    `⏰ *Напоминание о возврате*`,
+    `⏰ <b>Напоминание о возврате</b>`,
     ``,
-    `${clientName}, завтра истекает срок аренды по заказу \`${orderNumber}\`.`,
+    `${escapeTelegramHtml(clientName)}, завтра истекает срок аренды по заказу <code>${escapeTelegramHtml(orderNumber)}</code>.`,
     ``,
-    `Дата возврата: *${formatDate(endDate)}*`,
+    `Дата возврата: <b>${escapeTelegramHtml(formatDate(endDate))}</b>`,
     ``,
     `Техника:`,
-    ...items.map(i => `• ${i}`),
+    ...items.map(i => `• ${escapeTelegramHtml(i)}`),
     ``,
     `Пожалуйста, верните технику в офис вовремя.`,
     `По вопросам: свяжитесь с менеджером.`,
   ].join('\n')
 
-  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' })
+  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'HTML' })
 }
 
 export async function sendOverdueAlert(
@@ -72,19 +82,23 @@ export async function sendOverdueAlert(
   clientName: string,
   orderNumber: string,
   daysOverdue: number,
-  amount: number
+  amount: number | null
 ) {
+  const fineLine = amount != null && amount > 0
+    ? `Штраф за просрочку: <b>${escapeTelegramHtml(formatCurrency(amount))}</b>`
+    : `Размер штрафа уточните у менеджера.`
+
   const text = [
-    `🚨 *Просрочка возврата*`,
+    `🚨 <b>Просрочка возврата</b>`,
     ``,
-    `${clientName}, ваш заказ \`${orderNumber}\` просрочен на ${daysOverdue} дн.`,
+    `${escapeTelegramHtml(clientName)}, ваш заказ <code>${escapeTelegramHtml(orderNumber)}</code> просрочен на ${escapeTelegramHtml(daysOverdue)} дн.`,
     ``,
-    `Штраф за просрочку: *${formatCurrency(amount)}*`,
+    fineLine,
     ``,
     `Срочно свяжитесь с менеджером Dream Art!`,
   ].join('\n')
 
-  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' })
+  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'HTML' })
 }
 
 export async function sendPaymentReceipt(
@@ -96,15 +110,15 @@ export async function sendPaymentReceipt(
 ) {
   const methodLabel: Record<string, string> = { cash: 'наличными', transfer: 'переводом', card: 'картой' }
   const text = [
-    `💰 *Платёж получен*`,
+    `💰 <b>Платёж получен</b>`,
     ``,
-    `${clientName}, подтверждаем оплату:`,
-    `Заказ: \`${orderNumber}\``,
-    `Сумма: *${formatCurrency(amount)}*`,
-    `Способ: ${methodLabel[method] ?? method}`,
+    `${escapeTelegramHtml(clientName)}, подтверждаем оплату:`,
+    `Заказ: <code>${escapeTelegramHtml(orderNumber)}</code>`,
+    `Сумма: <b>${escapeTelegramHtml(formatCurrency(amount))}</b>`,
+    `Способ: ${escapeTelegramHtml(methodLabel[method] ?? method)}`,
     ``,
     `Спасибо!`,
   ].join('\n')
 
-  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'Markdown' })
+  await bot.telegram.sendMessage(chatId, text, { parse_mode: 'HTML' })
 }

@@ -51,13 +51,12 @@ export async function GET(req: NextRequest) {
 
   for (const order of overdue ?? []) {
     if (!order.telegram_chat_id) continue
-    const dailyFine = 0 // Could fetch sum(daily_rate) * 1.5 per item
     await sendOverdueAlert(
       order.telegram_chat_id,
       order.client_name,
       order.order_number,
       order.days_overdue,
-      dailyFine
+      null
     ).catch(console.error)
   }
 

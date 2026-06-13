@@ -4,14 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 const orderUpdateSchema = z.object({
-  status: z.enum(['draft', 'active', 'returned', 'overdue', 'cancelled']).optional(),
-  start_date: z.string().min(1).optional(),
-  end_date: z.string().min(1).optional(),
-  start_time: z.string().min(1).optional(),
-  end_time: z.string().min(1).optional(),
-  actual_return_date: z.string().nullable().optional(),
-  deposit_amount: z.coerce.number().min(0).optional(),
-  deposit_returned: z.boolean().optional(),
   contract_pdf_url: z.string().url().nullable().optional(),
   notes: z.string().nullable().optional(),
   trusted_person: z.string().nullable().optional(),

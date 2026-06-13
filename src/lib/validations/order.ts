@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+const isoDateSchema = (requiredMessage: string) => z.string()
+  .min(1, requiredMessage)
+  .refine(value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+    const parsed = new Date(`${value}T00:00:00Z`)
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+  }, 'Укажите корректную дату')
+
 export const orderItemSchema = z.object({
   equipment_id: z.string().uuid(),
   daily_rate: z.number().min(0),
@@ -17,14 +25,20 @@ export const orderItemSchema = z.object({
 
 export const orderSchema = z.object({
   client_id: z.string().uuid('Выберите клиента'),
-  start_date: z.string().min(1, 'Укажите дату начала'),
-  end_date: z.string().min(1, 'Укажите дату окончания'),
+  start_date: isoDateSchema('Укажите дату начала'),
+  end_date: isoDateSchema('Укажите дату окончания'),
   deposit_amount: z.coerce.number().min(0).default(0),
   notes: z.string().nullable().optional(),
   trusted_person: z.string().nullable().optional(),
   trusted_person_doc_type: z.string().nullable().optional(),
   items: z.array(orderItemSchema).min(1, 'Добавьте хотя бы одну единицу техники'),
-})
+}).refine(
+  data => data.end_date >= data.start_date,
+  {
+    message: 'Дата окончания не может быть раньше даты начала',
+    path: ['end_date'],
+  },
+)
 
 export type OrderFormValues = z.infer<typeof orderSchema>
 export type OrderItemFormValue = z.infer<typeof orderItemSchema>
