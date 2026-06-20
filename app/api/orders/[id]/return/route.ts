@@ -3,6 +3,12 @@ import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 
+function parseActualEndAt(value: string | null | undefined) {
+  if (!value) return new Date()
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 /**
  * POST /api/orders/[id]/return
  *
@@ -35,16 +41,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       amount: number
     }[]
     payment_notes?: string | null
+    actual_end_at?: string | null
   }
 
   if (!Array.isArray(body.items) || body.items.length === 0) {
     return NextResponse.json({ error: 'Нет позиций для сдачи' }, { status: 400 })
   }
 
+  const actualEndAt = parseActualEndAt(body.actual_end_at)
+  if (!actualEndAt) {
+    return NextResponse.json({ error: 'Некорректная дата фактического возврата' }, { status: 400 })
+  }
+
   // 1. Загружаем заказ + все позиции с equipment-ставками
   const { data: order, error: orderErr } = await service
     .from('orders')
-    .select('id, actual_start_at, order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, equipment(day_rate, night_rate, daily_rate))')
+    .select('id, client_id, actual_start_at, order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, equipment(day_rate, night_rate, daily_rate, day_night))')
     .eq('id', id)
     .single()
 
@@ -70,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     final_day_units: number | null
     final_night_units: number | null
     returned: boolean | null
-    equipment: { day_rate: number | null; night_rate: number | null; daily_rate: number | null } | null
+    equipment: { day_rate: number | null; night_rate: number | null; daily_rate: number | null; day_night: 'day' | 'night' | 'both' | null } | null
   }>
 
   // 2. Live-расчёт по всем позициям, чтобы вытащить freshly-computed subtotals
@@ -88,6 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       final_night_units: it.final_night_units,
       day_rate: dayRate,
       night_rate: nightRate,
+      day_night: it.equipment?.day_night ?? null,
       subtotal: it.subtotal ?? 0,
       day_units: it.day_units ?? 0,
       night_units: it.night_units ?? 0,
@@ -95,7 +108,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   })
 
-  const live = computeActiveOrderTotal({ now: new Date(), items: inputs })
+  const live = computeActiveOrderTotal({ now: actualEndAt, items: inputs })
 
   // 3. Готовим payload для RPC — только для тех позиций, что сдаются сейчас
   const requestedIds = new Set(body.items.map(i => i.order_item_id))
@@ -158,6 +171,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     p_payment_splits: paymentSplits,
     p_created_by: user.id,
     p_notes: body.payment_notes ?? null,
+    p_actual_end_at: actualEndAt.toISOString(),
   } as never)
 
   if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
@@ -167,6 +181,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   revalidatePath('/calendar')
   revalidatePath('/dashboard')
   revalidatePath('/finance')
+  revalidatePath('/clients')
+  if ((o as { client_id?: string | null }).client_id) {
+    revalidatePath(`/clients/${(o as { client_id: string }).client_id}`)
+  }
 
   // Частичная или полная?
   const remaining = allItems.filter(it => !it.returned && !requestedIds.has(it.id)).length
