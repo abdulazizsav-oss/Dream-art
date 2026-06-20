@@ -73,13 +73,23 @@ export default async function DashboardPage() {
           href="/orders"
           color={s?.overdue_count ? 'red' : 'gray'}
         />
-        <KpiCard
-          title={superAdmin ? 'Доход за месяц' : 'Доход сегодня'}
-          value={formatCurrency(superAdmin ? (s?.revenue_this_month ?? 0) : (s?.revenue_today ?? 0))}
-          icon={<TrendingUp className="w-5 h-5 text-green-500" />}
-          href="/finance"
-          color="green"
-        />
+        {superAdmin ? (
+          <KpiCard
+            title="Доход за месяц"
+            value={formatCurrency(s?.revenue_this_month ?? 0)}
+            icon={<TrendingUp className="w-5 h-5 text-green-500" />}
+            href="/finance"
+            color="green"
+          />
+        ) : (
+          <KpiCard
+            title="Свободно техники"
+            value={s?.equipment_free ?? 0}
+            icon={<Camera className="w-5 h-5 text-green-500" />}
+            href="/equipment"
+            color="green"
+          />
+        )}
         <KpiCard
           title="Клиентов"
           value={s?.total_clients ?? 0}
