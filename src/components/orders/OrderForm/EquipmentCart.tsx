@@ -49,6 +49,7 @@ function groupByEquipment(items: OrderItemFormValue[], equipment: EquipmentRow[]
         currency: (eq?.currency ?? 'UZS') as 'UZS' | 'USD',
         shiftType: item.shift_type ?? 'day',
         rateSource: item.rate_source ?? 'auto',
+        manualSubtotal: item.manual_subtotal ?? null,
         equipment: eq,
         entries: [],
         kitItems: (eq?.kit_items ?? []) as string[],
