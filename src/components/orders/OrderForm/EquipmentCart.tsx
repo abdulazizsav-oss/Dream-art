@@ -72,6 +72,7 @@ export function EquipmentCart({
   onRemoveAll,
   onToggleKitItem,
   onSetShiftMode,
+  onSetManualPrice,
 }: EquipmentCartProps) {
   const groups = groupByEquipment(selectedItems, equipment)
 
