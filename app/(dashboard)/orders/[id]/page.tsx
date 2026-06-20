@@ -156,6 +156,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       day_units: it.day_units ?? 0,
       night_units: it.night_units ?? 0,
       shift_type: it.shift_type ?? 'day',
+      manual_subtotal: it.manual_subtotal ?? null,
     }
   })
 
