@@ -219,6 +219,63 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          id: string
+          category: 'maintenance' | 'purchase' | 'salary' | 'rent' | 'tax' | 'marketing' | 'transport' | 'other'
+          description: string
+          amount: number
+          currency: 'UZS'
+          expense_date: string
+          payment_method: PaymentMethod
+          equipment_id: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category: 'maintenance' | 'purchase' | 'salary' | 'rent' | 'tax' | 'marketing' | 'transport' | 'other'
+          description?: string
+          amount: number
+          currency?: 'UZS'
+          expense_date?: string
+          payment_method?: PaymentMethod
+          equipment_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category?: 'maintenance' | 'purchase' | 'salary' | 'rent' | 'tax' | 'marketing' | 'transport' | 'other'
+          description?: string
+          amount?: number
+          currency?: 'UZS'
+          expense_date?: string
+          payment_method?: PaymentMethod
+          equipment_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'expenses_equipment_id_fkey'
+            columns: ['equipment_id']
+            isOneToOne: false
+            referencedRelation: 'equipment'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'expenses_created_by_profile_fk'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       clients: {
         Row: {
           id: string
@@ -245,6 +302,7 @@ export type Database = {
           trusted_person_name: string | null
           trusted_person_phone: string | null
           trusted_person_relation: string | null
+          created_by: string | null
           created_at: string
           updated_at: string
         }
@@ -273,6 +331,7 @@ export type Database = {
           trusted_person_name?: string | null
           trusted_person_phone?: string | null
           trusted_person_relation?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -301,10 +360,19 @@ export type Database = {
           trusted_person_name?: string | null
           trusted_person_phone?: string | null
           trusted_person_relation?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'clients_created_by_profile_fk'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'user_profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       orders: {
         Row: {
@@ -405,6 +473,7 @@ export type Database = {
           night_units: number
           days: number
           subtotal: number
+          manual_subtotal: number | null
           shift_type: ShiftType
           rate_source: RateSource
           condition_on_issue: string | null
@@ -582,6 +651,71 @@ export type Database = {
           },
         ]
       }
+      order_item_missing_kit_events: {
+        Row: {
+          id: string
+          order_id: string
+          order_item_id: string
+          kit_name: string
+          missing_since: string
+          returned_at: string | null
+          marked_missing_by: string | null
+          marked_returned_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          order_item_id: string
+          kit_name: string
+          missing_since?: string
+          returned_at?: string | null
+          marked_missing_by?: string | null
+          marked_returned_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          order_item_id?: string
+          kit_name?: string
+          missing_since?: string
+          returned_at?: string | null
+          marked_missing_by?: string | null
+          marked_returned_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'order_item_missing_kit_events_marked_missing_by_fkey'
+            columns: ['marked_missing_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_item_missing_kit_events_marked_returned_by_fkey'
+            columns: ['marked_returned_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_item_missing_kit_events_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_item_missing_kit_events_order_item_id_fkey'
+            columns: ['order_item_id']
+            isOneToOne: false
+            referencedRelation: 'order_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       blocked_dates: {
         Row: {
           id: string
@@ -676,6 +810,7 @@ export type Database = {
           total_rental_days: number
           total_revenue: number
           roi_percent: number
+          currency: CurrencyCode
         }
         Relationships: []
       }
@@ -760,6 +895,16 @@ export type Database = {
           p_payment_splits?: Json
           p_created_by?: string | null
           p_notes?: string | null
+          p_actual_end_at?: string | null
+        }
+        Returns: Json
+      }
+      return_missing_kit_events_atomic: {
+        Args: {
+          p_order_id: string
+          p_items: Json
+          p_marked_returned_by?: string | null
+          p_returned_at?: string | null
         }
         Returns: Json
       }
@@ -770,6 +915,23 @@ export type Database = {
           p_payment_splits: Json
           p_created_by?: string | null
           p_notes?: string | null
+        }
+        Returns: Json
+      }
+      add_order_payment_with_allocations_atomic: {
+        Args: {
+          p_order_id: string
+          p_payment_type: string
+          p_splits: Json
+          p_created_by?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
+      get_finance_analytics: {
+        Args: {
+          p_from: string
+          p_to: string
         }
         Returns: Json
       }
@@ -793,6 +955,7 @@ export type Tables<T extends keyof Database['public']['Tables']> =
 export type EquipmentCategory = Tables<'equipment_categories'>
 export type Equipment = Tables<'equipment'>
 export type EquipmentMaintenance = Tables<'equipment_maintenance'>
+export type Expense = Tables<'expenses'>
 export type Client = Tables<'clients'>
 export type Order = Tables<'orders'>
 export type OrderItem = Tables<'order_items'>
