@@ -27,9 +27,10 @@ export {
   describeUnits,
   getEquipmentRate,
   getPricingParts,
+  supportsNightShift,
 } from './billing'
 
-export type { ShiftType, RateSource } from './billing'
+export type { ShiftType, RateSource, ShiftCapability } from './billing'
 
 /* ──────── Backward-compatible helpers ──────── */
 
@@ -88,7 +89,7 @@ export function getAutoShiftType(
  */
 export function recalculateOrderItems(
   items: OrderItemFormValue[],
-  equipment: Pick<Equipment, 'id' | 'day_rate' | 'night_rate' | 'daily_rate'>[],
+  equipment: Pick<Equipment, 'id' | 'day_rate' | 'night_rate' | 'daily_rate' | 'day_night'>[],
   orderContext: {
     start_date?: string | null
     end_date?: string | null
@@ -114,6 +115,7 @@ export function recalculateOrderItems(
       equipment_id: item.equipment_id,
       day_rate: dayRate,
       night_rate: nightRate,
+      day_night: eq?.day_night ?? null,
       override,
     }
   })
@@ -124,6 +126,9 @@ export function recalculateOrderItems(
     const billed = result.items[idx]
     if (!billed) return item
 
+    // Ручная цена замораживает итог позиции — авто-расчёт по сменам не применяется.
+    const manual = item.manual_subtotal != null
+
     return {
       ...item,
       shift_type: billed.shift_type,
@@ -133,7 +138,7 @@ export function recalculateOrderItems(
       day_units: billed.day_units,
       night_units: billed.night_units,
       days: billed.day_units + billed.night_units,
-      subtotal: billed.subtotal,
+      subtotal: manual ? item.manual_subtotal! : billed.subtotal,
       rate_source: item.rate_source ?? 'auto',
     }
   })
