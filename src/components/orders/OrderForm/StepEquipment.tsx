@@ -177,6 +177,7 @@ export function StepEquipment({
             onRemoveAll={removeAllOfPosition}
             onToggleKitItem={handleToggleKitItem}
             onSetShiftMode={handleSetShiftMode}
+            onSetManualPrice={handleSetManualPrice}
           />
         </div>
       </div>
