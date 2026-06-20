@@ -17,14 +17,18 @@ const baseItems = [
   { href: '/equipment',  label: 'Техника',  icon: Camera },
   { href: '/orders',     label: 'Аренда',   icon: ClipboardList },
   { href: '/calendar',   label: 'Кал.',     icon: CalendarDays },
-  { href: '/finance',    label: 'Финансы',  icon: Wallet },
 ]
 
 export function MobileNav({ role }: MobileNavProps) {
   const pathname = usePathname()
 
+  // Финансы + Пользователи — только для главного администратора
   const items = role === 'super_admin'
-    ? [...baseItems, { href: '/admin/users', label: 'Польз.', icon: Shield }]
+    ? [
+        ...baseItems,
+        { href: '/finance',    label: 'Финансы', icon: Wallet },
+        { href: '/admin/users', label: 'Польз.',  icon: Shield },
+      ]
     : baseItems
 
   return (
