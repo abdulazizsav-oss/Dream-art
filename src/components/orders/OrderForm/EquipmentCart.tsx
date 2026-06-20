@@ -31,6 +31,8 @@ interface EquipmentCartProps {
   onRemoveAll: (equipmentId: string) => void
   onToggleKitItem: (index: number, kitItem: string, included: boolean) => void
   onSetShiftMode: (equipmentId: string, mode: 'auto' | ShiftType) => void
+  /** value = ручная цена за единицу; null = вернуть авто-расчёт */
+  onSetManualPrice: (equipmentId: string, value: number | null) => void
 }
 
 function groupByEquipment(items: OrderItemFormValue[], equipment: EquipmentRow[]): CartGroup[] {
