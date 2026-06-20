@@ -90,6 +90,23 @@ export async function POST(req: NextRequest) {
   const { error: updateError } = await service.from('orders').update(updatePayload as never).eq('id', orderId as string)
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
+  // Ручные цены позиций (frozen amounts). Колонка добавлена миграцией 021.
+  // Заморожённая сумма уже учтена в subtotal/total_amount; здесь сохраняем флаг,
+  // чтобы при закрытии заказа итог не пересчитывался по факт. длительности.
+  // Не критично для создания заказа — ошибки логируем, но не валим запрос.
+  const manualByEquipment = new Map<string, number>()
+  for (const it of normalizedItems) {
+    if (it.manual_subtotal != null) manualByEquipment.set(it.equipment_id, it.manual_subtotal)
+  }
+  for (const [equipmentId, amount] of manualByEquipment) {
+    const { error: manualErr } = await service
+      .from('order_items')
+      .update({ manual_subtotal: amount } as never)
+      .eq('order_id', orderId as string)
+      .eq('equipment_id', equipmentId)
+    if (manualErr) console.error('manual_subtotal update failed', manualErr.message)
+  }
+
   // Fetch created order for response + notifications
   const { data: order } = await service
     .from('orders')
