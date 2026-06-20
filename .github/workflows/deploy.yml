@@ -16,8 +16,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -euo pipefail
             cd /var/www/dream-art-crm
             git pull origin main
-            npm install
-            npm run build
-            pm2 restart dream-art
+            npm install --no-audit --no-fund
+            # Ограничиваем heap Node, чтобы билд не словил OOM на 2GB-сервере.
+            # set -e гарантирует: если билд упал — pm2 restart НЕ выполнится,
+            # и сайт продолжит работать на прежней сборке (fail-safe).
+            NODE_OPTIONS=--max-old-space-size=1536 npm run build
+            pm2 restart dream-art --update-env
