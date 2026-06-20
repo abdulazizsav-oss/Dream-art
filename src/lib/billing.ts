@@ -326,6 +326,21 @@ export function computeActiveOrderTotal(args: {
   let total = 0
 
   for (const it of args.items) {
+    // 0) Ручная цена — итог заморожен, фактическая длительность игнорируется.
+    //    Приоритетнее живого расчёта, но уступает уже сданной позиции (final_subtotal).
+    if (it.manual_subtotal != null && it.final_subtotal == null && it.actual_end_at == null) {
+      perItem.set(it.id, {
+        id: it.id,
+        subtotal: it.manual_subtotal,
+        day_units: it.day_units ?? 0,
+        night_units: it.night_units ?? 0,
+        shift_type: it.shift_type,
+        frozen: true,
+      })
+      total += it.manual_subtotal
+      continue
+    }
+
     // 1) Уже сданная позиция — берём замороженные значения
     if (it.final_subtotal != null || it.actual_end_at != null) {
       const subtotal = it.final_subtotal ?? it.subtotal
