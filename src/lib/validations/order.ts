@@ -19,6 +19,12 @@ export const orderItemSchema = z.object({
   night_rate_snapshot: z.number().min(0).default(0),
   day_units: z.number().int().min(0).default(0),
   night_units: z.number().int().min(0).default(0),
+  /**
+   * Ручная цена позиции. Если задана — итог по позиции «замораживается» на этой
+   * сумме и не пересчитывается ни в preview, ни при закрытии заказа.
+   * null/undefined — авто-расчёт по сменам.
+   */
+  manual_subtotal: z.number().min(0).nullable().optional(),
   condition_on_issue: z.string().default('Хорошее'),
   selected_kit_items: z.array(z.string()).default([]).optional(),
 })
