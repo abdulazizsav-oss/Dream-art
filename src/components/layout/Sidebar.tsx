@@ -22,7 +22,6 @@ const baseNavItems = [
   { href: '/clients',    label: 'Клиенты',    icon: Users },
   { href: '/orders',     label: 'Аренда',     icon: ClipboardList },
   { href: '/calendar',   label: 'Календарь',  icon: CalendarDays },
-  { href: '/finance',    label: 'Финансы',    icon: Wallet },
 ]
 
 export function Sidebar({ role, userName }: SidebarProps) {
@@ -34,8 +33,12 @@ export function Sidebar({ role, userName }: SidebarProps) {
     ...baseNavItems,
     { href: '/admin/categories', label: 'Категории',    icon: Layers },
     { href: '/admin/brands',    label: 'Бренды',        icon: Tag },
+    // Финансы — только для главного администратора
     ...(role === 'super_admin'
-      ? [{ href: '/admin/users', label: 'Пользователи', icon: Shield }]
+      ? [
+          { href: '/finance',    label: 'Финансы',      icon: Wallet },
+          { href: '/admin/users', label: 'Пользователи', icon: Shield },
+        ]
       : []),
   ]
 
