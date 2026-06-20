@@ -501,6 +501,7 @@ export type Database = {
           night_units?: number
           days: number
           subtotal: number
+          manual_subtotal?: number | null
           shift_type?: ShiftType
           rate_source?: RateSource
           condition_on_issue?: string | null
