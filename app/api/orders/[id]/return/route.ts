@@ -70,6 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     equipment_id: string
     rate_source: 'auto' | 'manual' | null
     subtotal: number | null
+    manual_subtotal: number | null
     daily_rate: number | null
     day_rate_snapshot: number | null
     night_rate_snapshot: number | null
