@@ -182,7 +182,9 @@ export default async function DashboardPage() {
                         <p className="text-xs text-gray-400">{e.total_rental_days} дней в аренде</p>
                       </div>
                     </div>
-                    <span className="text-sm text-green-700">{formatCurrency(e.total_revenue)}</span>
+                    {superAdmin && (
+                      <span className="text-sm text-green-700">{formatCurrency(e.total_revenue)}</span>
+                    )}
                   </Link>
                 ))}
               </div>
