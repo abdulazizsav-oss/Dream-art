@@ -16,6 +16,7 @@ import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButt
 import { AddItemsModal } from '@/components/orders/AddItemsModal'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
+import { formatMissingKitAge, formatMissingSinceDateTime } from '@/lib/missing-kit'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -23,7 +24,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { data: order } = await supabase
     .from('orders')
-    .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate), order_item_payment_allocations(amount)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
+    .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate, day_night), order_item_payment_allocations(amount)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
     .eq('id', id)
     .order('paid_at', { referencedTable: 'payments', ascending: false })
     .single()
@@ -34,7 +35,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { data: availableEquipment } = isOrderOpen
     ? await supabase
         .from('equipment')
-        .select('id, name, daily_rate, day_rate, night_rate, currency, brand, kit_items, equipment_categories(name), brands(name)')
+        .select('id, name, daily_rate, day_rate, night_rate, day_night, currency, brand, kit_items, equipment_categories(name), brands(name)')
         .order('sort_order')
         .order('name')
     : { data: [] }
@@ -46,7 +47,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const items = (order.order_items as {
     id: string
     equipment_id: string
-    equipment: { name: string; currency: 'UZS' | 'USD'; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null
+    equipment: { name: string; currency: 'UZS' | 'USD'; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null; day_night?: 'day' | 'night' | 'both' | null } | null
     daily_rate: number
     day_rate_snapshot?: number
     night_rate_snapshot?: number
@@ -54,6 +55,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     night_units?: number
     days: number
     subtotal: number
+    manual_subtotal?: number | null
     shift_type: 'day' | 'night'
     rate_source?: 'auto' | 'manual' | null
     actual_start_at?: string | null
@@ -70,6 +72,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     order_item_payment_allocations?: { amount: number }[] | null
   }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; payment_group_id?: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
+
+  const { data: missingKitEvents } = await supabase
+    .from('order_item_missing_kit_events')
+    .select('id, order_item_id, kit_name, missing_since, returned_at')
+    .eq('order_id', id)
+    .is('returned_at', null)
+
+  const missingEventsByItem = new Map<string, { id: string; kit_name: string; missing_since: string; returned_at: string | null }[]>()
+  for (const event of (missingKitEvents ?? []) as { id: string; order_item_id: string; kit_name: string; missing_since: string; returned_at: string | null }[]) {
+    const current = missingEventsByItem.get(event.order_item_id) ?? []
+    current.push(event)
+    missingEventsByItem.set(event.order_item_id, current)
+  }
 
   // Группируем сплит-платежи: если у группы >1 строки с одним payment_group_id — показываем как один платёж с разбивкой по методам
   type PaymentGroup =
@@ -136,6 +151,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       final_night_units: it.final_night_units ?? null,
       day_rate: dayRate,
       night_rate: nightRate,
+      day_night: eq?.day_night ?? null,
       subtotal: it.subtotal ?? 0,
       day_units: it.day_units ?? 0,
       night_units: it.night_units ?? 0,
@@ -172,6 +188,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     daily_rate: item.daily_rate,
                     day_rate: (item as any).day_rate,
                     night_rate: (item as any).night_rate,
+                    day_night: (item as any).day_night,
                     currency: item.currency,
                     brand: (item as any).brand,
                     kit_items: (item as any).kit_items ?? [],
@@ -213,12 +230,26 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <ReturnMissingKitButton
                 orderId={id}
                 items={items
-                  .filter(it => (it.missing_kit_items ?? []).length > 0)
-                  .map(it => ({
-                    order_item_id: it.id,
-                    equipment_name: it.equipment?.name ?? '—',
-                    missing_kit_items: it.missing_kit_items ?? [],
-                  }))}
+                  .map(it => {
+                    const activeEvents = missingEventsByItem.get(it.id) ?? []
+                    const missing = activeEvents.length > 0
+                      ? activeEvents.map(event => ({
+                          kit_name: event.kit_name,
+                          missing_since: event.missing_since,
+                        }))
+                      : (it.missing_kit_items ?? []).map(kit => ({
+                          kit_name: kit,
+                          missing_since: it.actual_end_at ?? (order as any).actual_end_at ?? (order as any).updated_at ?? (order as any).created_at,
+                        }))
+                    return {
+                      order_item_id: it.id,
+                      equipment_name: it.equipment?.name ?? '—',
+                      missing_kit_items: missing.map(event => event.kit_name),
+                      missing,
+                    }
+                  })
+                  .filter(it => it.missing_kit_items.length > 0)
+                }
               />
             )}
             <a href={`/api/orders/${id}/contract`} target="_blank">
@@ -319,7 +350,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           {items.map(item => {
             const kit = item.selected_kit_items ?? []
             const returned = item.returned_kit_items ?? []
-            const missing = item.missing_kit_items ?? []
+            const activeMissingEvents = missingEventsByItem.get(item.id) ?? []
+            const missing = activeMissingEvents.length > 0
+              ? activeMissingEvents.map(event => event.kit_name)
+              : item.missing_kit_items ?? []
             const isClosed = Boolean(item.returned) || order.status === 'returned'
             return (
               <div key={item.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
@@ -351,8 +385,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </div>
                   )}
                   {missing.length > 0 && (
-                    <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      ⚠ Не возвращено: {missing.join(', ')}
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {(activeMissingEvents.length > 0
+                        ? activeMissingEvents
+                        : missing.map(kit => ({
+                            kit_name: kit,
+                            missing_since: item.actual_end_at ?? (order as any).actual_end_at ?? (order as any).updated_at ?? (order as any).created_at,
+                          }))
+                      ).map(event => (
+                        <span key={event.kit_name} className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          Не возвращено: {event.kit_name} · с {formatMissingSinceDateTime(event.missing_since)} · {formatMissingKitAge(event.missing_since)}
+                        </span>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -360,8 +404,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   {(() => {
                     const live = itemBillingById.get(item.id)
                     const eq = item.equipment
-                    const dayRate = item.day_rate_snapshot ?? eq?.day_rate ?? eq?.daily_rate ?? item.daily_rate ?? 0
-                    const nightRate = item.night_rate_snapshot ?? eq?.night_rate ?? dayRate
+                    const useCurrentRates = Boolean(live && !live.frozen)
+                    const dayRate = useCurrentRates
+                      ? (eq?.day_rate ?? eq?.daily_rate ?? item.day_rate_snapshot ?? item.daily_rate ?? 0)
+                      : (item.day_rate_snapshot ?? eq?.day_rate ?? eq?.daily_rate ?? item.daily_rate ?? 0)
+                    const nightRate = useCurrentRates
+                      ? (eq?.night_rate ?? dayRate)
+                      : (item.night_rate_snapshot ?? eq?.night_rate ?? dayRate)
                     const displayItem = live
                       ? {
                           day_units: live.day_units,
