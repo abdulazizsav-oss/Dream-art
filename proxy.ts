@@ -17,6 +17,14 @@ export async function proxy(request: NextRequest) {
 
   let supabaseResponse = NextResponse.next({ request })
 
+  const clearSupabaseAuthCookies = (response: NextResponse) => {
+    request.cookies
+      .getAll()
+      .filter(cookie => cookie.name.startsWith('sb-') || cookie.name.includes('auth-token'))
+      .forEach(cookie => response.cookies.delete(cookie.name))
+    return response
+  }
+
   try {
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
@@ -47,8 +55,13 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url)
     }
   } catch {
-    // On any error — let the request through, app handles auth
-    return NextResponse.next()
+    if (isAuthPage || isAuthApi || isApiBot || isApiCron) {
+      return clearSupabaseAuthCookies(NextResponse.next())
+    }
+
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return clearSupabaseAuthCookies(NextResponse.redirect(url))
   }
 
   return supabaseResponse

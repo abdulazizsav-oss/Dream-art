@@ -13,15 +13,19 @@ export interface UserProfile {
 // React cache() memoizes per-request so layout + page + API route in the same
 // render don't each re-issue the auth.getUser() + profile SELECT.
 export const getMyProfile = cache(async (): Promise<UserProfile | null> => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase
-    .from('user_profiles')
-    .select('id, full_name, role, nickname')
-    .eq('id', user.id)
-    .single()
-  return data as UserProfile | null
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error || !user) return null
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('id, full_name, role, nickname')
+      .eq('id', user.id)
+      .single()
+    return data as UserProfile | null
+  } catch {
+    return null
+  }
 })
 
 export const getMyRole = cache(async (): Promise<UserRole | null> => {

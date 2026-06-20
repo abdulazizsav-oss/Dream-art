@@ -56,6 +56,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
       currency: 'UZS',
       day_rate: 0,
       night_rate: 0,
+      day_night: 'day',
       source: 'Каталог техники',
       ...defaultValues,
     },
@@ -64,17 +65,22 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   const photoUrl = watch('photo_url') as string | null | undefined
   const categoryId = watch('category_id') as string | undefined
   const brandIdVal = watch('brand_id') as string | undefined
-  const currencyVal = (watch('currency') as string | undefined) ?? 'UZS'
+  const dayNight = (watch('day_night') as EquipmentFormValues['day_night'] | undefined) ?? 'day'
+  const dayRate = Number(watch('day_rate') ?? 0)
+  const nightRate = Number(watch('night_rate') ?? 0)
   const kitItems = (watch('kit_items') as string[] | undefined) ?? []
-  const supportsNightRate =
-    (categories.find(c => c.id === categoryId)?.slug ?? '') === 'cameras'
+  const supportsNightRate = dayNight !== 'day'
+
+  function setNightShiftEnabled(enabled: boolean) {
+    setValue('day_night', enabled ? 'both' : 'day')
+    if (enabled && nightRate === 0) setValue('night_rate', dayRate)
+    if (!enabled) setValue('night_rate', dayRate)
+  }
 
   async function onSubmit(data: EquipmentFormValues) {
-    // Night-rate field is only shown for cameras; for everything else mirror
-    // the day rate so the pricing engine always has a valid value.
-    const payload = supportsNightRate
-      ? data
-      : { ...data, night_rate: data.day_rate }
+    const payload = data.day_night === 'day'
+      ? { ...data, night_rate: data.day_rate }
+      : { ...data, night_rate: data.night_rate || data.day_rate }
     const url = equipmentId ? `/api/equipment/${equipmentId}` : '/api/equipment'
     const method = equipmentId ? 'PUT' : 'POST'
     const res = await fetch(url, {
@@ -94,6 +100,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 max-w-xl">
+      <input type="hidden" {...register('day_night')} />
 
       {/* Photo upload */}
       <div className="space-y-1.5">
@@ -166,9 +173,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
       <div
         className={cn(
           'grid grid-cols-1 gap-4',
-          supportsNightRate
-            ? 'sm:grid-cols-[1fr_1fr_160px]'
-            : 'sm:grid-cols-[1fr_160px]',
+          supportsNightRate ? 'sm:grid-cols-2' : 'sm:grid-cols-1',
         )}
       >
         <div className="space-y-1.5">
@@ -185,11 +190,6 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
             className="min-h-[44px]"
           />
           {errors.day_rate && <p className="text-xs text-red-500">{errors.day_rate.message}</p>}
-          {!supportsNightRate && (
-            <p className="text-[11px] text-zinc-400">
-              Ночная ставка используется только для камер.
-            </p>
-          )}
         </div>
         {supportsNightRate && (
           <div className="space-y-1.5">
@@ -208,19 +208,28 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
             {errors.night_rate && <p className="text-xs text-red-500">{errors.night_rate.message}</p>}
           </div>
         )}
-        <div className="space-y-1.5">
-          <Label>Валюта</Label>
-          <Select
-            value={currencyVal}
-            onValueChange={v => setValue('currency', v as EquipmentFormValues['currency'])}
-          >
-            <SelectTrigger className="min-h-[44px]"><SelectValue>{currencyVal}</SelectValue></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="UZS">UZS</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      </div>
+      <input type="hidden" {...register('currency')} value="UZS" />
+      <p className="-mt-3 text-xs text-zinc-500">Все ставки и расчёты ведутся в UZS.</p>
+
+      <div className="rounded-xl border bg-zinc-50 p-3">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={supportsNightRate}
+            onChange={event => setNightShiftEnabled(event.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-zinc-300"
+          />
+          <span className="min-w-0">
+            <span className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+              <Moon className="h-4 w-4 text-indigo-500" />
+              Ночная смена
+            </span>
+            <span className="mt-0.5 block text-xs text-zinc-500">
+              Включите только для техники, которую можно считать отдельной ночной ставкой.
+            </span>
+          </span>
+        </label>
       </div>
 
       {/* ── Комплектация ── */}

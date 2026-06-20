@@ -12,7 +12,7 @@ export default async function OrdersPage() {
   const supabase = await createClient()
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate))')
+    .select('*, clients(full_name), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate, day_night))')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -87,7 +87,7 @@ function OrderRow({ order }: { order: {
     returned?: boolean | null;
     selected_kit_items: string[] | null;
     missing_kit_items: string[] | null;
-    equipment: { name: string; currency?: 'UZS' | 'USD' | null; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null } | null;
+    equipment: { name: string; currency?: 'UZS' | 'USD' | null; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null; day_night?: 'day' | 'night' | 'both' | null } | null;
   }[] | null;
 } }) {
   const isActive = order.status === 'active' || order.status === 'overdue'
@@ -113,6 +113,7 @@ function OrderRow({ order }: { order: {
         final_night_units: it.final_night_units ?? null,
         day_rate: dayRate,
         night_rate: nightRate,
+        day_night: eq?.day_night ?? null,
         subtotal: it.subtotal ?? 0,
         day_units: it.day_units ?? 0,
         night_units: it.night_units ?? 0,

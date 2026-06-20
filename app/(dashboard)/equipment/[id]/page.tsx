@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { EquipmentForm } from '@/components/equipment/EquipmentForm'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { supportsNightShift } from '@/lib/rental'
 import Link from 'next/link'
 import { CalendarDays, CircleDollarSign, Layers, Moon, Package, Sun, TrendingUp } from 'lucide-react'
 
@@ -21,6 +22,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
     : { data: null }
 
   if (!item) notFound()
+  const hasNightShift = supportsNightShift(item as { day_night?: 'day' | 'night' | 'both' | null })
 
   const { data: utilization } = await supabase
     .from('v_equipment_utilization')
@@ -68,7 +70,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             Ставки аренды
           </div>
           <div className="mt-2 space-y-1 text-sm">
-            {(item.equipment_categories as { slug?: string } | null)?.slug === 'cameras' ? (
+            {hasNightShift ? (
               <>
                 <p className="font-semibold inline-flex items-center gap-2">
                   <Sun className="w-4 h-4 text-amber-500" />
@@ -148,6 +150,11 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold mb-4">Редактировать</h2>
+        {item.currency !== 'UZS' && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Эта карточка была заведена в {item.currency}. Укажите корректные ставки в UZS перед сохранением.
+          </div>
+        )}
         <EquipmentForm
           categories={categories ?? []}
           brands={brands ?? []}
@@ -159,7 +166,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             daily_rate: item.daily_rate,
             day_rate: (item as any).day_rate ?? item.daily_rate,
             night_rate: (item as any).night_rate ?? item.daily_rate,
-            currency: item.currency,
+            day_night: (item as any).day_night ?? 'day',
+            currency: 'UZS',
             brand: item.brand ?? undefined,
             specs: item.specs ?? undefined,
             serial_number: item.serial_number ?? undefined,

@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, getTashkentDate, getTashkentTime } from '@/lib/utils'
+import { buildTashkentDate } from '@/lib/billing'
 
 interface OrderItem {
   id: string
@@ -26,11 +27,13 @@ export default function ReturnPage() {
   const id = params.id as string
   const [items, setItems] = useState<OrderItem[]>([])
   const [returns, setReturns] = useState<Record<string, string>>({})
-  // Per order_item_id: set of kit items that were returned (checked by default)
+  // Per order_item_id: set of kit items explicitly marked as returned.
   const [returnedKit, setReturnedKit] = useState<Record<string, Set<string>>>({})
   const [actualReturnDate, setActualReturnDate] = useState('')
+  const [actualReturnTime, setActualReturnTime] = useState('')
   const [orderEndDate, setOrderEndDate] = useState('')
   const [orderStartDate, setOrderStartDate] = useState('')
+  const [orderActualStartAt, setOrderActualStartAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -42,12 +45,14 @@ export default function ReturnPage() {
         setItems(oi)
         setOrderEndDate(order.end_date ?? '')
         setOrderStartDate(order.start_date ?? '')
-        setActualReturnDate(order.end_date ?? '')
+        setOrderActualStartAt(order.actual_start_at ?? null)
+        setActualReturnDate(getTashkentDate())
+        setActualReturnTime(getTashkentTime())
         const initialReturns: Record<string, string> = {}
         const initialKit: Record<string, Set<string>> = {}
         oi.forEach((i) => {
           initialReturns[i.id] = 'Хорошее'
-          initialKit[i.id] = new Set(i.selected_kit_items ?? [])
+          initialKit[i.id] = new Set<string>()
         })
         setReturns(initialReturns)
         setReturnedKit(initialKit)
@@ -66,13 +71,17 @@ export default function ReturnPage() {
     })
   }
 
-  // Calculate expected new total if actual_return_date differs from end_date
-  const isEarlyReturn = actualReturnDate && orderEndDate && actualReturnDate < orderEndDate
-  const recalcTotal = isEarlyReturn && orderStartDate
+  const actualReturnAt = actualReturnDate && actualReturnTime
+    ? buildTashkentDate(actualReturnDate, actualReturnTime)
+    : null
+  const startAt = orderActualStartAt
+    ? new Date(orderActualStartAt)
+    : orderStartDate
+      ? buildTashkentDate(orderStartDate, '09:30')
+      : null
+  const recalcTotal = actualReturnAt && startAt
     ? (() => {
-        const start = new Date(orderStartDate)
-        const ret = new Date(actualReturnDate)
-        const actualDays = Math.max(1, Math.round((ret.getTime() - start.getTime()) / 86400000) + 1)
+        const actualDays = Math.max(1, Math.ceil((actualReturnAt.getTime() - startAt.getTime()) / 86400000))
         return items.reduce((sum, i) => sum + i.daily_rate * actualDays, 0)
       })()
     : null
@@ -92,8 +101,8 @@ export default function ReturnPage() {
       }
     })
     const body: Record<string, unknown> = { items: payload }
-    if (actualReturnDate && actualReturnDate !== orderEndDate) {
-      body.actual_return_date = actualReturnDate
+    if (actualReturnAt) {
+      body.actual_end_at = actualReturnAt.toISOString()
     }
     const res = await fetch(`/api/orders/${id}/return`, {
       method: 'POST',
@@ -117,18 +126,27 @@ export default function ReturnPage() {
       <PageHeader title="Оформление возврата" />
       <div className="bg-white rounded-xl border p-6 space-y-4">
         {/* Actual return date */}
-        <div className="pb-4 border-b space-y-1.5">
-          <Label>Фактическая дата возврата</Label>
-          <Input
-            type="date"
-            value={actualReturnDate}
-            max={orderEndDate || undefined}
-            onChange={e => setActualReturnDate(e.target.value)}
-          />
-          {isEarlyReturn && recalcTotal !== null && (
+        <div className="pb-4 border-b space-y-2">
+          <Label>Фактическое время возврата</Label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="date"
+              value={actualReturnDate}
+              onChange={e => setActualReturnDate(e.target.value)}
+            />
+            <Input
+              type="time"
+              value={actualReturnTime}
+              onChange={e => setActualReturnTime(e.target.value)}
+            />
+          </div>
+          {recalcTotal !== null && (
             <p className="text-xs text-amber-600 font-medium">
-              ⚡ Досрочный возврат — сумма пересчитается: {recalcTotal.toLocaleString('ru-RU')} сум
+              Ориентировочно по фактическому времени: {recalcTotal.toLocaleString('ru-RU')} сум
             </p>
+          )}
+          {orderEndDate && (
+            <p className="text-[11px] text-gray-500">Плановая дата возврата: {orderEndDate}</p>
           )}
         </div>
 
@@ -159,10 +177,10 @@ export default function ReturnPage() {
                 <div className="mt-3 rounded-lg border bg-zinc-50 p-3">
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-xs">Комплектация</Label>
-                    <span className={`text-[11px] font-medium ${missingCount > 0 ? 'text-amber-600' : 'text-zinc-500'}`}>
+                    <span className={`text-[11px] font-medium ${missingCount > 0 ? 'text-orange-700' : 'text-zinc-500'}`}>
                       {missingCount > 0
-                        ? `Не возвращено: ${missingCount} из ${kit.length}`
-                        : `Все на месте (${kit.length})`}
+                        ? `Не сдано: ${missingCount} из ${kit.length}`
+                        : `Все сдано (${kit.length})`}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -175,20 +193,18 @@ export default function ReturnPage() {
                           onClick={() => toggleKit(item.id, kitItem)}
                           className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                             isReturned
-                              ? 'border-zinc-900 bg-zinc-900 text-white'
-                              : 'border-amber-300 bg-amber-50 text-amber-700 line-through'
+                              ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                              : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600'
                           }`}
                         >
-                          {kitItem}
+                          {isReturned ? '✓ ' : ''}{kitItem}
                         </button>
                       )
                     })}
                   </div>
-                  {missingCount > 0 && (
-                    <p className="mt-2 text-[11px] text-amber-700">
-                      ⚠ Отмеченные позиции будут зафиксированы как невозвращённые. Заказ всё равно закроется.
-                    </p>
-                  )}
+                  <p className="mt-2 text-[11px] text-gray-500">
+                    Зачёркнуто — сдали. Залитая цветом кнопка — не сдано.
+                  </p>
                 </div>
               )}
             </div>

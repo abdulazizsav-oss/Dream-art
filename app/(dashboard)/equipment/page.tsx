@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/utils'
-import { Plus, Wrench, ChevronRight, Camera, Boxes, Settings, Pencil, Moon, Sun } from 'lucide-react'
+import { CatalogCategoryGrid, CatalogEquipmentGrid } from '@/components/equipment/CatalogSortableGrid'
+import { Plus, Wrench, Settings } from 'lucide-react'
 
 export default async function EquipmentPage({
   searchParams,
@@ -47,40 +47,12 @@ export default async function EquipmentPage({
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            {(categories ?? []).map((cat, i) => (
-              <div
-                key={cat.id}
-                className="group relative bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
-              >
-                {/* Edit pencil — sibling link, not nested */}
-                <Link
-                  href="/admin/categories"
-                  className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-gray-500" />
-                </Link>
-
-                {/* Main card link */}
-                <Link href={`/equipment?category=${cat.id}`} className="block">
-                  <div className="h-32 bg-gray-50 relative overflow-hidden flex items-center justify-center">
-                    {(cat as any).photo_url ? (
-                      <img src={(cat as any).photo_url} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    ) : (
-                      <Boxes className="w-10 h-10 text-gray-200 group-hover:text-gray-300 transition-colors" />
-                    )}
-                    <span className="absolute top-2 right-2 text-[10px] font-mono text-gray-300 bg-white/80 px-1.5 rounded">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-semibold text-gray-900 truncate">{cat.name}</p>
-                    <p className="mt-1.5 text-sm text-gray-400">Открыть категорию</p>
-                  </div>
-                </Link>
-              </div>
-            ))}
-          </div>
+          <CatalogCategoryGrid categories={(categories ?? []).map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            photo_url: (cat as any).photo_url ?? null,
+            sort_order: (cat as any).sort_order ?? 0,
+          }))} />
         )}
       </div>
     )
@@ -155,67 +127,23 @@ export default async function EquipmentPage({
           <p className="text-gray-500">{brandId ? 'Нет позиций этого бренда' : 'В этой категории нет техники'}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {equipment!.map(item => {
-            const brand = (item as any).brands as { name: string; logo_url: string | null } | null
-            return (
-              <div
-                key={item.id}
-                className="group relative bg-white rounded-2xl border hover:border-blue-300 hover:shadow-md transition-all overflow-hidden"
-              >
-                {/* Edit pencil — sibling, absolutely positioned */}
-                <Link
-                  href={`/equipment/${item.id}`}
-                  className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white rounded-lg p-1.5 shadow-sm"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-gray-500" />
-                </Link>
-
-                {/* Main card link */}
-                <Link href={`/equipment/${item.id}`} className="block">
-                  <div className="h-44 bg-gray-50 flex items-center justify-center overflow-hidden relative">
-                    {item.photo_url ? (
-                      <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                    ) : (
-                      <Camera className="w-12 h-12 text-gray-200" />
-                    )}
-                    {brand?.logo_url && (
-                      <img src={brand.logo_url} alt={brand.name} className="absolute top-2 left-2 w-8 h-8 object-contain bg-white/90 rounded-lg p-1 shadow-sm" />
-                    )}
-                  </div>
-                  <div className="p-4">
-                    {brand && !brand.logo_url && (
-                      <p className="text-xs text-gray-400 mb-1 font-semibold uppercase tracking-wide">{brand.name}</p>
-                    )}
-                    <p className="font-semibold text-gray-900 leading-snug">{item.name}</p>
-                    {(item as any).specs && (
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{(item as any).specs}</p>
-                    )}
-                    <div className="mt-3 space-y-1.5 border-t pt-3 text-xs">
-                      <div className="flex items-center justify-between text-gray-700">
-                        <span className="inline-flex items-center gap-1">
-                          <Sun className="h-3.5 w-3.5 text-amber-500" />
-                          День
-                        </span>
-                        <span className="font-medium">{formatCurrency((item as any).day_rate ?? item.daily_rate, item.currency)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-gray-700">
-                        <span className="inline-flex items-center gap-1">
-                          <Moon className="h-3.5 w-3.5 text-indigo-500" />
-                          Ночь
-                        </span>
-                        <div className="inline-flex items-center gap-2">
-                          <span className="font-medium">{formatCurrency((item as any).night_rate ?? item.daily_rate, item.currency)}</span>
-                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            )
-          })}
-        </div>
+        <CatalogEquipmentGrid
+          categoryId={catId}
+          canReorder={!brandId}
+          equipment={equipment!.map(item => ({
+            id: item.id,
+            name: item.name,
+            photo_url: item.photo_url,
+            specs: (item as any).specs ?? null,
+            daily_rate: item.daily_rate,
+            day_rate: (item as any).day_rate ?? null,
+            night_rate: (item as any).night_rate ?? null,
+            day_night: (item as any).day_night ?? null,
+            currency: item.currency,
+            sort_order: (item as any).sort_order ?? 0,
+            brands: ((item as any).brands as { name: string; logo_url: string | null } | null) ?? null,
+          }))}
+        />
       )}
     </div>
   )

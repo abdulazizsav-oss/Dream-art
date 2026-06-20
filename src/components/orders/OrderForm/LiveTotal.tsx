@@ -11,7 +11,7 @@ interface LiveTotalProps {
   startDate: string | undefined | null
   endDate: string | undefined | null
   items: OrderItemFormValue[]
-  equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate'>[]
+  equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate' | 'day_night'>[]
   variant?: 'compact' | 'card'
   className?: string
 }

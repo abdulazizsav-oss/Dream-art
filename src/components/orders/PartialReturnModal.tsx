@@ -54,10 +54,10 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
   const [splits, setSplits] = useState<Split[]>([{ method: 'cash', amount: '' }])
   const [notes, setNotes] = useState('')
 
-  // Комплект: по умолчанию все элементы считаются возвращёнными
+  // Комплект: пользователь явно отмечает только то, что вернулось сейчас.
   const [returnedKit, setReturnedKit] = useState<Record<string, Set<string>>>(() => {
     const init: Record<string, Set<string>> = {}
-    for (const it of items) init[it.id] = new Set(it.selected_kit_items)
+    for (const it of items) init[it.id] = new Set<string>()
     return init
   })
 
@@ -284,11 +284,11 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                                 className={cn(
                                   'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
                                   ok
-                                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                                    : 'border-amber-300 bg-amber-50 text-amber-700 line-through',
+                                    ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                                    : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600',
                                 )}
                               >
-                                {k}
+                                {ok ? '✓ ' : ''}{k}
                               </button>
                             )
                           })}
@@ -299,10 +299,13 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                 })}
               </div>
               {missingTotals > 0 && (
-                <p className="text-xs font-medium text-amber-700">
-                  ⚠ Не возвращено элементов комплекта: {missingTotals}
+                <p className="text-xs font-medium text-orange-700">
+                  Не сдано элементов комплекта: {missingTotals}
                 </p>
               )}
+              <p className="text-[11px] text-gray-500">
+                Зачёркнуто — сдали. Залитая цветом кнопка — не сдано.
+              </p>
             </div>
 
             {paidTotal > 0 && (

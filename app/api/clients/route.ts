@@ -25,7 +25,11 @@ export async function POST(req: NextRequest) {
   const parsed = clientSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { data, error } = await supabase.from('clients').insert(parsed.data).select().single()
+  const { data, error } = await supabase
+    .from('clients')
+    .insert({ ...parsed.data, created_by: user.id } as never)
+    .select()
+    .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   revalidatePath('/clients')

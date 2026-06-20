@@ -48,10 +48,10 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
   const [notes, setNotes] = useState('')
   const [leaveDebt, setLeaveDebt] = useState(false)
 
-  // Kit tracking: by default all kit items are marked as returned
+  // Kit tracking: start empty so the manager explicitly marks what came back.
   const [returnedKit, setReturnedKit] = useState<Record<string, Set<string>>>(() => {
     const init: Record<string, Set<string>> = {}
-    for (const it of items) init[it.id] = new Set(it.selected_kit_items)
+    for (const it of items) init[it.id] = new Set<string>()
     return init
   })
 
@@ -200,11 +200,12 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Комплектация</Label>
-                {missingTotals.total > 0 && (
-                  <span className="text-xs font-medium text-amber-700">
-                    ⚠ Не возвращено: {missingTotals.total}
-                  </span>
-                )}
+                <span className={cn(
+                  'text-xs font-medium',
+                  missingTotals.total > 0 ? 'text-orange-700' : 'text-zinc-500',
+                )}>
+                  {missingTotals.total > 0 ? `Не сдано: ${missingTotals.total}` : 'Все сдано'}
+                </span>
               </div>
               <div className="space-y-2 rounded-xl border bg-zinc-50/60 p-2">
                 {items.filter(it => it.selected_kit_items.length > 0).map(it => {
@@ -223,11 +224,11 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
                               className={cn(
                                 'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
                                 active
-                                  ? 'border-emerald-600 bg-emerald-600 text-white'
-                                  : 'border-amber-300 bg-amber-50 text-amber-700 line-through',
+                                  ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                                  : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600',
                               )}
                             >
-                              {k}
+                              {active ? '✓ ' : ''}{k}
                             </button>
                           )
                         })}
@@ -237,7 +238,7 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
                 })}
               </div>
               <p className="text-[11px] text-gray-500">
-                Нажмите на элемент, чтобы пометить как «не вернули». Заказ всё равно закроется, но отметка сохранится.
+                Зачёркнуто — сдали. Залитая цветом кнопка — не сдано.
               </p>
             </div>
           )}

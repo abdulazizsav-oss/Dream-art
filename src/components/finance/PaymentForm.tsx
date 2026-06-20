@@ -16,6 +16,7 @@ type PaymentMethod = 'cash' | 'transfer' | 'card'
 interface PaymentFormProps {
   orders: { id: string; order_number: string; clients: { full_name: string } | null }[]
   defaultOrderId?: string
+  onSuccess?: () => void
 }
 
 interface Split {
@@ -23,7 +24,7 @@ interface Split {
   amount: string
 }
 
-export function PaymentForm({ orders, defaultOrderId }: PaymentFormProps) {
+export function PaymentForm({ orders, defaultOrderId, onSuccess }: PaymentFormProps) {
   const router = useRouter()
   const [orderId, setOrderId] = useState(defaultOrderId ?? '')
   const [type, setType] = useState('rental')
@@ -78,6 +79,7 @@ export function PaymentForm({ orders, defaultOrderId }: PaymentFormProps) {
       toast.success(validSplits.length > 1 ? 'Сплит-платёж добавлен' : 'Платёж добавлен')
       setSplits([{ method: 'cash', amount: '' }])
       setNotes('')
+      onSuccess?.()
       router.refresh()
     }
     setSaving(false)

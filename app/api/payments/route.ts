@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { randomUUID } from 'crypto'
 
 const methodEnum = z.enum(['cash', 'transfer', 'card'])
 const typeEnum = z.enum(['rental', 'deposit', 'deposit_return', 'extra', 'fine'])
@@ -49,33 +48,25 @@ export async function POST(req: NextRequest) {
 
   const { order_id, payment_type, notes, splits, amount, payment_method } = parsed.data
 
-  // Normalize to array of rows (supports both legacy single-payment body and new splits array)
+  // Normalize to an array for legacy clients and the split-payment form.
   const normalized = splits && splits.length > 0
     ? splits
     : amount != null
       ? [{ amount, payment_method }]
       : []
 
-  // Единый payment_group_id на весь сплит — чтобы потом группировать в UI/отчётах
-  const groupId = normalized.length > 1 ? randomUUID() : null
-  const paidAt = new Date().toISOString()
-
-  const rows = normalized.map(s => ({
-    order_id,
-    amount: s.amount,
-    payment_method: s.payment_method,
-    payment_type,
-    notes: notes ?? null,
-    created_by: user.id,
-    payment_group_id: groupId,
-    paid_at: paidAt,
-  }))
-
-  if (rows.length === 0) {
+  if (normalized.length === 0) {
     return NextResponse.json({ error: 'Укажите сумму платежа' }, { status: 400 })
   }
 
-  const { data, error } = await supabase.from('payments').insert(rows as never).select()
+  const service = createServiceClient()
+  const { data, error } = await service.rpc('add_order_payment_with_allocations_atomic', {
+    p_order_id: order_id,
+    p_payment_type: payment_type,
+    p_splits: normalized,
+    p_created_by: user.id,
+    p_notes: notes ?? null,
+  } as never)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

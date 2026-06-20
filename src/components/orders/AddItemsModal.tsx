@@ -10,7 +10,8 @@ import {
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { formatCurrency } from '@/lib/utils'
-import { PackagePlus, Search } from 'lucide-react'
+import { Moon, PackagePlus, Search, Sun } from 'lucide-react'
+import { supportsNightShift } from '@/lib/rental'
 
 interface EquipmentOption {
   id: string
@@ -18,6 +19,7 @@ interface EquipmentOption {
   daily_rate: number
   day_rate: number | null
   night_rate: number | null
+  day_night: 'day' | 'night' | 'both' | null
   currency: 'UZS' | 'USD'
   brand: string | null
   kit_items?: string[] | null
@@ -73,7 +75,7 @@ export function AddItemsModal({ orderId, equipment, variant = 'outline', size = 
     const items = Array.from(picked).map(id => {
       const item = equipment.find(candidate => candidate.id === id)!
       const dayRate = item.day_rate ?? item.daily_rate ?? 0
-      const nightRate = item.night_rate ?? dayRate
+      const nightRate = supportsNightShift(item) ? (item.night_rate ?? dayRate) : dayRate
       return {
         equipment_id: item.id,
         daily_rate: dayRate,
@@ -146,6 +148,7 @@ export function AddItemsModal({ orderId, equipment, variant = 'outline', size = 
                 const active = picked.has(item.id)
                 const brand = item.brands?.name ?? item.brand
                 const rate = item.day_rate ?? item.daily_rate
+                const hasNightShift = supportsNightShift(item)
                 return (
                   <label
                     key={item.id}
@@ -165,8 +168,17 @@ export function AddItemsModal({ orderId, equipment, variant = 'outline', size = 
                         {[brand, item.equipment_categories?.name].filter(Boolean).join(' · ') || 'Без категории'}
                       </span>
                     </span>
-                    <span className="text-right text-xs font-medium text-zinc-700">
-                      {formatCurrency(rate, item.currency)}
+                    <span className="space-y-0.5 text-right text-xs font-medium text-zinc-700">
+                      <span className="flex items-center justify-end gap-1">
+                        <Sun className="h-3 w-3 text-amber-500" />
+                        {formatCurrency(rate, item.currency)}
+                      </span>
+                      {hasNightShift && (
+                        <span className="flex items-center justify-end gap-1">
+                          <Moon className="h-3 w-3 text-indigo-500" />
+                          {formatCurrency(item.night_rate ?? rate, item.currency)}
+                        </span>
+                      )}
                     </span>
                   </label>
                 )

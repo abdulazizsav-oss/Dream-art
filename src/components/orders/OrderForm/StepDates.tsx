@@ -49,6 +49,9 @@ export function StepDates({
 
   const days = start && end ? calcDays(start, end) : 0
   const autoBreakdown = getAutoBillingBreakdown(start, end)
+  const hasNightUnits = previewItems.some(item => (item.night_units ?? 0) > 0)
+  const displayDayUnits = hasNightUnits || previewItems.length === 0 ? autoBreakdown.dayUnits : autoBreakdown.totalUnits
+  const displayNightUnits = hasNightUnits ? autoBreakdown.nightUnits : 0
 
   return (
     <div>
@@ -71,7 +74,7 @@ export function StepDates({
             Период: <strong>{days} {days === 1 ? 'день' : days < 5 ? 'дня' : 'дней'}</strong>
           </p>
           <p className="mt-1 text-zinc-500">
-            Предварительный расчет: <strong>{describeBreakdown(autoBreakdown.dayUnits, autoBreakdown.nightUnits)}</strong>
+            Предварительный расчет: <strong>{describeBreakdown(displayDayUnits, displayNightUnits)}</strong>
           </p>
           <p className="mt-1 text-[11px] text-zinc-400">
             Время выдачи и возврата запишется автоматически. Итоговая сумма пересчитается при закрытии заказа — по фактическому времени.

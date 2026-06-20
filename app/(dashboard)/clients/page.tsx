@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, CLIENT_SEGMENT_LABELS } from '@/lib/utils'
 import { Plus, Users, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  buildLegacyMissingKitEvents,
+  buildMissingKitByClient,
+  formatMissingKitPreview,
+  formatMissingKitAge,
+  formatMissingSinceDateTime,
+  mergeMissingKitEvents,
+  type LegacyMissingKitOrderRow,
+  type MissingKitEventRow,
+} from '@/lib/missing-kit'
 
 // ── Reliability helpers ─────────────────────────────────────────────────────
 
@@ -90,10 +100,32 @@ function missingFields(c: { telegram_username: string | null; address_actual: st
 
 export default async function ClientsPage() {
   const supabase = await createClient()
-  const { data: clients } = await supabase
+  const clientsPromise = supabase
     .from('clients')
     .select('*')
     .order('full_name')
+
+  const missingEventsPromise = supabase
+    .from('order_item_missing_kit_events')
+    .select('id, order_id, order_item_id, kit_name, missing_since, returned_at, orders!inner(id, order_number, client_id, status, created_at), order_items(id, equipment(name))')
+    .is('returned_at', null)
+    .order('missing_since', { ascending: false })
+
+  const legacyMissingOrdersPromise = supabase
+    .from('orders')
+    .select('id, order_number, client_id, status, created_at, updated_at, actual_end_at, actual_return_date, order_items(id, actual_end_at, missing_kit_items, equipment(name))')
+    .order('created_at', { ascending: false })
+
+  const [{ data: clients }, { data: missingEvents }, { data: legacyMissingOrders }] = await Promise.all([
+    clientsPromise,
+    missingEventsPromise,
+    legacyMissingOrdersPromise,
+  ])
+  const missingEventRows = mergeMissingKitEvents(
+    (missingEvents ?? []) as unknown as MissingKitEventRow[],
+    buildLegacyMissingKitEvents((legacyMissingOrders ?? []) as unknown as LegacyMissingKitOrderRow[]),
+  )
+  const missingByClient = buildMissingKitByClient(missingEventRows)
 
   return (
     <div>
@@ -113,6 +145,10 @@ export default async function ClientsPage() {
         <div className="bg-white rounded-2xl border divide-y overflow-hidden">
           {clients.map(c => {
             const missing = missingFields(c)
+            const missingKit = missingByClient.get(c.id)
+            const oldestMissing = missingKit?.orders
+              .flatMap(order => order.items.flatMap(item => item.missing))
+              .sort((a, b) => b.age_days - a.age_days)[0]
             const segment = CLIENT_SEGMENT_LABELS[c.segment] ?? c.segment
             return (
               <Link
@@ -151,11 +187,25 @@ export default async function ClientsPage() {
                       </span>
                     </div>
                   )}
+                  {missingKit && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <AlertTriangle className="w-3 h-3 text-orange-500 flex-shrink-0" />
+                      <span className="text-[11px] font-medium text-orange-600">
+                        Недосдача: {formatMissingKitPreview(missingKit.names)}
+                        {oldestMissing ? ` · с ${formatMissingSinceDateTime(oldestMissing.missing_since)} · ${formatMissingKitAge(oldestMissing.missing_since)}` : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right side */}
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                   <ReliabilityBadge rating={c.reliability_rating} />
+                  {missingKit && (
+                    <span className="text-xs text-orange-700 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full">
+                      Недосдача: {missingKit.total}
+                    </span>
+                  )}
                   {c.deposit_held > 0 && (
                     <span className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
                       Депозит: {formatCurrency(c.deposit_held)}

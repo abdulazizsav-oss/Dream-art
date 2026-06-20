@@ -6,6 +6,18 @@ import { ReliabilityRating } from '@/components/clients/ReliabilityRating'
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
+import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
+import {
+  buildLegacyMissingKitEvents,
+  buildMissingKitByClient,
+  formatMissingKitPreview,
+  formatMissingKitAge,
+  formatMissingSinceDateTime,
+  mergeMissingKitEvents,
+  type LegacyMissingKitOrderRow,
+  type MissingKitEventRow,
+} from '@/lib/missing-kit'
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,12 +26,39 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
   if (!client) notFound()
 
-  const { data: orders } = await supabase
+  const ordersPromise = supabase
     .from('orders')
     .select('*')
     .eq('client_id', id)
     .order('created_at', { ascending: false })
     .limit(20)
+
+  const missingEventsPromise = supabase
+    .from('order_item_missing_kit_events')
+    .select('id, order_id, order_item_id, kit_name, missing_since, returned_at, orders!inner(id, order_number, client_id, status, created_at), order_items(id, equipment(name))')
+    .eq('orders.client_id', id)
+    .is('returned_at', null)
+    .order('missing_since', { ascending: false })
+
+  const legacyMissingOrdersPromise = supabase
+    .from('orders')
+    .select('id, order_number, client_id, status, created_at, updated_at, actual_end_at, actual_return_date, order_items(id, actual_end_at, missing_kit_items, equipment(name))')
+    .eq('client_id', id)
+    .order('created_at', { ascending: false })
+
+  const [{ data: orders }, { data: missingEvents }, { data: legacyMissingOrders }] = await Promise.all([
+    ordersPromise,
+    missingEventsPromise,
+    legacyMissingOrdersPromise,
+  ])
+  const missingEventRows = mergeMissingKitEvents(
+    (missingEvents ?? []) as unknown as MissingKitEventRow[],
+    buildLegacyMissingKitEvents((legacyMissingOrders ?? []) as unknown as LegacyMissingKitOrderRow[]),
+  )
+  const missingKit = buildMissingKitByClient(missingEventRows).get(id)
+  const oldestMissing = missingKit?.orders
+    .flatMap(order => order.items.flatMap(item => item.missing))
+    .sort((a, b) => b.age_days - a.age_days || a.missing_since.localeCompare(b.missing_since))[0]
 
   const totalSpend = orders?.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total_amount, 0) ?? 0
 
@@ -61,6 +100,65 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
       </div>
+
+      {missingKit && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold text-orange-800">
+                <AlertTriangle className="h-4 w-4" />
+                Недосдача у клиента
+              </p>
+              <p className="mt-1 text-sm text-orange-700">
+                {missingKit.total} поз. · {formatMissingKitPreview(missingKit.names, 8)}
+              </p>
+              {oldestMissing && (
+                <p className="mt-1 text-xs font-semibold text-orange-800">
+                  Дата недосдачи: {formatMissingSinceDateTime(oldestMissing.missing_since)} · прошло {formatMissingKitAge(oldestMissing.missing_since)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            {missingKit.orders.map(order => (
+              <div key={order.orderId} className="rounded-lg border border-orange-100 bg-white/80 p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <Link href={`/orders/${order.orderId}`} className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                      {order.orderNumber}
+                    </Link>
+                    {order.items[0]?.missing[0] && (
+                      <p className="mt-1 text-xs font-medium text-orange-700">
+                        Недосдано с {formatMissingSinceDateTime(order.items[0].missing[0].missing_since)} · {formatMissingKitAge(order.items[0].missing[0].missing_since)}
+                      </p>
+                    )}
+                  </div>
+                  <ReturnMissingKitButton
+                    orderId={order.orderId}
+                    items={order.items}
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  />
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {order.items.flatMap(item =>
+                    item.missing.map(missing => (
+                      <span
+                        key={`${item.order_item_id}-${missing.kit_name}`}
+                        className="rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700"
+                      >
+                        {item.equipment_name}: {missing.kit_name} · с {formatMissingSinceDateTime(missing.missing_since)} · {formatMissingKitAge(missing.missing_since)}
+                      </span>
+                    )),
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border p-6">
         <h2 className="font-semibold mb-4">Редактировать</h2>

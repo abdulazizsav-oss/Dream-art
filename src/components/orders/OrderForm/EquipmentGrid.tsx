@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Camera, Check, Search, Sun, Moon } from 'lucide-react'
+import { Camera, Search, Sun, Moon } from 'lucide-react'
 import type { Equipment, EquipmentCategory } from '@/types/database'
 import { cn, formatCurrency } from '@/lib/utils'
+import { supportsNightShift } from '@/lib/rental'
 
 export type EquipmentRow = Equipment & {
   equipment_categories: (EquipmentCategory & { slug?: string }) | null
@@ -12,11 +13,11 @@ export type EquipmentRow = Equipment & {
 
 interface EquipmentGridProps {
   equipment: EquipmentRow[]
-  selectedIds: Set<string>
-  onToggle: (item: EquipmentRow) => void
+  selectedCounts: Map<string, number>
+  onAdd: (item: EquipmentRow) => void
 }
 
-export function EquipmentGrid({ equipment, selectedIds, onToggle }: EquipmentGridProps) {
+export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGridProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
@@ -87,11 +88,10 @@ export function EquipmentGrid({ equipment, selectedIds, onToggle }: EquipmentGri
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
           <AnimatePresence initial={false}>
             {filtered.map(item => {
-              const selected = selectedIds.has(item.id)
+              const count = selectedCounts.get(item.id) ?? 0
               const dayRate = item.day_rate ?? item.daily_rate
               const nightRate = item.night_rate ?? item.daily_rate
-              const showNightRate =
-                item.equipment_categories?.slug === 'cameras' && nightRate !== dayRate
+              const showNightRate = supportsNightShift(item)
 
               return (
                 <motion.button
@@ -102,10 +102,10 @@ export function EquipmentGrid({ equipment, selectedIds, onToggle }: EquipmentGri
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.18 }}
-                  onClick={() => onToggle(item)}
+                  onClick={() => onAdd(item)}
                   className={cn(
                     'group overflow-hidden rounded-2xl border bg-white text-left transition-all',
-                    selected
+                    count > 0
                       ? 'border-zinc-900 shadow-sm'
                       : 'border-zinc-200 hover:border-zinc-400 hover:shadow-sm',
                   )}
@@ -121,10 +121,9 @@ export function EquipmentGrid({ equipment, selectedIds, onToggle }: EquipmentGri
                     ) : (
                       <Camera className="h-9 w-9 text-zinc-300" />
                     )}
-                    {selected && (
-                      <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-zinc-900 px-2 py-1 text-xs font-semibold text-white">
-                        <Check className="h-3 w-3" />
-                        Выбрано
+                    {count > 0 && (
+                      <span className="absolute left-2 top-2 inline-flex min-w-[28px] items-center justify-center rounded-full bg-zinc-900 px-2 py-1 text-xs font-semibold text-white">
+                        ×{count}
                       </span>
                     )}
                   </div>
