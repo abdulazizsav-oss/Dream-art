@@ -65,6 +65,7 @@ export function StepEquipment({
       subtotal: rate,
       shift_type: nextShiftType,
       rate_source: template?.rate_source ?? 'auto',
+      manual_subtotal: template?.manual_subtotal ?? null,
       condition_on_issue: 'Хорошее',
       selected_kit_items: [],
     }
