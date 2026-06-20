@@ -13,6 +13,7 @@ import { getTashkentDate, getTashkentTime } from './utils'
 
 export type ShiftType = 'day' | 'night'
 export type RateSource = 'auto' | 'manual'
+export type ShiftCapability = 'day' | 'night' | 'both'
 
 /* ──────── Константы ──────── */
 
@@ -37,6 +38,7 @@ export interface BillingItemInput {
   equipment_id: string
   day_rate: number
   night_rate: number | null
+  day_night?: ShiftCapability | null
   /** Если `manual` — все смены уходят в указанный shift_type */
   override?: ShiftType | null
 }
@@ -87,6 +89,14 @@ function pack(day: number, night: number): ShiftBreakdown {
   return { day_units: day, night_units: night, total_units: day + night }
 }
 
+function normalizeShiftCapability(value?: ShiftCapability | null): ShiftCapability {
+  return value ?? 'both'
+}
+
+export function supportsNightShift(eq?: { day_night?: ShiftCapability | null } | null): boolean {
+  return normalizeShiftCapability(eq?.day_night) !== 'day'
+}
+
 /**
  * Из "YYYY-MM-DD" + "HH:MM" в Asia/Tashkent → Date (UTC).
  * Используется в preview для превращения дат формы в Date для `computeOrderBilling`.
@@ -102,29 +112,39 @@ export function buildTashkentDate(dateStr: string, timeStr: string = '09:30'): D
 
 /**
  * Правила Dream Art:
- *   • Тот же день                                      → 1 день
+ *   • Тот же день · взял <20:00                         → 1 день
+ *   • Тот же день · взял ≥20:00                         → 1 ночь
  *   • Сутки · взял ≥20:00 · вернул ≤10:00              → 1 ночь
+ *   • Сутки · взял ≥20:00 · вернул <20:00              → 1 ночь
+ *   • Сутки · взял ≥20:00 · вернул ≥20:00              → 2 ночи
  *   • Сутки · взял <20:00 · вернул ≤10:00              → 1 день  (утренний переход бесплатно)
  *   • Сутки · взял <20:00 · вернул >10:00              → 1 день + 1 ночь
- *   • Сутки · взял ≥20:00 · вернул >10:00              → 1 ночь + 1 день
  *   • ≥2 дней                                          → span дней + коррекция по последнему времени
  */
 export function computeShifts(start: Date, end: Date): ShiftBreakdown {
   const s = toTashkentLocal(start)
   const e = toTashkentLocal(end)
   const span = calendarDaysBetween(s.date, e.date)
+  const startedEvening = s.minutes >= NIGHT_START_MIN
 
-  // Тот же день (или возврат «в прошлое» — защитно)
-  if (span <= 0) return pack(1, 0)
+  // Возврат «в прошлое» — защитно.
+  if (span < 0) return pack(1, 0)
+
+  // Вечерняя аренда остаётся ночной до следующего порога 20:00.
+  // Каждый следующий календарный порог 20:00 открывает ещё одну ночную смену.
+  if (startedEvening) {
+    const nightUnits = Math.max(1, span + (e.minutes >= NIGHT_START_MIN ? 1 : 0))
+    return pack(0, nightUnits)
+  }
+
+  // Тот же день для дневного старта.
+  if (span === 0) return pack(1, 0)
 
   // Сутки
   if (span === 1) {
-    const startedEvening = s.minutes >= NIGHT_START_MIN
     const endBeforeMorning = e.minutes <= NIGHT_END_MIN
 
-    if (startedEvening && endBeforeMorning) return pack(0, 1)
-    if (!startedEvening && endBeforeMorning) return pack(1, 0)
-    if (!startedEvening && !endBeforeMorning) return pack(1, 1)
+    if (endBeforeMorning) return pack(1, 0)
     return pack(1, 1)
   }
 
@@ -192,6 +212,7 @@ export function computeOrderBilling(input: {
   const autoBreakdown = computeShifts(input.start, input.end)
 
   const items: BillingItemResult[] = input.items.map(it => {
+    const capability = normalizeShiftCapability(it.day_night)
     const nightRate = it.night_rate ?? it.day_rate
 
     let dayUnits = autoBreakdown.day_units
@@ -209,6 +230,16 @@ export function computeOrderBilling(input: {
       dayUnits = 0
       nightUnits = autoBreakdown.total_units
       rateSource = 'manual'
+      shiftType = 'night'
+    }
+
+    if (capability === 'day') {
+      dayUnits += nightUnits
+      nightUnits = 0
+      shiftType = 'day'
+    } else if (capability === 'night') {
+      nightUnits += dayUnits
+      dayUnits = 0
       shiftType = 'night'
     }
 
@@ -255,11 +286,17 @@ export interface ActiveItemInput {
   /** Ставки для live-расчёта auto-позиций */
   day_rate: number
   night_rate: number | null
+  day_night?: ShiftCapability | null
   /** Fallback / manual subtotal, если manual rate_source или нет actual_start_at */
   subtotal: number
   day_units: number
   night_units: number
   shift_type: ShiftType
+  /**
+   * Ручная цена позиции. Если задана — итог заморожен на этой сумме и не зависит
+   * от фактической длительности (actual_start_at → now()).
+   */
+  manual_subtotal?: number | null
 }
 
 export interface ActiveItemResult {
@@ -316,6 +353,7 @@ export function computeActiveOrderTotal(args: {
           equipment_id: it.equipment_id,
           day_rate: it.day_rate,
           night_rate: it.night_rate,
+          day_night: it.day_night,
           override: it.rate_source === 'manual' ? it.shift_type : null,
         }],
       })
@@ -356,11 +394,14 @@ export function computeActiveOrderTotal(args: {
 
 /** Вернуть ставку по типу смены (учитывает equipment без ночной ставки) */
 export function getEquipmentRate(
-  eq: { day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null },
+  eq: { day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null; day_night?: ShiftCapability | null },
   shift: ShiftType,
 ): number {
   const dayRate = eq.day_rate ?? eq.daily_rate ?? 0
-  if (shift === 'night') return eq.night_rate ?? dayRate
+  const nightRate = eq.night_rate ?? dayRate
+  const capability = normalizeShiftCapability(eq.day_night)
+  if (capability === 'night') return nightRate
+  if (shift === 'night' && capability !== 'day') return nightRate
   return dayRate
 }
 
