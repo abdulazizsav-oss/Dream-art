@@ -116,9 +116,11 @@ export function EquipmentCart({
                       <p className="truncate text-sm font-semibold text-zinc-900">{group.name}</p>
                       <p className="mt-1 text-xs text-zinc-500">{pricingLabel}</p>
                       <p className="mt-1 text-xs text-zinc-500">
-                        {group.rateSource === 'auto'
-                          ? `Авто: ${breakdownLabel}`
-                          : `Вручную: ${describeShift(group.shiftType)} (${breakdownLabel})`}
+                        {group.manualSubtotal != null
+                          ? `Своя цена: ${formatCurrency(group.manualSubtotal, group.currency)} / шт.`
+                          : group.rateSource === 'auto'
+                            ? `Авто: ${breakdownLabel}`
+                            : `Вручную: ${describeShift(group.shiftType)} (${breakdownLabel})`}
                       </p>
                       {group.equipment?.specs && (
                         <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{group.equipment.specs}</p>
