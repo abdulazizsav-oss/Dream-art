@@ -89,11 +89,11 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
               <div key={`${item.equipment_id}-${index}`} className="flex justify-between gap-3 text-sm">
                 <span>{item.equipment?.name ?? 'Неизвестно'}</span>
                 <span className="text-gray-600">
-                  {getPricingParts(item)
-                    .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
-                    .join(' + ')}
-                  {' = '}
-                  {formatCurrency(item.subtotal, item.equipment?.currency)}
+                  {item.manual_subtotal != null
+                    ? `Своя цена = ${formatCurrency(item.subtotal, item.equipment?.currency)}`
+                    : `${getPricingParts(item)
+                        .map(part => `${describeShift(part.shiftType)} · ${formatCurrency(part.rate, item.equipment?.currency)} × ${describeUnits(part.units, part.shiftType)}`)
+                        .join(' + ')} = ${formatCurrency(item.subtotal, item.equipment?.currency)}`}
                 </span>
               </div>
             ))}
