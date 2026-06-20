@@ -182,6 +182,36 @@ export function EquipmentCart({
                     )}
                   </div>
 
+                  <div className="mt-3 flex items-center gap-2 border-t border-zinc-200 pt-3">
+                    <label className="whitespace-nowrap text-[11px] font-medium text-zinc-500">
+                      Своя цена / шт.
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1000}
+                      value={group.manualSubtotal ?? ''}
+                      onChange={event => {
+                        const raw = event.target.value
+                        if (raw === '') return onSetManualPrice(group.key, null)
+                        const parsed = Number(raw)
+                        onSetManualPrice(group.key, Number.isFinite(parsed) ? Math.max(0, parsed) : null)
+                      }}
+                      placeholder="Авто"
+                      className="h-9 w-32 rounded-lg border px-2 text-sm tabular-nums focus:border-zinc-400 focus:outline-none"
+                    />
+                    {group.manualSubtotal != null && (
+                      <button
+                        type="button"
+                        onClick={() => onSetManualPrice(group.key, null)}
+                        className="text-[11px] font-medium text-blue-600 hover:underline"
+                      >
+                        Сбросить
+                      </button>
+                    )}
+                  </div>
+
                   {group.kitItems.length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-zinc-200 pt-3">
                       {group.entries.map((entry, entryIdx) => {
