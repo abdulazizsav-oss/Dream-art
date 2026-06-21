@@ -42,7 +42,7 @@ export async function normalizeOrderItemsForBilling(
   const equipmentIds = Array.from(new Set(items.map(item => item.equipment_id)))
   const { data, error } = await supabase
     .from('equipment')
-    .select('id, daily_rate, day_rate, night_rate, day_night, currency, kit_items')
+    .select('id, daily_rate, day_rate, night_rate, day_night, currency, kit_items, kit')
     .in('id', equipmentIds)
 
   if (error) throw new OrderPricingError(error.message, 500)
@@ -58,6 +58,7 @@ export async function normalizeOrderItemsForBilling(
         day_night: row.day_night ?? 'both',
         currency: row.currency ?? 'UZS',
         kit_items: row.kit_items ?? [],
+        kit: sanitizeKitCatalog(row.kit),
       },
     ]),
   )
