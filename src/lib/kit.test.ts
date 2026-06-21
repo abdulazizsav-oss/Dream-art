@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { expandKitUnits, groupKitUnits, formatKitGroup } from './kit'
+import {
+  expandKitUnits, groupKitUnits, formatKitGroup,
+  kitPerShift, defaultKitSelection, kitSelectionToNames, reconcileKitSelection,
+} from './kit'
 
 test('expandKitUnits: qty >= 2 produces numbered units', () => {
   assert.deepEqual(expandKitUnits('Батарея', 2), ['Батарея 1', 'Батарея 2'])
