@@ -16,6 +16,7 @@ import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButt
 import { AddItemsModal } from '@/components/orders/AddItemsModal'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
+import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
 import { formatMissingKitAge, formatMissingSinceDateTime } from '@/lib/missing-kit'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
