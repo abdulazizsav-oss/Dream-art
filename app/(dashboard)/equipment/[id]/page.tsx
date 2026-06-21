@@ -181,6 +181,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             source: item.source ?? undefined,
             sort_order: item.sort_order,
             kit_items: kitItems,
+            kit: kitCatalog,
           }}
         />
       </div>
