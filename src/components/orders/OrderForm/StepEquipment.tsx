@@ -68,10 +68,9 @@ export function StepEquipment({
       rate_source: template?.rate_source ?? 'auto',
       manual_subtotal: template?.manual_subtotal ?? null,
       condition_on_issue: 'Хорошее',
-      // По умолчанию выдаём комплект по каталогу (default_qty); в корзине можно изменить кол-во.
-      kit_selection: template?.kit_selection
-        ? template.kit_selection
-        : defaultKitSelection(sanitizeKitCatalog((item as { kit?: unknown }).kit)),
+      // По умолчанию ничего не отмечено — менеджер сам выбирает, что выдал.
+      // При добавлении ещё одной единицы наследуем выбор первой.
+      kit_selection: template?.kit_selection ?? [],
     }
   }
 
