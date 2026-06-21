@@ -7,6 +7,7 @@
 
 import type { Equipment } from '@/types/database'
 import type { OrderItemFormValue } from '@/lib/validations/order'
+import { kitPerShift, kitSelectionToNames } from './kit'
 import {
   buildTashkentDate,
   computeOrderBilling,
