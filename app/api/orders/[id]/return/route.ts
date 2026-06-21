@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // 1. Загружаем заказ + все позиции с equipment-ставками
   const { data: order, error: orderErr } = await service
     .from('orders')
-    .select('id, client_id, actual_start_at, order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, equipment(day_rate, night_rate, daily_rate, day_night))')
+    .select('id, client_id, actual_start_at, order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, kit_selection, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, equipment(day_rate, night_rate, daily_rate, day_night))')
     .eq('id', id)
     .single()
 
