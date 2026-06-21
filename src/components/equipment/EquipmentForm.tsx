@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ImageUpload } from '@/components/ui/ImageUpload'
 import { TagInput } from '@/components/ui/TagInput'
+import { groupKitUnits, formatKitGroup } from '@/lib/kit'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
