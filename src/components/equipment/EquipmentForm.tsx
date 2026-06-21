@@ -69,7 +69,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   const dayNight = (watch('day_night') as EquipmentFormValues['day_night'] | undefined) ?? 'day'
   const dayRate = Number(watch('day_rate') ?? 0)
   const nightRate = Number(watch('night_rate') ?? 0)
-  const kitItems = (watch('kit_items') as string[] | undefined) ?? []
+  const kit = (watch('kit') as KitComponent[] | undefined) ?? []
   const supportsNightRate = dayNight !== 'day'
 
   function setNightShiftEnabled(enabled: boolean) {
