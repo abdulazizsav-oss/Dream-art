@@ -3,6 +3,7 @@
 import { useState, KeyboardEvent } from 'react'
 import { X, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { expandKitUnits } from '@/lib/kit'
 
 interface TagInputProps {
   value: string[]
@@ -11,6 +12,12 @@ interface TagInputProps {
   suggestions?: string[]
   className?: string
   disabled?: boolean
+  /**
+   * Режим количества: рядом с полем появляется числовой ввод. При добавлении
+   * элемент с кол-вом N>1 разворачивается в пронумерованные единицы
+   * («Батарея ×2» → «Батарея 1», «Батарея 2»).
+   */
+  enableQuantity?: boolean
 }
 
 export function TagInput({
@@ -20,15 +27,24 @@ export function TagInput({
   suggestions = [],
   className,
   disabled,
+  enableQuantity = false,
 }: TagInputProps) {
   const [draft, setDraft] = useState('')
+  const [qty, setQty] = useState(1)
 
-  function addTag(tag: string) {
-    const trimmed = tag.trim()
-    if (!trimmed) return
-    if (value.includes(trimmed)) return
-    onChange([...value, trimmed])
+  function addTags(tags: string[]) {
+    const next = [...value]
+    for (const tag of tags) {
+      const trimmed = tag.trim()
+      if (trimmed && !next.includes(trimmed)) next.push(trimmed)
+    }
+    if (next.length !== value.length) onChange(next)
     setDraft('')
+    setQty(1)
+  }
+
+  function commitDraft() {
+    addTags(enableQuantity ? expandKitUnits(draft, qty) : [draft])
   }
 
   function removeTag(tag: string) {
@@ -38,7 +54,7 @@ export function TagInput({
   function handleKey(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
-      addTag(draft)
+      commitDraft()
     } else if (e.key === 'Backspace' && !draft && value.length > 0) {
       removeTag(value[value.length - 1])
     }
