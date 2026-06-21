@@ -1,5 +1,6 @@
 import type { OrderItemFormValue } from '@/lib/validations/order'
 import { recalculateOrderItems } from '@/lib/rental'
+import { reconcileKitSelection, sanitizeKitCatalog, type KitComponent } from '@/lib/kit'
 
 type EquipmentPricingRow = {
   id: string
@@ -9,6 +10,7 @@ type EquipmentPricingRow = {
   day_night: 'day' | 'night' | 'both' | null
   currency: 'UZS' | 'USD' | null
   kit_items: string[] | null
+  kit: unknown
 }
 
 export class OrderPricingError extends Error {
