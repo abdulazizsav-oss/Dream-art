@@ -300,6 +300,8 @@ export interface ActiveItemInput {
    * от фактической длительности (actual_start_at → now()).
    */
   manual_subtotal?: number | null
+  /** Доплата за смену по платному комплекту (Σ unit_price × qty). */
+  kit_per_shift?: number | null
 }
 
 export interface ActiveItemResult {
