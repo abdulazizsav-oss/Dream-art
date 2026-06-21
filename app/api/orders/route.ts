@@ -107,6 +107,21 @@ export async function POST(req: NextRequest) {
     if (manualErr) console.error('manual_subtotal update failed', manualErr.message)
   }
 
+  // Платный комплект: сохраняем выбор (kit_selection) по каждой технике. Колонка из миграции 022.
+  // subtotal уже включает доплату; kit_selection нужен для отображения и пересчёта при возврате.
+  const kitByEquipment = new Map<string, unknown>()
+  for (const it of normalizedItems) {
+    if (it.kit_selection && it.kit_selection.length > 0) kitByEquipment.set(it.equipment_id, it.kit_selection)
+  }
+  for (const [equipmentId, selection] of kitByEquipment) {
+    const { error: kitErr } = await service
+      .from('order_items')
+      .update({ kit_selection: selection } as never)
+      .eq('order_id', orderId as string)
+      .eq('equipment_id', equipmentId)
+    if (kitErr) console.error('kit_selection update failed', kitErr.message)
+  }
+
   // Fetch created order for response + notifications
   const { data: order } = await service
     .from('orders')
