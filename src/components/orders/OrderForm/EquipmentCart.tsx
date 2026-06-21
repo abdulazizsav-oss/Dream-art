@@ -215,34 +215,42 @@ export function EquipmentCart({
                     )}
                   </div>
 
-                  {group.kitItems.length > 0 && (
-                    <div className="mt-3 space-y-2 border-t border-zinc-200 pt-3">
-                      {group.entries.map((entry, entryIdx) => {
-                        const selectedKit = entry.item.selected_kit_items ?? []
+                  {group.kitCatalog.length > 0 && (
+                    <div className="mt-3 space-y-1.5 border-t border-zinc-200 pt-3">
+                      <p className="text-[11px] font-medium text-zinc-500">Комплект (кол-во на 1 шт.)</p>
+                      {group.kitCatalog.map(comp => {
+                        const qty = group.kitSelection.find(e => e.name === comp.name)?.qty ?? 0
+                        const paid = comp.price > 0
                         return (
-                          <div key={entry.index}>
-                            <p className="mb-1.5 text-[11px] font-medium text-zinc-500">
-                              Комплект #{entryIdx + 1}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {group.kitItems.map(kitItem => {
-                                const included = selectedKit.includes(kitItem)
-                                return (
-                                  <button
-                                    key={kitItem}
-                                    type="button"
-                                    onClick={() => onToggleKitItem(entry.index, kitItem, !included)}
-                                    className={cn(
-                                      'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                                      included
-                                        ? 'border-zinc-900 bg-zinc-900 text-white'
-                                        : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-400',
-                                    )}
-                                  >
-                                    {kitItem}
-                                  </button>
-                                )
-                              })}
+                          <div key={comp.name} className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 truncate">
+                              <span className="text-xs text-zinc-700">{comp.name}</span>
+                              {paid && (
+                                <span className="ml-1 text-[11px] font-medium text-blue-600">
+                                  {formatCurrency(comp.price, group.currency)}/смена
+                                </span>
+                              )}
+                            </div>
+                            <div className="inline-flex items-center gap-1 rounded-full border bg-white px-1 py-0.5">
+                              <button
+                                type="button"
+                                aria-label="Меньше"
+                                onClick={() => onSetKitQty(group.key, comp.name, Math.max(0, qty - 1))}
+                                disabled={qty <= 0}
+                                className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-zinc-100 disabled:opacity-30"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="min-w-[20px] text-center text-xs font-semibold tabular-nums">{qty}</span>
+                              <button
+                                type="button"
+                                aria-label="Больше"
+                                onClick={() => onSetKitQty(group.key, comp.name, Math.min(comp.max_qty, qty + 1))}
+                                disabled={qty >= comp.max_qty}
+                                className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-zinc-700 disabled:opacity-30"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           </div>
                         )
