@@ -185,7 +185,7 @@ export function StepEquipment({
             onIncrement={handleCartIncrement}
             onDecrement={removeLastOfPosition}
             onRemoveAll={removeAllOfPosition}
-            onToggleKitItem={handleToggleKitItem}
+            onSetKitQty={handleSetKitQty}
             onSetShiftMode={handleSetShiftMode}
             onSetManualPrice={handleSetManualPrice}
           />
