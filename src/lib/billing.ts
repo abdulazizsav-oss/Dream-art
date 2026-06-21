@@ -245,7 +245,8 @@ export function computeOrderBilling(input: {
       shiftType = 'night'
     }
 
-    const subtotal = it.day_rate * dayUnits + nightRate * nightUnits
+    const kitPerShift = it.kit_per_shift ?? 0
+    const subtotal = it.day_rate * dayUnits + nightRate * nightUnits + kitPerShift * (dayUnits + nightUnits)
 
     return {
       equipment_id: it.equipment_id,
