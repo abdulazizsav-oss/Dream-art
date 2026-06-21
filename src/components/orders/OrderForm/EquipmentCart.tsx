@@ -54,7 +54,8 @@ function groupByEquipment(items: OrderItemFormValue[], equipment: EquipmentRow[]
         manualSubtotal: item.manual_subtotal ?? null,
         equipment: eq,
         entries: [],
-        kitItems: (eq?.kit_items ?? []) as string[],
+        kitCatalog: sanitizeKitCatalog((eq as { kit?: unknown } | undefined)?.kit),
+        kitSelection: (item.kit_selection ?? []) as KitSelectionEntry[],
       })
     }
 
