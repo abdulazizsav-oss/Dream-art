@@ -68,8 +68,10 @@ export function StepEquipment({
       rate_source: template?.rate_source ?? 'auto',
       manual_subtotal: template?.manual_subtotal ?? null,
       condition_on_issue: 'Хорошее',
-      // По умолчанию выдаём весь комплект техники; в корзине можно снять лишнее.
-      selected_kit_items: [...((item.kit_items as string[] | undefined) ?? [])],
+      // По умолчанию выдаём комплект по каталогу (default_qty); в корзине можно изменить кол-во.
+      kit_selection: template?.kit_selection
+        ? template.kit_selection
+        : defaultKitSelection(sanitizeKitCatalog((item as { kit?: unknown }).kit)),
     }
   }
 
