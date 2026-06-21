@@ -57,6 +57,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     days: number
     subtotal: number
     manual_subtotal?: number | null
+    kit_selection?: unknown
     shift_type: 'day' | 'night'
     rate_source?: 'auto' | 'manual' | null
     actual_start_at?: string | null
