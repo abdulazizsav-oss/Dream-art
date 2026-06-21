@@ -239,13 +239,14 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
           <Label>Комплектация</Label>
         </div>
         <p className="text-xs text-gray-400 -mt-2">
-          Что выдаётся вместе с техникой. При оформлении заказа админ отмечает галочками, что именно выдано клиенту.
+          Что выдаётся вместе с техникой. Для нескольких одинаковых (напр. 2 аккумулятора) укажите количество «×» — они станут отдельными единицами (Аккумулятор 1, Аккумулятор 2), чтобы можно было отметить недосдачу одной из них.
         </p>
         <TagInput
           value={kitItems}
           onChange={tags => setValue('kit_items', tags)}
           placeholder="Напишите и нажмите Enter…"
           suggestions={KIT_SUGGESTIONS}
+          enableQuantity
         />
       </div>
 
