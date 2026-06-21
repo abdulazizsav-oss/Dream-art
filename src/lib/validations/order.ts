@@ -27,6 +27,15 @@ export const orderItemSchema = z.object({
   manual_subtotal: z.number().min(0).nullable().optional(),
   condition_on_issue: z.string().default('Хорошее'),
   selected_kit_items: z.array(z.string()).default([]).optional(),
+  /**
+   * Выбранный комплект с количеством и ценой за смену. Источник истины для
+   * платного комплекта; selected_kit_items выводятся из него (имена-единицы).
+   */
+  kit_selection: z.array(z.object({
+    name: z.string(),
+    qty: z.number().int().min(0),
+    unit_price: z.number().min(0),
+  })).default([]).optional(),
 })
 
 export const orderSchema = z.object({
