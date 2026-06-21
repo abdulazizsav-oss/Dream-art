@@ -305,7 +305,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                 </p>
               )}
               <p className="text-[11px] text-gray-500">
-                Зачёркнуто — сдали. Залитая цветом кнопка — не сдано.
+                По умолчанию всё сдано (зачёркнуто). Нажмите на элемент, который НЕ вернули — станет оранжевым.
               </p>
             </div>
 
