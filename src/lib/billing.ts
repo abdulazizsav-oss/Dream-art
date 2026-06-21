@@ -375,6 +375,7 @@ export function computeActiveOrderTotal(args: {
           night_rate: it.night_rate,
           day_night: it.day_night,
           override: it.rate_source === 'manual' ? it.shift_type : null,
+          kit_per_shift: it.kit_per_shift ?? 0,
         }],
       })
       const billed = billing.items[0]
