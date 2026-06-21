@@ -198,6 +198,48 @@ test('manual_subtotal freezes the item total regardless of elapsed time', () => 
   assert.equal(result.perItem.get('item-manual')?.frozen, true)
 })
 
+test('kit_per_shift adds to the per-shift subtotal (preview)', () => {
+  // Вечерний старт → 1 ночная смена. База 150 000 + доп. комплект 30 000/смена = 180 000.
+  const billing = computeOrderBilling({
+    start: buildTashkentDate('2026-04-24', '20:46'),
+    end: buildTashkentDate('2026-04-25', '18:26'),
+    items: [{
+      equipment_id: 'cam',
+      day_rate: 50_000,
+      night_rate: 150_000,
+      day_night: 'both',
+      kit_per_shift: 30_000,
+    }],
+  })
+  assert.equal(billing.items[0]?.subtotal, 180_000)
+  assert.equal(billing.total_amount, 180_000)
+})
+
+test('computeActiveOrderTotal includes kit_per_shift in live recompute', () => {
+  const result = computeActiveOrderTotal({
+    now: buildTashkentDate('2026-04-25', '18:26'),
+    items: [{
+      id: 'i1',
+      equipment_id: 'cam',
+      rate_source: 'auto',
+      actual_start_at: buildTashkentDate('2026-04-24', '20:46').toISOString(),
+      actual_end_at: null,
+      final_subtotal: null,
+      final_day_units: null,
+      final_night_units: null,
+      day_rate: 150_000,
+      night_rate: 150_000,
+      subtotal: 0,
+      day_units: 0,
+      night_units: 0,
+      shift_type: 'night',
+      kit_per_shift: 30_000,
+    }],
+  })
+  // 1 ночь: база 150 000 + доп. 30 000 = 180 000
+  assert.equal(result.total_amount, 180_000)
+})
+
 test('a returned manual item still uses final_subtotal, not manual_subtotal', () => {
   const result = computeActiveOrderTotal({
     now: buildTashkentDate('2026-04-25', '18:00'),
