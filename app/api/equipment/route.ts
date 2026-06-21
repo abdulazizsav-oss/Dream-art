@@ -49,9 +49,12 @@ export async function POST(req: NextRequest) {
   const parsed = equipmentSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
+  const kit = parsed.data.kit ?? []
   const payload = {
     ...parsed.data,
     daily_rate: parsed.data.day_rate,
+    // kit_items держим синхронным с каталогом kit (имена) для обратной совместимости.
+    kit_items: kit.length > 0 ? kit.map(c => c.name) : (parsed.data.kit_items ?? []),
   }
 
   const { data, error } = await supabase
