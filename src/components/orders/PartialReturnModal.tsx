@@ -54,10 +54,11 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
   const [splits, setSplits] = useState<Split[]>([{ method: 'cash', amount: '' }])
   const [notes, setNotes] = useState('')
 
-  // Комплект: пользователь явно отмечает только то, что вернулось сейчас.
+  // Комплект: по умолчанию весь комплект считается возвращённым —
+  // менеджер снимает отметку только с того, что НЕ вернули.
   const [returnedKit, setReturnedKit] = useState<Record<string, Set<string>>>(() => {
     const init: Record<string, Set<string>> = {}
-    for (const it of items) init[it.id] = new Set<string>()
+    for (const it of items) init[it.id] = new Set(it.selected_kit_items)
     return init
   })
 
