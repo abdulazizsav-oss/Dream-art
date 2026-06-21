@@ -138,6 +138,7 @@ export type Database = {
           source?: string | null
           sort_order?: number
           kit_items?: string[]
+          kit?: Json
           day_night?: 'day' | 'night' | 'both'
           created_at?: string
           updated_at?: string
