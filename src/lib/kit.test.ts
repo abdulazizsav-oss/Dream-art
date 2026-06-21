@@ -41,3 +41,36 @@ test('formatKitGroup: ×N for multiples, original name for singletons', () => {
   // легаси-метка "BAT 2" (число — часть названия) не должна превратиться в "BAT"
   assert.equal(formatKitGroup(groupKitUnits(['BAT 2'])[0]), 'BAT 2')
 })
+
+test('kitPerShift sums unit_price × qty', () => {
+  assert.equal(kitPerShift([
+    { name: 'Акк', qty: 2, unit_price: 30_000 },
+    { name: 'SD', qty: 1, unit_price: 20_000 },
+  ]), 80_000)
+  assert.equal(kitPerShift([]), 0)
+  assert.equal(kitPerShift(null), 0)
+})
+
+test('defaultKitSelection takes default_qty and drops zero-default', () => {
+  const sel = defaultKitSelection([
+    { name: 'Body', price: 0, default_qty: 1, max_qty: 1 },
+    { name: 'Доп. аккумулятор', price: 30_000, default_qty: 0, max_qty: 2 },
+  ])
+  assert.deepEqual(sel, [{ name: 'Body', qty: 1, unit_price: 0 }])
+})
+
+test('reconcileKitSelection clamps qty to max_qty and takes catalog price', () => {
+  const catalog = [{ name: 'Акк', price: 30_000, default_qty: 1, max_qty: 2 }]
+  const out = reconcileKitSelection(
+    [{ name: 'Акк', qty: 5, unit_price: 999 }, { name: 'Левый', qty: 1, unit_price: 1 }],
+    catalog,
+  )
+  assert.deepEqual(out, [{ name: 'Акк', qty: 2, unit_price: 30_000 }])
+})
+
+test('kitSelectionToNames expands qty into numbered units', () => {
+  assert.deepEqual(
+    kitSelectionToNames([{ name: 'Акк', qty: 2, unit_price: 0 }, { name: 'SD', qty: 1, unit_price: 0 }]),
+    ['Акк 1', 'Акк 2', 'SD'],
+  )
+})
