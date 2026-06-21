@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { EquipmentGrid, type EquipmentRow } from './EquipmentGrid'
 import { EquipmentCart } from './EquipmentCart'
 import { getAutoShiftType, getEquipmentRate, recalculateOrderItems, supportsNightShift } from '@/lib/rental'
+import { defaultKitSelection, reconcileKitSelection, sanitizeKitCatalog, type KitSelectionEntry } from '@/lib/kit'
 
 interface StepEquipmentProps {
   equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
