@@ -140,8 +140,13 @@ export function recalculateOrderItems(
       day_units: billed.day_units,
       night_units: billed.night_units,
       days: billed.day_units + billed.night_units,
+      // subtotal billed уже включает доплату за комплект (kit_per_shift × смены).
       subtotal: manual ? item.manual_subtotal! : billed.subtotal,
       rate_source: item.rate_source ?? 'auto',
+      // selected_kit_items выводим из kit_selection (источник истины) для трекинга.
+      selected_kit_items: item.kit_selection !== undefined
+        ? kitSelectionToNames(item.kit_selection)
+        : item.selected_kit_items,
     }
   })
 }
