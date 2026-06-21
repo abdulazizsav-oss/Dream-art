@@ -31,6 +31,10 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
     .single()
 
   const kitItems = ((item as any).kit_items ?? []) as string[]
+  // Каталог комплекта с ценами; для старой техники до миграции выводим из kit_items (цена 0).
+  const kitCatalog = (((item as any).kit ?? []) as unknown[]).length > 0
+    ? (item as any).kit
+    : kitItems.map((name) => ({ name, price: 0, default_qty: 1, max_qty: 1 }))
   const [{ data: categories }, { data: brands }] = await Promise.all([
     supabase.from('equipment_categories').select('*').order('sort_order').order('name'),
     supabase.from('brands').select('id, name, logo_url').order('sort_order').order('name'),
