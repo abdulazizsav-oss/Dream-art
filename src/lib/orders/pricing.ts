@@ -80,13 +80,20 @@ export async function normalizeOrderItemsForBilling(
       typeof item.manual_subtotal === 'number' && Number.isFinite(item.manual_subtotal) && item.manual_subtotal >= 0
         ? item.manual_subtotal
         : null
+    // Платный комплект: цены и max_qty берём из каталога техники (клиенту не доверяем).
+    // selected_kit_items выводятся из kit_selection в recalculateOrderItems.
+    const reconciledKit = item.kit_selection !== undefined
+      ? reconcileKitSelection(item.kit_selection, equipment.kit as KitComponent[])
+      : undefined
     return {
       ...item,
       daily_rate: equipment.day_rate,
       day_rate_snapshot: equipment.day_rate,
       night_rate_snapshot: equipment.night_rate,
       manual_subtotal: manualSubtotal,
-      selected_kit_items: (item.selected_kit_items ?? []).filter(kitItem => allowedKit.has(kitItem)),
+      ...(reconciledKit !== undefined
+        ? { kit_selection: reconciledKit }
+        : { selected_kit_items: (item.selected_kit_items ?? []).filter(kitItem => allowedKit.has(kitItem)) }),
     }
   })
 
