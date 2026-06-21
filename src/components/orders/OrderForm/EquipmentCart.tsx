@@ -73,7 +73,7 @@ export function EquipmentCart({
   onIncrement,
   onDecrement,
   onRemoveAll,
-  onToggleKitItem,
+  onSetKitQty,
   onSetShiftMode,
   onSetManualPrice,
 }: EquipmentCartProps) {
