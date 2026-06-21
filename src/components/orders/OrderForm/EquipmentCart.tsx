@@ -231,27 +231,44 @@ export function EquipmentCart({
                                 </span>
                               )}
                             </div>
-                            <div className="inline-flex items-center gap-1 rounded-full border bg-white px-1 py-0.5">
+                            {comp.max_qty > 1 ? (
+                              // Можно взять несколько (напр. аккумулятор) — степпер +/−.
+                              <div className="inline-flex items-center gap-1 rounded-full border bg-white px-1 py-0.5">
+                                <button
+                                  type="button"
+                                  aria-label="Меньше"
+                                  onClick={() => onSetKitQty(group.key, comp.name, Math.max(0, qty - 1))}
+                                  disabled={qty <= 0}
+                                  className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-zinc-100 disabled:opacity-30"
+                                >
+                                  <Minus className="h-3.5 w-3.5" />
+                                </button>
+                                <span className="min-w-[20px] text-center text-xs font-semibold tabular-nums">{qty}</span>
+                                <button
+                                  type="button"
+                                  aria-label="Больше"
+                                  onClick={() => onSetKitQty(group.key, comp.name, Math.min(comp.max_qty, qty + 1))}
+                                  disabled={qty >= comp.max_qty}
+                                  className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-zinc-700 disabled:opacity-30"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              // Только 0 или 1 — кнопка-переключатель «выдан / не выдан».
                               <button
                                 type="button"
-                                aria-label="Меньше"
-                                onClick={() => onSetKitQty(group.key, comp.name, Math.max(0, qty - 1))}
-                                disabled={qty <= 0}
-                                className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-zinc-100 disabled:opacity-30"
+                                onClick={() => onSetKitQty(group.key, comp.name, qty > 0 ? 0 : 1)}
+                                className={cn(
+                                  'inline-flex min-h-[32px] items-center gap-1 rounded-full border px-3 text-xs font-medium transition-colors',
+                                  qty > 0
+                                    ? 'border-zinc-900 bg-zinc-900 text-white'
+                                    : 'border-zinc-200 bg-white text-zinc-500 hover:border-zinc-400',
+                                )}
                               >
-                                <Minus className="h-3.5 w-3.5" />
+                                {qty > 0 ? '✓ Выдан' : 'Выдать'}
                               </button>
-                              <span className="min-w-[20px] text-center text-xs font-semibold tabular-nums">{qty}</span>
-                              <button
-                                type="button"
-                                aria-label="Больше"
-                                onClick={() => onSetKitQty(group.key, comp.name, Math.min(comp.max_qty, qty + 1))}
-                                disabled={qty >= comp.max_qty}
-                                className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white transition-colors hover:bg-zinc-700 disabled:opacity-30"
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
+                            )}
                           </div>
                         )
                       })}
