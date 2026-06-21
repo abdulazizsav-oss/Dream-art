@@ -41,6 +41,8 @@ export interface BillingItemInput {
   day_night?: ShiftCapability | null
   /** Если `manual` — все смены уходят в указанный shift_type */
   override?: ShiftType | null
+  /** Доплата за смену по платному комплекту (Σ unit_price × qty). Прибавляется к subtotal × смены. */
+  kit_per_shift?: number | null
 }
 
 export interface BillingItemResult {
