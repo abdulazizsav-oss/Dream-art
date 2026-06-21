@@ -91,11 +91,34 @@ export function TagInput({
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={handleKey}
-          onBlur={() => addTag(draft)}
+          onBlur={() => { if (!enableQuantity) commitDraft() }}
           placeholder={value.length === 0 ? placeholder : ''}
           disabled={disabled}
           className="flex-1 min-w-[120px] bg-transparent outline-none placeholder:text-gray-400 py-1"
         />
+        {enableQuantity && (
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-400">×</span>
+            <input
+              type="number"
+              min={1}
+              value={qty}
+              onChange={e => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+              disabled={disabled}
+              aria-label="Количество"
+              className="w-12 rounded-md border border-input bg-background px-1.5 py-1 text-center text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={commitDraft}
+              disabled={disabled || !draft.trim()}
+              className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-40"
+            >
+              <Plus className="w-3 h-3" />
+              Добавить
+            </button>
+          </div>
+        )}
       </div>
 
       {availableSuggestions.length > 0 && (
@@ -105,12 +128,12 @@ export function TagInput({
             <button
               key={s}
               type="button"
-              onClick={() => addTag(s)}
+              onClick={() => addTags(enableQuantity ? expandKitUnits(s, qty) : [s])}
               disabled={disabled}
               className="inline-flex items-center gap-1 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-xs text-gray-600 transition-colors"
             >
               <Plus className="w-3 h-3" />
-              {s}
+              {s}{enableQuantity && qty > 1 ? ` ×${qty}` : ''}
             </button>
           ))}
         </div>
