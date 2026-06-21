@@ -48,10 +48,11 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
   const [notes, setNotes] = useState('')
   const [leaveDebt, setLeaveDebt] = useState(false)
 
-  // Kit tracking: start empty so the manager explicitly marks what came back.
+  // Kit tracking: по умолчанию считаем, что вернулся весь комплект —
+  // менеджер снимает отметку только с того, что НЕ вернули (забытая батарейка).
   const [returnedKit, setReturnedKit] = useState<Record<string, Set<string>>>(() => {
     const init: Record<string, Set<string>> = {}
-    for (const it of items) init[it.id] = new Set<string>()
+    for (const it of items) init[it.id] = new Set(it.selected_kit_items)
     return init
   })
 
