@@ -535,6 +535,7 @@ export type Database = {
           days?: number
           subtotal?: number
           manual_subtotal?: number | null
+          kit_selection?: Json
           shift_type?: ShiftType
           rate_source?: RateSource
           condition_on_issue?: string | null
