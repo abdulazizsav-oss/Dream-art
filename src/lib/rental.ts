@@ -118,6 +118,7 @@ export function recalculateOrderItems(
       night_rate: nightRate,
       day_night: eq?.day_night ?? null,
       override,
+      kit_per_shift: kitPerShift(item.kit_selection),
     }
   })
 
