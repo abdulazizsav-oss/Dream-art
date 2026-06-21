@@ -101,19 +101,24 @@ export function StepEquipment({
     addUnit(item)
   }
 
-  function handleToggleKitItem(index: number, kitItem: string, included: boolean) {
-    const next = [...selectedItems]
-    const current = next[index]
-    if (!current) return
-
-    const selected = current.selected_kit_items ?? []
-    next[index] = {
-      ...current,
-      selected_kit_items: included
-        ? Array.from(new Set([...selected, kitItem]))
-        : selected.filter(value => value !== kitItem),
-    }
-
+  function handleSetKitQty(equipmentId: string, name: string, qty: number) {
+    const eq = equipmentRows.find(row => row.id === equipmentId)
+    const catalog = sanitizeKitCatalog((eq as { kit?: unknown } | undefined)?.kit)
+    const next = selectedItems.map(item => {
+      if (item.equipment_id !== equipmentId) return item
+      const current = (item.kit_selection ?? []) as KitSelectionEntry[]
+      let updated: KitSelectionEntry[]
+      if (qty <= 0) {
+        updated = current.filter(e => e.name !== name)
+      } else if (current.some(e => e.name === name)) {
+        updated = current.map(e => (e.name === name ? { ...e, qty } : e))
+      } else {
+        const comp = catalog.find(c => c.name === name)
+        updated = [...current, { name, qty, unit_price: comp?.price ?? 0 }]
+      }
+      // Сверяем с каталогом: ограничиваем по max_qty и берём цены из каталога.
+      return { ...item, kit_selection: reconcileKitSelection(updated, catalog) }
+    })
     syncItems(next)
   }
 
