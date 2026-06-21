@@ -21,6 +21,13 @@ export const equipmentSchema = z.object({
   source: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   sort_order: z.coerce.number().int().min(0).default(0).optional(),
   kit_items: z.array(z.string()).default([]).optional(),
+  // Каталог комплекта с ценами и количеством. kit_items держим синхронным (имена).
+  kit: z.array(z.object({
+    name: z.string().min(1),
+    price: z.coerce.number().min(0).default(0),
+    default_qty: z.coerce.number().int().min(0).default(1),
+    max_qty: z.coerce.number().int().min(1).default(1),
+  })).default([]).optional(),
 })
 
 export type EquipmentFormInput = z.input<typeof equipmentSchema>
