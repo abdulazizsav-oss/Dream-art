@@ -8,6 +8,7 @@ import type { RateSource, ShiftType } from '@/lib/rental'
 import type { OrderItemFormValue } from '@/lib/validations/order'
 import type { EquipmentRow } from './EquipmentGrid'
 import { LiveTotal } from './LiveTotal'
+import { sanitizeKitCatalog, type KitComponent, type KitSelectionEntry } from '@/lib/kit'
 
 interface CartGroup {
   key: string
@@ -18,7 +19,8 @@ interface CartGroup {
   manualSubtotal: number | null
   equipment: EquipmentRow | undefined
   entries: { item: OrderItemFormValue; index: number }[]
-  kitItems: string[]
+  kitCatalog: KitComponent[]
+  kitSelection: KitSelectionEntry[]
 }
 
 interface EquipmentCartProps {
@@ -29,7 +31,7 @@ interface EquipmentCartProps {
   onIncrement: (equipmentId: string) => void
   onDecrement: (equipmentId: string) => void
   onRemoveAll: (equipmentId: string) => void
-  onToggleKitItem: (index: number, kitItem: string, included: boolean) => void
+  onSetKitQty: (equipmentId: string, name: string, qty: number) => void
   onSetShiftMode: (equipmentId: string, mode: 'auto' | ShiftType) => void
   /** value = ручная цена за единицу; null = вернуть авто-расчёт */
   onSetManualPrice: (equipmentId: string, value: number | null) => void
