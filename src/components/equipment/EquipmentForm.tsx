@@ -240,20 +240,17 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
           <Label>Комплектация</Label>
         </div>
         <p className="text-xs text-gray-400 -mt-2">
-          Что выдаётся вместе с техникой. Для нескольких одинаковых (напр. 2 аккумулятора) укажите количество «×» — они станут отдельными единицами (Аккумулятор 1, Аккумулятор 2), чтобы можно было отметить недосдачу одной из них.
+          Что входит/выдаётся с техникой. <b>Цена 0</b> — входит в базовую стоимость. <b>Цена &gt; 0</b> — платный доп. (считается за смену, как аренда). <b>Макс.</b> — сколько можно взять (напр. аккумулятор макс. 2).
         </p>
-        <TagInput
-          value={kitItems}
-          onChange={tags => setValue('kit_items', tags)}
-          placeholder="Напишите и нажмите Enter…"
+        <KitCatalogEditor
+          value={kit}
+          onChange={next => {
+            setValue('kit', next)
+            // kit_items держим синхронным (имена) для обратной совместимости.
+            setValue('kit_items', next.map(c => c.name))
+          }}
           suggestions={KIT_SUGGESTIONS}
-          enableQuantity
         />
-        {kitItems.length > 0 && (
-          <p className="text-xs text-gray-500">
-            Состав: {groupKitUnits(kitItems).map(formatKitGroup).join(', ')}
-          </p>
-        )}
       </div>
 
       <div className="space-y-1.5">
