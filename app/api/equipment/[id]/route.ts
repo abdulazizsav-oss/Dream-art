@@ -35,6 +35,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const payload = {
     ...parsed.data,
     ...(parsed.data.day_rate !== undefined ? { daily_rate: parsed.data.day_rate } : {}),
+    // При обновлении каталога kit держим kit_items синхронным (имена).
+    ...(parsed.data.kit !== undefined ? { kit_items: parsed.data.kit.map(c => c.name) } : {}),
   }
 
   const { data, error } = await supabase
