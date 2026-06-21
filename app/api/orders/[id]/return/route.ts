@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
+import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
 
 function parseActualEndAt(value: string | null | undefined) {
   if (!value) return new Date()
