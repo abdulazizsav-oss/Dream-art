@@ -249,6 +249,11 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
           suggestions={KIT_SUGGESTIONS}
           enableQuantity
         />
+        {kitItems.length > 0 && (
+          <p className="text-xs text-gray-500">
+            Состав: {groupKitUnits(kitItems).map(formatKitGroup).join(', ')}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
