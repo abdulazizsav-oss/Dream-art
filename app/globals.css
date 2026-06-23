@@ -180,8 +180,10 @@
   button:not(:disabled):active,
   [role="button"]:not([aria-disabled="true"]):active,
   a:active {
-    transform: scale(0.98);
-    transition: transform 80ms ease-out;
+    scale: 0.96;
+    transition-property: scale;
+    transition-duration: 80ms;
+    transition-timing-function: ease-out;
   }
 
   /* Плавный fade-in для основного контента страниц при входе */
