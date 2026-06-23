@@ -416,13 +416,13 @@ export function StepClient({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-gray-400" /> Телефон
+                  <Phone className="w-3.5 h-3.5 text-gray-400" /> Телефон *
                 </Label>
                 <Input
                   value={trustedPerson.phone}
                   onChange={e => onTrustedPersonChange({ ...trustedPerson, phone: e.target.value })}
                   placeholder="+998 90 000-00-00"
-                  className="min-h-[44px]"
+                  className={cn('min-h-[44px]', trustedPerson.name.trim() && !trustedPerson.phone.trim() ? 'border-orange-300' : '')}
                 />
               </div>
               <div className="space-y-1.5">
