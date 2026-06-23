@@ -305,9 +305,10 @@ export function CatalogEquipmentGrid({
               <>
                 <Link
                   href={`/equipment/${item.id}`}
-                  className="absolute right-2 top-2 z-10 rounded-lg bg-white/90 p-1.5 opacity-0 shadow-sm transition-opacity hover:bg-white group-hover:opacity-100"
+                  aria-label="Редактировать"
+                  className="absolute right-2 top-2 z-10 inline-flex items-center justify-center rounded-lg bg-white/90 p-2 shadow-sm transition-opacity hover:bg-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                 >
-                  <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                  <Pencil className="h-4 w-4 text-gray-600" />
                 </Link>
                 <Link href={`/equipment/${item.id}`} className="block">
                   <EquipmentCardBody item={item} index={index} editing={false} />
