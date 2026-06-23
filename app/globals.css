@@ -123,12 +123,34 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Более чёткий текст на macOS / Retina */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans;
     /* Improve tap responsiveness on touch devices */
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+  }
+
+  /* Заголовки — балансируем переносы; основной текст — без «сирот» */
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Числа, которые меняются (суммы, счётчики), — моноширинные, без скачков ширины */
+  .tabular-nums, [class*="tabular"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Тонкий контур на фото — единая «глубина» края (чистый чёрный, низкая прозрачность) */
+  img:not([aria-hidden="true"]) {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   }
 
   /* Tablet-first touch targets: all interactive elements ≥ 44px */
