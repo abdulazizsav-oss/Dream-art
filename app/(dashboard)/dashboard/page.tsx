@@ -209,7 +209,7 @@ function KpiCard({ title, value, icon, href, color }: {
 
   return (
     <Link href={href}>
-      <div className="bg-white rounded-xl border p-4 hover:shadow-sm transition-shadow">
+      <div className="bg-white rounded-xl p-4 shadow-border shadow-border-hover">
         <div className="flex items-center justify-between mb-2">
           <div className={cn('p-2 rounded-lg', bg)}>{icon}</div>
         </div>
