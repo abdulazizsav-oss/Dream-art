@@ -261,6 +261,17 @@
 
 /* Плавные переходы для цветов/фонов */
 @layer utilities {
+  /* Тень-вместо-границы для карточек — адаптируется к любому фону, в отличие от border */
+  .shadow-border {
+    box-shadow: var(--shadow-border);
+    transition-property: box-shadow;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
+  .shadow-border-hover:hover {
+    box-shadow: var(--shadow-border-hover);
+  }
+
   .transition-smooth {
     transition-property: color, background-color, border-color, opacity, box-shadow, transform;
     transition-duration: 160ms;
