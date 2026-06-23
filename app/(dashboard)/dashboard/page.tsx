@@ -101,15 +101,15 @@ export default async function DashboardPage() {
 
       {/* Equipment summary */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-        <div className="bg-white rounded-xl border p-4 text-center">
+        <div className="bg-white rounded-xl p-4 text-center shadow-border">
           <p className="text-2xl font-semibold text-zinc-900">{equipmentCount ?? 0}</p>
           <p className="text-xs text-gray-500 mt-1">Позиции каталога</p>
         </div>
-        <div className="bg-white rounded-xl border p-4 text-center">
+        <div className="bg-white rounded-xl p-4 text-center shadow-border">
           <p className="text-2xl font-semibold text-yellow-600">{maintenanceCount ?? 0}</p>
           <p className="text-xs text-gray-500 mt-1">На ТО</p>
         </div>
-        <div className="bg-white rounded-xl border p-4 text-center">
+        <div className="bg-white rounded-xl p-4 text-center shadow-border">
           <p className="text-2xl font-semibold text-blue-600">{s?.active_rentals ?? 0}</p>
           <p className="text-xs text-gray-500 mt-1">Активные заказы</p>
         </div>
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Active orders */}
-        <div className="bg-white rounded-xl border p-5">
+        <div className="bg-white rounded-xl p-5 shadow-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Активные аренды</h2>
             <Link href="/orders" className="text-xs text-blue-600 hover:underline">Все</Link>
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           /* Top equipment */
-          <div className="bg-white rounded-xl border p-5">
+          <div className="bg-white rounded-xl p-5 shadow-border">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Топ техника</h2>
               <Link href="/equipment" className="text-xs text-blue-600 hover:underline">Все</Link>
