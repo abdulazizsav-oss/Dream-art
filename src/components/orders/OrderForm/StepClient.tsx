@@ -142,7 +142,11 @@ export function StepClient({
     })
   }
 
-  const canProceed = !!selectedClientId && !!trustedPerson.name.trim() && !!trustedPerson.doc_type
+  // Телефон доверенного лица обязателен — без него нельзя идти дальше.
+  const canProceed = !!selectedClientId
+    && !!trustedPerson.name.trim()
+    && !!trustedPerson.phone.trim()
+    && !!trustedPerson.doc_type
 
   return (
     <div className="space-y-6">
