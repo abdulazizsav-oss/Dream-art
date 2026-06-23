@@ -220,7 +220,7 @@ function CategoryCardBody({
           <Boxes className="h-10 w-10 text-gray-200 transition-colors group-hover:text-gray-300" />
         )}
         {!editing && (
-          <span className="absolute right-2 top-2 rounded bg-white/80 px-1.5 font-mono text-[10px] text-gray-300">
+          <span className="absolute right-2 top-2 rounded bg-black/55 px-1.5 py-0.5 font-mono text-[10px] font-medium tabular-nums text-white">
             {String(index + 1).padStart(2, '0')}
           </span>
         )}
