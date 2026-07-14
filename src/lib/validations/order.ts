@@ -38,7 +38,7 @@ export const orderItemSchema = z.object({
   })).default([]).optional(),
 })
 
-export const orderSchema = z.object({
+const normalizedOrderSchema = z.object({
   client_id: z.string().uuid('Выберите клиента'),
   start_date: isoDateSchema('Укажите дату начала'),
   end_date: isoDateSchema('Укажите дату окончания'),
@@ -46,14 +46,55 @@ export const orderSchema = z.object({
   notes: z.string().nullable().optional(),
   trusted_person: z.string().nullable().optional(),
   trusted_person_doc_type: z.string().nullable().optional(),
+  fulfillment_method: z.enum(['pickup', 'delivery']),
+  delivery_address: z.string()
+    .trim()
+    .min(1, 'Укажите адрес доставки')
+    .max(500, 'Адрес не должен быть длиннее 500 символов')
+    .nullable()
+    .default(null),
+  delivery_fee: z.number({ error: 'Укажите стоимость доставки' })
+    .int('Стоимость доставки должна быть целым числом')
+    .min(0, 'Стоимость доставки не может быть отрицательной'),
   items: z.array(orderItemSchema).min(1, 'Добавьте хотя бы одну единицу техники'),
-}).refine(
-  data => data.end_date >= data.start_date,
-  {
-    message: 'Дата окончания не может быть раньше даты начала',
-    path: ['end_date'],
-  },
-)
+}).superRefine((data, ctx) => {
+  if (data.end_date < data.start_date) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Дата окончания не может быть раньше даты начала',
+      path: ['end_date'],
+    })
+  }
+
+  if (data.fulfillment_method === 'delivery' && data.delivery_address === null) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Укажите адрес доставки',
+      path: ['delivery_address'],
+    })
+  }
+})
+
+/**
+ * Старые клиенты не передают способ получения. Считаем их самовывозом
+ * и на границе схемы обнуляем поля доставки, чтобы они не попали в payload.
+ * Для delivery поле delivery_fee намеренно не имеет default: менеджер должен ввести
+ * стоимость явно, в том числе 0 для бесплатной доставки.
+ */
+export const orderSchema = z.preprocess(input => {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return input
+
+  const raw = input as Record<string, unknown>
+  const method = raw.fulfillment_method ?? 'pickup'
+  if (method !== 'pickup') return input
+
+  return {
+    ...raw,
+    fulfillment_method: 'pickup',
+    delivery_address: null,
+    delivery_fee: 0,
+  }
+}, normalizedOrderSchema)
 
 export type OrderFormValues = z.infer<typeof orderSchema>
 export type OrderItemFormValue = z.infer<typeof orderItemSchema>

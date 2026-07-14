@@ -28,6 +28,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     subtotal: number
     shift_type?: 'day' | 'night'
   }[]) ?? []
+  const fulfillmentMethod: 'pickup' | 'delivery' = (order as any).fulfillment_method === 'delivery'
+    ? 'delivery'
+    : 'pickup'
+  const deliveryAddress = typeof (order as any).delivery_address === 'string'
+    ? (order as any).delivery_address
+    : null
+  const rawDeliveryFee = Number((order as any).delivery_fee ?? 0)
+  const deliveryFee = fulfillmentMethod === 'delivery' && Number.isFinite(rawDeliveryFee)
+    ? Math.max(0, rawDeliveryFee)
+    : 0
+  const rentalAmount = items.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0)
 
   const pdfBytes = await generateContract({
     orderNumber: order.order_number,
@@ -49,7 +60,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       })),
       subtotal: i.subtotal,
     })),
-    totalAmount: order.total_amount,
+    fulfillmentMethod,
+    deliveryAddress,
+    rentalAmount,
+    deliveryFee,
+    totalAmount: rentalAmount + deliveryFee,
     depositAmount: order.deposit_amount,
     notes: order.notes ?? null,
     createdAt: formatDate(order.created_at),

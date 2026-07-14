@@ -15,6 +15,10 @@ interface ContractData {
     pricingLines: { shiftLabel: string; rate: number; unitsLabel: string }[]
     subtotal: number
   }[]
+  fulfillmentMethod: 'pickup' | 'delivery'
+  deliveryAddress: string | null
+  rentalAmount: number
+  deliveryFee: number
   totalAmount: number
   depositAmount: number
   notes: string | null
@@ -39,6 +43,29 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   function line(text: string, x = 50, size = 10, bold = false) {
     page.drawText(text, { x, y, size, font: bold ? boldFont : font, color: rgb(0.1, 0.1, 0.1) })
     y -= size + 4
+  }
+
+  function wrappedLine(text: string, x = 50, size = 10, bold = false, maxChars = 82) {
+    const words = text.trim().split(/\s+/)
+    const rows: string[] = []
+    let current = ''
+
+    for (const word of words) {
+      const chunks = word.length > maxChars
+        ? word.match(new RegExp(`.{1,${maxChars}}`, 'g')) ?? [word]
+        : [word]
+      for (const chunk of chunks) {
+        const candidate = current ? `${current} ${chunk}` : chunk
+        if (candidate.length > maxChars && current) {
+          rows.push(current)
+          current = chunk
+        } else {
+          current = candidate
+        }
+      }
+    }
+    if (current) rows.push(current)
+    rows.forEach(row => line(row, x, size, bold))
   }
 
   function gap(n = 1) { y -= n * 10 }
@@ -68,6 +95,15 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   line(`С ${data.startDate} ${data.startTime} по ${data.endDate} ${data.endTime}`)
   gap()
 
+  // Pickup / delivery
+  line('ПОЛУЧЕНИЕ ЗАКАЗА:', 50, 11, true)
+  gap(0.5)
+  line(`Способ получения: ${data.fulfillmentMethod === 'delivery' ? 'Доставка' : 'Самовывоз'}`)
+  if (data.fulfillmentMethod === 'delivery' && data.deliveryAddress) {
+    wrappedLine(`Адрес доставки: ${data.deliveryAddress}`, 50, 9, false, 78)
+  }
+  gap()
+
   // Equipment list
   line('АРЕНДУЕМОЕ ОБОРУДОВАНИЕ:', 50, 11, true)
   gap(0.5)
@@ -85,7 +121,13 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   // Totals
   line('─'.repeat(70), 50, 10)
   gap(0.3)
-  line(`Итого за аренду: ${data.totalAmount.toLocaleString('ru')} сум`, 50, 11, true)
+  line(`Итого за аренду: ${data.rentalAmount.toLocaleString('ru')} сум`)
+  if (data.fulfillmentMethod === 'delivery') {
+    line(`Доставка: ${data.deliveryFee === 0 ? 'Бесплатно' : `${data.deliveryFee.toLocaleString('ru')} сум`}`)
+  } else {
+    line('Доставка: —')
+  }
+  line(`Итого к оплате: ${data.totalAmount.toLocaleString('ru')} сум`, 50, 11, true)
   if (data.depositAmount > 0) {
     line(`Депозит: ${data.depositAmount.toLocaleString('ru')} сум`)
   }

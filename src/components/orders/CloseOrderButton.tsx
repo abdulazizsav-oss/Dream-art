@@ -28,6 +28,8 @@ interface CloseOrderButtonProps {
   orderId: string
   debt: number
   items?: CloseOrderItem[]
+  deliveryFee?: number
+  deliveryPaid?: number
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm' | 'lg'
   className?: string
@@ -38,7 +40,16 @@ interface Split {
   amount: string
 }
 
-export function CloseOrderButton({ orderId, debt, items = [], variant = 'default', size = 'default', className }: CloseOrderButtonProps) {
+export function CloseOrderButton({
+  orderId,
+  debt,
+  items = [],
+  deliveryFee = 0,
+  deliveryPaid = 0,
+  variant = 'default',
+  size = 'default',
+  className,
+}: CloseOrderButtonProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -64,8 +75,9 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
     () => items.reduce((sum, it) => sum + (Number(it.current_subtotal) || 0), 0),
     [items],
   )
+  const deliveryRemaining = Math.max(0, deliveryFee - deliveryPaid)
   const remainingDebt = Math.max(0, debt - paidNow)
-  const paymentIsTooLarge = paidNow > closingItemsTotal + 0.01
+  const paymentIsTooLarge = paidNow > debt + 0.01
 
   const missingTotals = useMemo(() => {
     let total = 0
@@ -93,6 +105,26 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
   function updateSplit(i: number, patch: Partial<Split>) {
     setSplits(prev => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)))
   }
+
+  function selectPaymentMethod(i: number, method: PaymentMethod) {
+    const wasDebt = leaveDebt
+    setLeaveDebt(false)
+    setSplits(prev => prev.map((split, idx) => (
+      idx === i
+        ? {
+            ...split,
+            method,
+            amount: wasDebt && i === 0 && debt > 0 ? String(debt) : split.amount,
+          }
+        : split
+    )))
+  }
+
+  function selectDebt() {
+    setLeaveDebt(true)
+    setSplits([{ method: 'cash', amount: '' }])
+  }
+
   function addSplit() {
     const used = new Set(splits.map(s => s.method))
     const next = (['cash', 'card', 'transfer'] as PaymentMethod[]).find(m => !used.has(m)) ?? 'card'
@@ -111,7 +143,7 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
         .filter(s => s.amount > 0)
 
       if (paymentIsTooLarge) {
-        toast.error('Сумма оплаты больше суммы закрываемых позиций')
+        toast.error('Сумма оплаты больше остатка по заказу')
         setLoading(false)
         return
       }
@@ -148,7 +180,11 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
         return
       }
 
-      if (missingTotals.total > 0) {
+      if (missingTotals.total > 0 && remainingDebt > 0) {
+        toast.success(
+          `Заказ закрыт. Долг: ${formatCurrency(remainingDebt)}. Не возвращено позиций комплекта: ${missingTotals.total}`,
+        )
+      } else if (missingTotals.total > 0) {
         toast.success(`Заказ закрыт. Не возвращено позиций комплекта: ${missingTotals.total}`)
       } else if (remainingDebt > 0 && leaveDebt) {
         toast.success(`Заказ закрыт. Остался долг: ${formatCurrency(remainingDebt)}`)
@@ -178,7 +214,7 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
           <DialogHeader>
           <DialogTitle>Закрытие заказа</DialogTitle>
           <DialogDescription>
-            Отметим что вернулось из комплекта, запишем оплату и закроем заказ.
+            Отметим, что вернулось из комплекта, выберем оплату или долг и закроем заказ.
           </DialogDescription>
         </DialogHeader>
 
@@ -195,6 +231,21 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
               {formatCurrency(Math.max(0, closingItemsTotal))}
             </span>
           </div>
+          {deliveryFee > 0 && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 flex items-center justify-between gap-3 text-sm">
+              <div>
+                <p className="text-sky-700">Доставка</p>
+                {deliveryPaid > 0 && (
+                  <p className="mt-0.5 text-[11px] text-sky-600">
+                    Уже оплачено: {formatCurrency(deliveryPaid)}
+                  </p>
+                )}
+              </div>
+              <span className="font-semibold text-sky-900">
+                {formatCurrency(deliveryRemaining)}
+              </span>
+            </div>
+          )}
 
           {/* Kit checklist */}
           {hasKit && (
@@ -249,22 +300,22 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
             <div className="flex items-center justify-between">
               <Label>Способы оплаты</Label>
               <span className="text-xs text-zinc-500">
-                {splits.length > 1 ? 'Сплит-платёж' : 'Один способ'}
+                {leaveDebt ? 'Без оплаты' : splits.length > 1 ? 'Сплит-платёж' : 'Один способ'}
               </span>
             </div>
 
             <div className="space-y-2">
               {splits.map((split, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     {(['cash', 'card', 'transfer'] as PaymentMethod[]).map(m => (
                       <button
                         key={m}
                         type="button"
-                        onClick={() => updateSplit(i, { method: m })}
+                        onClick={() => selectPaymentMethod(i, m)}
                         className={cn(
                           'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
-                          split.method === m
+                          !leaveDebt && split.method === m
                             ? 'border-zinc-900 bg-zinc-900 text-white'
                             : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
                         )}
@@ -272,17 +323,33 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
                         {PAYMENT_METHOD_LABELS[m]}
                       </button>
                     ))}
+                    {i === 0 && debt > 0 && (
+                      <button
+                        type="button"
+                        onClick={selectDebt}
+                        className={cn(
+                          'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                          leaveDebt
+                            ? 'border-amber-600 bg-amber-600 text-white'
+                            : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-400',
+                        )}
+                      >
+                        В долг
+                      </button>
+                    )}
                   </div>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    value={split.amount}
-                    onChange={e => updateSplit(i, { amount: e.target.value })}
-                    placeholder="0"
-                    className="flex-1 min-h-[36px]"
-                  />
-                  {splits.length > 1 && (
+                  {!leaveDebt && (
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={split.amount}
+                      onChange={e => updateSplit(i, { amount: e.target.value })}
+                      placeholder="Сумма"
+                      className="flex-1 min-h-[36px] min-w-[120px]"
+                    />
+                  )}
+                  {!leaveDebt && splits.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeSplit(i)}
@@ -296,7 +363,7 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
               ))}
             </div>
 
-            {splits.length < 3 && (
+            {!leaveDebt && splits.length < 3 && (
               <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[36px]">
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Добавить способ
@@ -310,13 +377,20 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
               </div>
             )}
 
-            <p className="text-[11px] text-gray-500">
-              Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, debt))}</span>.
-              Можно вписать меньше — остаток уйдёт в долг.
-            </p>
+            {leaveDebt ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                Оплата не проводится. Заказ закроется, а клиент останется должником на{' '}
+                <strong>{formatCurrency(Math.max(0, debt))}</strong>.
+              </p>
+            ) : (
+              <p className="text-[11px] text-gray-500">
+                Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, debt))}</span>.
+                Можно вписать меньше — остаток автоматически останется долгом.
+              </p>
+            )}
             {paymentIsTooLarge && (
               <p className="text-xs font-medium text-red-600">
-                Нельзя принять больше {formatCurrency(closingItemsTotal)} по позициям, которые закрываются сейчас.
+                Нельзя принять больше {formatCurrency(Math.max(0, debt))} — это текущий остаток по заказу.
               </p>
             )}
           </div>
@@ -331,29 +405,21 @@ export function CloseOrderButton({ orderId, debt, items = [], variant = 'default
             />
           </div>
 
-          {remainingDebt > 0 && (
-            <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-              <input
-                type="checkbox"
-                checked={leaveDebt}
-                onChange={e => setLeaveDebt(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                Закрыть с долгом <strong>{formatCurrency(remainingDebt)}</strong> — клиент доплатит позже.
-              </span>
-            </label>
-          )}
-
           <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Отмена
             </Button>
             <Button
               type="submit"
-              disabled={loading || paymentIsTooLarge || (remainingDebt > 0 && !leaveDebt && paidNow < debt)}
+              disabled={loading || paymentIsTooLarge || (!leaveDebt && debt > 0 && paidNow <= 0)}
             >
-              {loading ? 'Закрытие...' : paidNow > 0 ? 'Провести оплату и закрыть' : 'Закрыть заказ'}
+              {loading
+                ? 'Закрытие...'
+                : leaveDebt
+                  ? 'Закрыть в долг'
+                  : paidNow > 0
+                    ? 'Провести оплату и закрыть'
+                    : 'Закрыть заказ'}
             </Button>
           </DialogFooter>
         </form>

@@ -74,7 +74,8 @@ export function PaymentForm({ orders, defaultOrderId, onSuccess }: PaymentFormPr
       }),
     })
     if (!res.ok) {
-      toast.error('Ошибка добавления платежа')
+      const error = await res.json().catch(() => ({}))
+      toast.error(typeof error.error === 'string' ? error.error : 'Ошибка добавления платежа')
     } else {
       toast.success(validSplits.length > 1 ? 'Сплит-платёж добавлен' : 'Платёж добавлен')
       setSplits([{ method: 'cash', amount: '' }])

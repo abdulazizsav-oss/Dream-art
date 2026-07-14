@@ -12,6 +12,8 @@ interface LiveTotalProps {
   endDate: string | undefined | null
   items: OrderItemFormValue[]
   equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate' | 'day_night'>[]
+  deliveryFee?: number
+  showDelivery?: boolean
   variant?: 'compact' | 'card'
   className?: string
 }
@@ -21,6 +23,8 @@ export function LiveTotal({
   endDate,
   items,
   equipment,
+  deliveryFee = 0,
+  showDelivery = false,
   variant = 'card',
   className,
 }: LiveTotalProps) {
@@ -31,6 +35,7 @@ export function LiveTotal({
     equipment,
   )
   const unitsLabel = describeBreakdown(dayUnits, nightUnits)
+  const grandTotal = total + (showDelivery ? deliveryFee : 0)
 
   if (variant === 'compact') {
     return (
@@ -46,7 +51,7 @@ export function LiveTotal({
           </span>
         </div>
         <span className="font-semibold text-gray-900">
-          {formatCurrency(total, currency)}
+          {formatCurrency(grandTotal, currency)}
         </span>
       </div>
     )
@@ -74,10 +79,32 @@ export function LiveTotal({
             {itemsCount} {itemsCount === 1 ? 'позиция' : itemsCount < 5 ? 'позиции' : 'позиций'}
           </p>
         </div>
-        <p className="text-2xl font-bold text-zinc-900 tabular-nums">
-          {formatCurrency(total, currency)}
-        </p>
+        {!showDelivery && (
+          <p className="text-2xl font-bold text-zinc-900 tabular-nums">
+            {formatCurrency(total, currency)}
+          </p>
+        )}
       </div>
+      {showDelivery && (
+        <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3 text-sm">
+          <div className="flex items-center justify-between gap-3 text-zinc-500">
+            <span>Аренда</span>
+            <span className="tabular-nums">{formatCurrency(total, currency)}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3 text-zinc-500">
+            <span>Доставка</span>
+            <span className="tabular-nums">
+              {deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee, 'UZS')}
+            </span>
+          </div>
+          <div className="flex items-end justify-between gap-3 border-t border-zinc-100 pt-2">
+            <span className="font-medium text-zinc-700">Итого</span>
+            <span className="text-2xl font-bold text-zinc-900 tabular-nums">
+              {formatCurrency(grandTotal, currency)}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

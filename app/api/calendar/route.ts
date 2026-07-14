@@ -31,6 +31,8 @@ type RawOrder = {
   end_date: string
   start_time: string | null
   end_time: string | null
+  actual_start_at: string | null
+  actual_end_at: string | null
   status: string
   created_at: string | null
   created_by: string | null
@@ -92,6 +94,8 @@ export async function GET(req: NextRequest) {
         end_date,
         start_time,
         end_time,
+        actual_start_at,
+        actual_end_at,
         status,
         created_at,
         created_by,
@@ -186,6 +190,8 @@ export async function GET(req: NextRequest) {
       end_date: order.end_date,
       start_time: order.start_time || '09:30',
       end_time: order.end_time || '23:00',
+      actual_start_at: order.actual_start_at,
+      actual_end_at: order.actual_end_at,
       status: order.status,
       created_at: order.created_at,
       created_by: order.created_by,
@@ -242,6 +248,8 @@ export async function GET(req: NextRequest) {
         end_date: order.end_date,
         start_time: order.start_time,
         end_time: order.end_time,
+        actual_start_at: order.actual_start_at,
+        actual_end_at: order.actual_end_at,
         status: order.status,
         shift_type: item.shift_type,
         client_name: order.client?.full_name ?? 'Клиент',

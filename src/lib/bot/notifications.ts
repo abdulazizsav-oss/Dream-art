@@ -16,6 +16,9 @@ interface OrderForNotification {
   start_date: string
   end_date: string
   total_amount: number
+  fulfillment_method?: 'pickup' | 'delivery' | null
+  delivery_address?: string | null
+  delivery_fee?: number | null
   clients: {
     full_name: string
     telegram_chat_id: number | null
@@ -34,17 +37,35 @@ export async function sendOrderConfirmation(order: OrderForNotification) {
   const items = order.order_items
     ?.map(i => `• ${escapeTelegramHtml(i.equipment?.name ?? 'Оборудование')} — ${escapeTelegramHtml(formatCurrency(i.subtotal))}`)
     .join('\n') ?? ''
+  const isDelivery = order.fulfillment_method === 'delivery'
+  const rawDeliveryFee = Number(order.delivery_fee ?? 0)
+  const deliveryFee = isDelivery && Number.isFinite(rawDeliveryFee) ? Math.max(0, rawDeliveryFee) : 0
+  const rentalAmount = order.order_items?.length
+    ? order.order_items.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0)
+    : Math.max(0, Number(order.total_amount) - deliveryFee)
+  const totalAmount = rentalAmount + deliveryFee
+  const fulfillmentLines = [
+    `Получение: <b>${isDelivery ? 'Доставка' : 'Самовывоз'}</b>`,
+    ...(isDelivery && order.delivery_address
+      ? [`Адрес: ${escapeTelegramHtml(order.delivery_address)}`]
+      : []),
+  ]
 
   const text = [
     `✅ <b>Заказ подтверждён</b>`,
     ``,
     `Номер: <code>${escapeTelegramHtml(order.order_number)}</code>`,
     `Период: ${escapeTelegramHtml(formatDate(order.start_date))} — ${escapeTelegramHtml(formatDate(order.end_date))}`,
+    ...fulfillmentLines,
     ``,
     `<b>Техника:</b>`,
     items,
     ``,
-    `<b>Итого: ${escapeTelegramHtml(formatCurrency(order.total_amount))}</b>`,
+    `Аренда: ${escapeTelegramHtml(formatCurrency(rentalAmount))}`,
+    `Доставка: ${isDelivery
+      ? (deliveryFee === 0 ? 'Бесплатно' : escapeTelegramHtml(formatCurrency(deliveryFee)))
+      : '—'}`,
+    `<b>Итого: ${escapeTelegramHtml(formatCurrency(totalAmount))}</b>`,
     ``,
     `Спасибо, что выбрали Dream Art! 🎥`,
   ].join('\n')

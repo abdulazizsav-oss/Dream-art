@@ -16,6 +16,7 @@ export type UserRole = 'admin' | 'super_admin'
 export type CurrencyCode = 'UZS' | 'USD'
 export type ShiftType = 'day' | 'night'
 export type RateSource = 'auto' | 'manual'
+export type FulfillmentMethod = 'pickup' | 'delivery'
 
 export type Database = {
   public: {
@@ -397,6 +398,9 @@ export type Database = {
           notes: string | null
           trusted_person: string | null
           trusted_person_doc_type: string | null
+          fulfillment_method: FulfillmentMethod
+          delivery_address: string | null
+          delivery_fee: number
           created_by: string | null
           created_at: string
           updated_at: string
@@ -420,6 +424,9 @@ export type Database = {
           notes?: string | null
           trusted_person?: string | null
           trusted_person_doc_type?: string | null
+          fulfillment_method?: FulfillmentMethod
+          delivery_address?: string | null
+          delivery_fee?: number
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -443,6 +450,9 @@ export type Database = {
           notes?: string | null
           trusted_person?: string | null
           trusted_person_doc_type?: string | null
+          fulfillment_method?: FulfillmentMethod
+          delivery_address?: string | null
+          delivery_fee?: number
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -654,6 +664,45 @@ export type Database = {
             foreignKeyName: 'order_item_payment_allocations_payment_id_fkey'
             columns: ['payment_id']
             isOneToOne: false
+            referencedRelation: 'payments'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      order_delivery_payment_allocations: {
+        Row: {
+          id: string
+          order_id: string
+          payment_id: string
+          amount: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          payment_id: string
+          amount: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          payment_id?: string
+          amount?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'order_delivery_payment_allocations_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_delivery_payment_allocations_payment_id_fkey'
+            columns: ['payment_id']
+            isOneToOne: true
             referencedRelation: 'payments'
             referencedColumns: ['id']
           },
@@ -888,6 +937,23 @@ export type Database = {
         }
         Returns: string
       }
+      create_order_atomic_v2: {
+        Args: {
+          p_client_id: string
+          p_start_date: string
+          p_end_date: string
+          p_start_time: string
+          p_end_time: string
+          p_deposit_amount: number
+          p_notes: string
+          p_created_by: string
+          p_items: Json
+          p_fulfillment_method?: string
+          p_delivery_address?: string | null
+          p_delivery_fee?: number
+        }
+        Returns: string
+      }
       return_order_atomic: {
         Args: { p_order_id: string; p_items: Json; p_actual_return_date?: string | null }
         Returns: void
@@ -897,6 +963,17 @@ export type Database = {
         Returns: void
       }
       return_order_items_with_payments_atomic: {
+        Args: {
+          p_order_id: string
+          p_items: Json
+          p_payment_splits?: Json
+          p_created_by?: string | null
+          p_notes?: string | null
+          p_actual_end_at?: string | null
+        }
+        Returns: Json
+      }
+      return_order_items_with_payments_atomic_v2: {
         Args: {
           p_order_id: string
           p_items: Json
@@ -936,6 +1013,25 @@ export type Database = {
         }
         Returns: Json
       }
+      add_order_payment_with_allocations_atomic_v2: {
+        Args: {
+          p_order_id: string
+          p_payment_type: string
+          p_splits: Json
+          p_created_by?: string | null
+          p_notes?: string | null
+        }
+        Returns: Json
+      }
+      update_order_delivery_atomic: {
+        Args: {
+          p_order_id: string
+          p_fulfillment_method: string
+          p_delivery_address: string | null
+          p_delivery_fee: number
+        }
+        Returns: Json
+      }
       get_finance_analytics: {
         Args: {
           p_from: string
@@ -969,5 +1065,6 @@ export type Order = Tables<'orders'>
 export type OrderItem = Tables<'order_items'>
 export type Payment = Tables<'payments'>
 export type OrderItemPaymentAllocation = Tables<'order_item_payment_allocations'>
+export type OrderDeliveryPaymentAllocation = Tables<'order_delivery_payment_allocations'>
 export type BlockedDate = Tables<'blocked_dates'>
 export type UserProfile = Tables<'user_profiles'>

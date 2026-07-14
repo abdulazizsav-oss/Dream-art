@@ -8,7 +8,7 @@ import {
   PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { FileText, RotateCcw, UserCheck, User } from 'lucide-react'
+import { FileText, MapPin, RotateCcw, Store, Truck, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
 import { PayReturnedItemButton } from '@/components/orders/PayReturnedItemButton'
@@ -18,6 +18,7 @@ import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
 import { formatMissingKitAge, formatMissingSinceDateTime } from '@/lib/missing-kit'
+import { DeliveryEditor } from '@/components/orders/DeliveryEditor'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -74,6 +75,31 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     order_item_payment_allocations?: { amount: number }[] | null
   }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; payment_group_id?: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
+  const fulfillmentMethod: 'pickup' | 'delivery' = (order as any).fulfillment_method === 'delivery'
+    ? 'delivery'
+    : 'pickup'
+  const deliveryAddress = typeof (order as any).delivery_address === 'string'
+    ? (order as any).delivery_address
+    : null
+  const rawDeliveryFee = Number((order as any).delivery_fee ?? 0)
+  const deliveryFee = fulfillmentMethod === 'delivery' && Number.isFinite(rawDeliveryFee)
+    ? Math.max(0, rawDeliveryFee)
+    : 0
+  const rentalPayments = payments.filter(payment => payment.payment_type === 'rental')
+  const hasRentalPayments = rentalPayments.length > 0
+  let deliveryPaid = 0
+  if (fulfillmentMethod === 'delivery') {
+    // Отдельный best-effort запрос сохраняет совместимость с локальной БД до
+    // применения миграции: отсутствие новой таблицы не ломает основной заказ.
+    const { data: deliveryAllocations } = await (supabase as any)
+      .from('order_delivery_payment_allocations')
+      .select('amount')
+      .eq('order_id', id)
+    deliveryPaid = (deliveryAllocations ?? []).reduce(
+      (sum: number, allocation: { amount?: number | null }) => sum + Number(allocation.amount ?? 0),
+      0,
+    )
+  }
 
   const { data: missingKitEvents } = await supabase
     .from('order_item_missing_kit_events')
@@ -164,16 +190,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   })
 
   const liveBilling = isActive
-    ? computeActiveOrderTotal({ now: new Date(), items: activeInputs })
+    ? computeActiveOrderTotal({ now: new Date(), items: activeInputs, delivery_fee: deliveryFee })
     : null
 
-  const effectiveTotal = liveBilling ? liveBilling.total_amount : order.total_amount
+  const effectiveTotal = liveBilling ? liveBilling.total_amount : Number(order.total_amount)
+  const effectiveRentalAmount = liveBilling
+    ? liveBilling.rental_amount
+    : Math.max(0, effectiveTotal - deliveryFee)
 
   // Per-item breakdown для отображения
   const itemBillingById = liveBilling?.perItem ?? new Map()
 
   const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
-  const debt = effectiveTotal - payments.filter(p => p.payment_type === 'rental').reduce((s, p) => s + p.amount, 0)
+  const debt = effectiveTotal - rentalPayments.reduce((s, p) => s + p.amount, 0)
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -203,6 +232,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 <CloseOrderButton
                   orderId={id}
                   debt={Math.max(0, debt)}
+                  deliveryFee={deliveryFee}
+                  deliveryPaid={deliveryPaid}
                   variant="default"
                   items={items.filter(it => !it.returned).map(it => ({
                     id: it.id,
@@ -219,6 +250,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     name: it.equipment?.name ?? '—',
                     selected_kit_items: it.selected_kit_items ?? [],
                     current_subtotal: itemBillingById.get(it.id)?.subtotal ?? it.subtotal ?? 0,
+                    already_paid: (it.order_item_payment_allocations ?? [])
+                      .reduce((sum, allocation) => sum + Number(allocation.amount ?? 0), 0),
                     currency: it.equipment?.currency ?? 'UZS',
                   }))}
                 />
@@ -297,8 +330,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           )}
         </div>
         <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Сумма аренды</p>
+          <p className="text-xs text-gray-500">Итого заказа</p>
           <p className="font-semibold mt-1">{formatCurrency(effectiveTotal)}</p>
+          <div className="mt-1 space-y-0.5 text-[11px] text-gray-500">
+            <p>Аренда: {formatCurrency(effectiveRentalAmount)}</p>
+            {fulfillmentMethod === 'delivery' && (
+              <p>Доставка: {deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee)}</p>
+            )}
+          </div>
           {liveBilling && (
             <p className="text-[11px] text-gray-400 mt-0.5">
               По факту на сейчас
@@ -310,6 +349,57 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className={cn('font-semibold mt-1', debt > 0 ? 'text-red-600' : 'text-green-600')}>
             {formatCurrency(Math.max(0, debt))}
           </p>
+        </div>
+      </div>
+
+      {/* Pickup / delivery */}
+      <div className="bg-white rounded-xl border p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              {fulfillmentMethod === 'delivery'
+                ? <Truck className="h-4 w-4 text-blue-600" />
+                : <Store className="h-4 w-4 text-zinc-500" />}
+              <h2 className="font-semibold">Получение заказа</h2>
+              <span className={cn(
+                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                fulfillmentMethod === 'delivery'
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'bg-zinc-100 text-zinc-600',
+              )}>
+                {fulfillmentMethod === 'delivery' ? 'Доставка' : 'Самовывоз'}
+              </span>
+            </div>
+
+            {fulfillmentMethod === 'delivery' ? (
+              <div className="mt-3 space-y-2 text-sm">
+                <p className="flex items-start gap-2 text-zinc-700">
+                  <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-zinc-400" />
+                  <span className="break-words">{deliveryAddress || 'Адрес не указан'}</span>
+                </p>
+                <p className="text-zinc-500">
+                  К началу аренды: {formatDate(order.start_date)}
+                </p>
+                <p>
+                  Стоимость: <span className="font-medium">
+                    {deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee)}
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-zinc-500">Клиент забирает технику самостоятельно.</p>
+            )}
+          </div>
+
+          {isOrderOpen && (
+            <DeliveryEditor
+              orderId={id}
+              fulfillmentMethod={fulfillmentMethod}
+              deliveryAddress={deliveryAddress}
+              deliveryFee={deliveryFee}
+              hasRentalPayments={hasRentalPayments}
+            />
+          )}
         </div>
       </div>
 

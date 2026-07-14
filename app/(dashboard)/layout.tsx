@@ -12,7 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen bg-gray-50">
       <NavigationProgress />
       <Sidebar role={profile?.role ?? 'admin'} userName={profile?.full_name ?? ''} />
-      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
+      <main className="flex-1 min-w-0 p-4 pb-[calc(8rem+env(safe-area-inset-bottom,0px))] md:p-6 md:pb-[calc(8rem+env(safe-area-inset-bottom,0px))] lg:p-8 lg:pb-8">
         {children}
       </main>
       {/* Mobile bottom navigation */}

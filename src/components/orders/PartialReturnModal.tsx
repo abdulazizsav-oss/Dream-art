@@ -27,6 +27,7 @@ interface PartialItem {
   name: string
   selected_kit_items: string[]
   current_subtotal: number
+  already_paid: number
   currency?: 'UZS' | 'USD'
 }
 
@@ -112,7 +113,9 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
     let total = 0
     for (const id of picked) {
       if ((paymentIntent[id] ?? 'paid') === 'paid') {
-        total += items.find(it => it.id === id)?.current_subtotal ?? 0
+        const item = items.find(it => it.id === id)
+        if (!item) continue
+        total += Math.max(0, item.current_subtotal - item.already_paid)
       }
     }
     return total
@@ -238,6 +241,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                   const active = picked.has(it.id)
                   const returned = returnedKit[it.id] ?? new Set<string>()
                   const intent = paymentIntent[it.id] ?? 'paid'
+                  const remainingDue = Math.max(0, it.current_subtotal - it.already_paid)
                   return (
                     <div key={it.id} className={cn('rounded-lg border p-2 transition-colors', active ? 'bg-white border-emerald-400' : 'bg-white')}>
                       <label className="flex items-start gap-2 cursor-pointer">
@@ -252,6 +256,11 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                           {formatCurrency(it.current_subtotal, it.currency)}
                         </span>
                       </label>
+                      {active && it.already_paid > 0 && (
+                        <p className="mt-1 pl-6 text-[11px] text-zinc-500">
+                          Уже оплачено: {formatCurrency(it.already_paid, it.currency)} · остаток: {formatCurrency(remainingDue, it.currency)}
+                        </p>
+                      )}
                       {active && (
                         <div className="mt-2 pl-6 flex flex-wrap gap-1.5">
                           {(['paid', 'unpaid'] as PaymentIntent[]).map(nextIntent => (

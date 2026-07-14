@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertTriangle,
   CalendarSearch,
-  ChevronLeft,
-  ChevronRight,
   LockKeyhole,
   Moon,
   Search,
@@ -28,6 +26,8 @@ interface CalendarOrder {
   end_date: string
   start_time: string
   end_time: string
+  actual_start_at: string | null
+  actual_end_at: string | null
   status: OrderStatus
   created_at: string | null
   created_by: string | null
@@ -54,6 +54,8 @@ interface Allocation {
   end_date: string
   start_time: string
   end_time: string
+  actual_start_at: string | null
+  actual_end_at: string | null
   status: OrderStatus
   shift_type: 'day' | 'night'
   client_name: string
@@ -112,7 +114,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; bar: string; badge: st
     badge: 'bg-red-100 text-red-700',
   },
   returned: {
-    label: 'Завершён',
+    label: 'Закрыт',
     bar: 'border-zinc-300 bg-zinc-100 text-zinc-700',
     badge: 'bg-zinc-200 text-zinc-600',
   },
@@ -127,6 +129,15 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; bar: string; badge: st
     badge: 'bg-blue-100 text-blue-700',
   },
 }
+
+const STATUS_FILTERS = [
+  { value: 'active', label: 'В работе' },
+  { value: 'overdue', label: 'Просрочки' },
+  { value: 'returned', label: 'Закрытые' },
+  { value: 'draft', label: 'Черновики' },
+  { value: 'cancelled', label: 'Отменённые' },
+  { value: 'all', label: 'Все' },
+] as const
 
 const DAY_WIDTH = 88
 const LEFT_WIDTH = 320
@@ -162,6 +173,34 @@ function formatDay(value: string) {
     day: 'numeric',
     month: 'short',
   }).format(new Date(`${value}T00:00:00Z`))
+}
+
+function formatActualDateTime(value: string) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Asia/Tashkent',
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(value)).replace(',', '')
+}
+
+function shortTime(value: string) {
+  return value.slice(0, 5)
+}
+
+function orderTimeLabel(order: CalendarOrder) {
+  if (order.actual_start_at) {
+    const end = order.actual_end_at
+      ? formatActualDateTime(order.actual_end_at)
+      : ['active', 'overdue'].includes(order.status)
+        ? 'по настоящее время'
+        : 'не закрыт'
+    return `Факт: ${formatActualDateTime(order.actual_start_at)} – ${end}`
+  }
+
+  return `План: ${formatShortDate(order.start_date)} ${shortTime(order.start_time)} – ${formatShortDate(order.end_date)} ${shortTime(order.end_time)}`
 }
 
 function clampEvent(start: string, end: string, rangeFrom: string, rangeTo: string) {
@@ -320,8 +359,6 @@ export default function CalendarPage() {
     replaceUrl({ days: next })
   }
 
-  const jumpToday = () => changeFrom(addDays(today, -2))
-
   const requestNearest = () => {
     nearestRequested.current = true
     setNearestRequest(value => value + 1)
@@ -344,29 +381,6 @@ export default function CalendarPage() {
       <PageHeader
         title="Календарь"
         description="Аренды, занятость техники, блокировки и техническое обслуживание"
-        action={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="min-h-[44px] min-w-[44px]"
-              onClick={() => changeFrom(addDays(from, -daysVisible))}
-              aria-label="Предыдущий период"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button variant="outline" className="min-h-[44px] px-4" onClick={jumpToday}>
-              Сегодня
-            </Button>
-            <Button
-              variant="outline"
-              className="min-h-[44px] min-w-[44px]"
-              onClick={() => changeFrom(addDays(from, daysVisible))}
-              aria-label="Следующий период"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-        }
       />
 
       <div className="rounded-2xl border bg-white p-3 md:p-4">
@@ -379,7 +393,21 @@ export default function CalendarPage() {
           </SegmentButton>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+        <div className="mb-3 flex flex-wrap items-center gap-2 border-t pt-3">
+          <span className="mr-1 text-xs font-medium text-zinc-500">Показывать заказы:</span>
+          {STATUS_FILTERS.map(option => (
+            <StatusButton
+              key={option.value}
+              active={status === option.value}
+              status={option.value}
+              onClick={() => updateFilter('status', option.value)}
+            >
+              {option.label}
+            </StatusButton>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
           <div className="relative md:col-span-2 xl:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
@@ -392,14 +420,6 @@ export default function CalendarPage() {
               className="min-h-[44px] w-full rounded-xl border bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
             />
           </div>
-          <FilterSelect value={status} onChange={value => updateFilter('status', value)}>
-            <option value="active">Активные + просрочки</option>
-            <option value="overdue">Только просрочки</option>
-            <option value="draft">Черновики</option>
-            <option value="returned">Завершённые</option>
-            <option value="cancelled">Отменённые</option>
-            <option value="all">Все статусы</option>
-          </FilterSelect>
           <FilterSelect value={equipmentId} onChange={value => updateFilter('equipment_id', value)}>
             <option value="">Вся техника</option>
             {(data?.filters.equipment ?? []).map(item => (
@@ -484,6 +504,7 @@ export default function CalendarPage() {
       <div className="flex flex-wrap gap-3 rounded-xl border bg-white px-4 py-3 text-xs text-zinc-600">
         <Legend color="bg-emerald-200" label="Активная аренда" />
         <Legend color="bg-red-200" label="Просрочка / конфликт" />
+        <Legend color="bg-zinc-200" label="Закрытый заказ" />
         <Legend color="bg-violet-200" label="ТО" icon={<Wrench className="h-3 w-3" />} />
         <Legend color="bg-amber-200" label="Блокировка" icon={<LockKeyhole className="h-3 w-3" />} />
       </div>
@@ -666,8 +687,11 @@ function OrderTimelineRow({
           </span>
         </div>
         <p className="mt-2 line-clamp-1 text-xs text-zinc-600">{equipmentNames(order)}</p>
-        <p className="mt-1 text-[11px] text-zinc-400">
-          {formatShortDate(order.start_date)} {order.start_time} – {formatShortDate(order.end_date)} {order.end_time}
+        <p className={cn(
+          'mt-1 text-[11px]',
+          order.actual_start_at ? 'font-medium text-zinc-600' : 'text-zinc-400',
+        )}>
+          {orderTimeLabel(order)}
         </p>
       </Link>
       <div className="relative min-h-24">
@@ -682,7 +706,7 @@ function OrderTimelineRow({
             left: span.start * DAY_WIDTH + 4,
             width: Math.max(span.length * DAY_WIDTH - 8, 48),
           }}
-          title={`${order.order_number} | ${order.client?.full_name} | ${equipmentNames(order)}`}
+          title={`${order.order_number} | ${order.client?.full_name} | ${equipmentNames(order)} | ${orderTimeLabel(order)}`}
         >
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold">
@@ -763,7 +787,13 @@ function EquipmentTimelineRow({
                 }}
                 title={conflict
                   ? `Конфликт с ${event.conflict_order_ids.length} заказом(ами)`
-                  : `${event.order_number} | ${event.client_name}`}
+                  : `${event.order_number} | ${event.client_name}${event.actual_start_at
+                    ? ` | Факт: ${formatActualDateTime(event.actual_start_at)} – ${event.actual_end_at
+                      ? formatActualDateTime(event.actual_end_at)
+                      : ['active', 'overdue'].includes(event.status)
+                        ? 'по настоящее время'
+                        : 'не закрыт'}`
+                    : ''}`}
               >
                 {conflict && <AlertTriangle className="mr-1 h-3 w-3 shrink-0 text-red-700" />}
                 <span className="truncate">{event.order_number} · {event.client_name}</span>
@@ -865,7 +895,9 @@ function MobileAgenda({
                     </div>
                     <p className="mt-2 text-xs text-zinc-600">{equipmentNames(order)}</p>
                     <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-zinc-400">
-                      <span>{order.start_time} – {order.end_time}</span>
+                      <span className={order.actual_start_at ? 'font-medium text-zinc-600' : undefined}>
+                        {orderTimeLabel(order)}
+                      </span>
                       <span className="inline-flex items-center gap-1">
                         {shiftLabel(order.items) === 'Ночь'
                           ? <Moon className="h-3 w-3" />
@@ -944,6 +976,43 @@ function SegmentButton({
         active
           ? 'border-zinc-900 bg-zinc-900 text-white'
           : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+function StatusButton({
+  active,
+  status,
+  onClick,
+  children,
+}: {
+  active: boolean
+  status: typeof STATUS_FILTERS[number]['value']
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  const activeClass = status === 'overdue'
+    ? 'border-red-600 bg-red-600 text-white'
+    : status === 'returned'
+      ? 'border-zinc-700 bg-zinc-700 text-white'
+      : status === 'draft'
+        ? 'border-blue-600 bg-blue-600 text-white'
+        : status === 'cancelled'
+          ? 'border-orange-600 bg-orange-600 text-white'
+          : status === 'active'
+            ? 'border-emerald-700 bg-emerald-700 text-white'
+            : 'border-zinc-900 bg-zinc-900 text-white'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'min-h-[36px] rounded-full border px-3 text-xs font-medium transition-colors',
+        active ? activeClass : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
       )}
     >
       {children}

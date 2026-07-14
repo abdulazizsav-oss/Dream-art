@@ -314,6 +314,11 @@ export interface ActiveItemResult {
 }
 
 export interface ActiveOrderTotalResult {
+  /** Текущая стоимость только аренды и комплектов. */
+  rental_amount: number
+  /** Разовая стоимость доставки. */
+  delivery_fee: number
+  /** Общий итог заказа: аренда + доставка. */
   total_amount: number
   perItem: Map<string, ActiveItemResult>
 }
@@ -326,9 +331,10 @@ export interface ActiveOrderTotalResult {
 export function computeActiveOrderTotal(args: {
   now: Date
   items: ActiveItemInput[]
+  delivery_fee?: number | null
 }): ActiveOrderTotalResult {
   const perItem = new Map<string, ActiveItemResult>()
-  let total = 0
+  let rentalAmount = 0
 
   for (const it of args.items) {
     // 0) Ручная цена — итог заморожен, фактическая длительность игнорируется.
@@ -342,7 +348,7 @@ export function computeActiveOrderTotal(args: {
         shift_type: it.shift_type,
         frozen: true,
       })
-      total += it.manual_subtotal
+      rentalAmount += it.manual_subtotal
       continue
     }
 
@@ -359,7 +365,7 @@ export function computeActiveOrderTotal(args: {
         shift_type: nightU > dayU ? 'night' : 'day',
         frozen: true,
       })
-      total += subtotal
+      rentalAmount += subtotal
       continue
     }
 
@@ -392,7 +398,7 @@ export function computeActiveOrderTotal(args: {
         }),
         frozen: false,
       })
-      total += sub
+      rentalAmount += sub
       continue
     }
 
@@ -405,10 +411,18 @@ export function computeActiveOrderTotal(args: {
       shift_type: it.shift_type,
       frozen: false,
     })
-    total += it.subtotal
+    rentalAmount += it.subtotal
   }
 
-  return { total_amount: total, perItem }
+  const rawDeliveryFee = Number(args.delivery_fee ?? 0)
+  const deliveryFee = Number.isFinite(rawDeliveryFee) ? Math.max(0, rawDeliveryFee) : 0
+
+  return {
+    rental_amount: rentalAmount,
+    delivery_fee: deliveryFee,
+    total_amount: rentalAmount + deliveryFee,
+    perItem,
+  }
 }
 
 /* ──────── Вспомогательные для отображения ──────── */

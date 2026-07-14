@@ -3,6 +3,27 @@ import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
+import { z } from 'zod'
+
+const paymentMethodSchema = z.enum(['cash', 'transfer', 'card'])
+
+const returnRequestSchema = z.object({
+  items: z.array(z.object({
+    order_item_id: z.string().uuid(),
+    condition_on_return: z.string().max(1000).optional(),
+    return_photo_urls: z.array(z.string().url()).max(20).optional(),
+    returned_kit_items: z.array(z.string().max(300)).max(200).optional(),
+    missing_kit_items: z.array(z.string().max(300)).max(200).optional(),
+    payment_intent: z.enum(['paid', 'unpaid', 'partial']).optional(),
+    paid_amount: z.coerce.number().min(0).multipleOf(0.01).optional(),
+  }).strict()).min(1, 'Нет позиций для сдачи'),
+  payment_splits: z.array(z.object({
+    payment_method: paymentMethodSchema,
+    amount: z.coerce.number().min(0.01).multipleOf(0.01),
+  }).strict()).max(3).optional(),
+  payment_notes: z.string().max(2000).nullable().optional(),
+  actual_end_at: z.string().datetime({ offset: true }).nullable().optional(),
+}).strict()
 
 function parseActualEndAt(value: string | null | undefined) {
   if (!value) return new Date()
@@ -13,7 +34,7 @@ function parseActualEndAt(value: string | null | undefined) {
 /**
  * POST /api/orders/[id]/return
  *
- * Закрывает выбранные позиции заказа (или все) через RPC `return_order_items_with_payments_atomic`.
+ * Закрывает выбранные позиции заказа (или все) через RPC `return_order_items_with_payments_atomic_v2`.
  * Для каждой позиции рассчитывает final_subtotal по правилам computeActiveOrderTotal:
  *   - manual → сохранённый subtotal
  *   - auto   → computeOrderBilling(actual_start_at → now())
@@ -27,27 +48,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const service = await createServiceClient()
 
-  const body = await req.json() as {
-    items: {
-      order_item_id: string
-      condition_on_return?: string
-      return_photo_urls?: string[]
-      returned_kit_items?: string[]
-      missing_kit_items?: string[]
-      payment_intent?: 'paid' | 'unpaid' | 'partial'
-      paid_amount?: number
-    }[]
-    payment_splits?: {
-      payment_method: 'cash' | 'transfer' | 'card'
-      amount: number
-    }[]
-    payment_notes?: string | null
-    actual_end_at?: string | null
+  const parsed = returnRequestSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
-
-  if (!Array.isArray(body.items) || body.items.length === 0) {
-    return NextResponse.json({ error: 'Нет позиций для сдачи' }, { status: 400 })
-  }
+  const body = parsed.data
 
   const actualEndAt = parseActualEndAt(body.actual_end_at)
   if (!actualEndAt) {
@@ -57,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // 1. Загружаем заказ + все позиции с equipment-ставками
   const { data: order, error: orderErr } = await service
     .from('orders')
-    .select('id, client_id, actual_start_at, order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, kit_selection, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, equipment(day_rate, night_rate, daily_rate, day_night))')
+    .select('id, client_id, actual_start_at, delivery_fee, order_delivery_payment_allocations(amount), order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, kit_selection, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, order_item_payment_allocations(amount), equipment(day_rate, night_rate, daily_rate, day_night))')
     .eq('id', id)
     .single()
 
@@ -85,6 +90,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     final_day_units: number | null
     final_night_units: number | null
     returned: boolean | null
+    order_item_payment_allocations: { amount: number | null }[] | null
     equipment: { day_rate: number | null; night_rate: number | null; daily_rate: number | null; day_night: 'day' | 'night' | 'both' | null } | null
   }>
 
@@ -117,6 +123,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // 3. Готовим payload для RPC — только для тех позиций, что сдаются сейчас
   const requestedIds = new Set(body.items.map(i => i.order_item_id))
+  const hasPaymentIntent = body.items.some(item => item.payment_intent !== undefined)
   let expectedPaidTotal = 0
   const itemsForRpc = body.items
     .map(req => {
@@ -124,13 +131,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!src || src.returned) return null
       const calc = live.perItem.get(req.order_item_id)
       if (!calc) return null
+      const existingPaid = (src.order_item_payment_allocations ?? [])
+        .reduce((sum, allocation) => sum + Number(allocation.amount ?? 0), 0)
+      const remainingDue = Math.max(calc.subtotal - existingPaid, 0)
       const rawPaidAmount =
         req.payment_intent === 'paid'
-          ? calc.subtotal
+          ? remainingDue
           : req.payment_intent === 'unpaid'
             ? 0
             : Number(req.paid_amount ?? 0)
-      const paidAmount = Math.max(0, Math.min(calc.subtotal, rawPaidAmount))
+      const paidAmount = Math.max(0, Math.min(remainingDue, rawPaidAmount))
       expectedPaidTotal += paidAmount
       return {
         order_item_id: req.order_item_id,
@@ -151,15 +161,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Нет валидных позиций для сдачи' }, { status: 400 })
   }
 
-  const paymentSplits = (body.payment_splits ?? [])
-    .map(split => ({
-      payment_method: split.payment_method,
-      amount: Number(split.amount),
-    }))
-    .filter(split => split.amount > 0)
+  const paymentSplits = body.payment_splits ?? []
 
   const splitTotal = paymentSplits.reduce((sum, split) => sum + split.amount, 0)
-  if (Math.abs(splitTotal - expectedPaidTotal) > 0.01) {
+  if (hasPaymentIntent && Math.abs(splitTotal - expectedPaidTotal) > 0.01) {
     return NextResponse.json(
       {
         error: expectedPaidTotal > 0
@@ -170,7 +175,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     )
   }
 
-  const { data: rpcData, error: rpcErr } = await service.rpc('return_order_items_with_payments_atomic', {
+  const { data: rpcData, error: rpcErr } = await service.rpc('return_order_items_with_payments_atomic_v2', {
     p_order_id: id,
     p_items: itemsForRpc,
     p_payment_splits: paymentSplits,
@@ -179,7 +184,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     p_actual_end_at: actualEndAt.toISOString(),
   } as never)
 
-  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 400 })
 
   revalidatePath('/orders')
   revalidatePath(`/orders/${id}`)
@@ -197,6 +202,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     success: true,
     closed: (rpcData as any)?.closed ?? itemsForRpc.length,
     order_closed: (rpcData as any)?.order_closed ?? remaining === 0,
-    paid_total: (rpcData as any)?.paid_total ?? expectedPaidTotal,
+    paid_total: (rpcData as any)?.paid_total ?? splitTotal,
+    delivery_paid_total: (rpcData as any)?.delivery_paid_total ?? 0,
   })
 }

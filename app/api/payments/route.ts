@@ -7,18 +7,18 @@ const methodEnum = z.enum(['cash', 'transfer', 'card'])
 const typeEnum = z.enum(['rental', 'deposit', 'deposit_return', 'extra', 'fine'])
 
 const splitSchema = z.object({
-  amount: z.coerce.number().min(0.01),
+  amount: z.coerce.number().min(0.01).multipleOf(0.01),
   payment_method: methodEnum,
-})
+}).strict()
 
 const paymentSchema = z.object({
   order_id: z.string().uuid(),
-  amount: z.coerce.number().min(0.01).optional(),
+  amount: z.coerce.number().min(0.01).multipleOf(0.01).optional(),
   payment_method: methodEnum.default('cash'),
   payment_type: typeEnum.default('rental'),
   notes: z.string().nullable().optional(),
   splits: z.array(splitSchema).min(1).optional(),
-})
+}).strict()
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   const service = createServiceClient()
-  const { data, error } = await service.rpc('add_order_payment_with_allocations_atomic', {
+  const { data, error } = await service.rpc('add_order_payment_with_allocations_atomic_v2', {
     p_order_id: order_id,
     p_payment_type: payment_type,
     p_splits: normalized,
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     p_notes: notes ?? null,
   } as never)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
   revalidatePath('/finance')
   revalidatePath('/orders')

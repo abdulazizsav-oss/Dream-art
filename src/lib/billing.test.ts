@@ -341,3 +341,30 @@ test('partial return freezes returned items while open items keep billing live',
   assert.equal(result.perItem.get('returned-item')?.frozen, true)
   assert.equal(result.perItem.get('open-item')?.subtotal, 150_000)
 })
+
+test('computeActiveOrderTotal adds delivery once and keeps rental breakdown separate', () => {
+  const result = computeActiveOrderTotal({
+    now: buildTashkentDate('2026-04-25', '18:26'),
+    delivery_fee: 35_000,
+    items: [{
+      id: 'delivery-order-item',
+      equipment_id: 'canon-r5',
+      rate_source: 'auto',
+      actual_start_at: null,
+      actual_end_at: null,
+      final_subtotal: null,
+      final_day_units: null,
+      final_night_units: null,
+      day_rate: 150_000,
+      night_rate: 150_000,
+      subtotal: 150_000,
+      day_units: 1,
+      night_units: 0,
+      shift_type: 'day',
+    }],
+  })
+
+  assert.equal(result.rental_amount, 150_000)
+  assert.equal(result.delivery_fee, 35_000)
+  assert.equal(result.total_amount, 185_000)
+})

@@ -28,6 +28,9 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
   const [values, setValues] = useState<Partial<OrderFormValues>>({
     items: [],
     deposit_amount: 0,
+    fulfillment_method: 'pickup',
+    delivery_address: null,
+    delivery_fee: 0,
   })
   const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>({
     name: '',
@@ -50,6 +53,19 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
     })
   }
 
+  function selectClient(clientId: string) {
+    if (clientId === values.client_id) return
+
+    const client = allClients.find(candidate => candidate.id === clientId)
+    update({
+      client_id: clientId,
+      // Адрес — снимок для конкретного заказа. Не переносим его от прежнего клиента.
+      delivery_address: values.fulfillment_method === 'delivery'
+        ? client?.address_actual?.trim() || null
+        : null,
+    })
+  }
+
   async function submit() {
     setSubmitting(true)
     const recalculatedItems = recalculateOrderItems(values.items ?? [], equipment, {
@@ -63,8 +79,15 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
       trustedPerson.phone || null,
     ].filter(Boolean).join(' ')
 
+    const fulfillmentMethod = values.fulfillment_method ?? 'pickup'
+
     const payload = {
       ...values,
+      fulfillment_method: fulfillmentMethod,
+      delivery_address: fulfillmentMethod === 'delivery'
+        ? values.delivery_address?.trim() || null
+        : null,
+      delivery_fee: fulfillmentMethod === 'delivery' ? values.delivery_fee : 0,
       trusted_person: tpParts || null,
       trusted_person_doc_type: trustedPerson.doc_type || null,
       items: recalculatedItems,
@@ -114,7 +137,7 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
             clients={allClients}
             selectedClientId={values.client_id}
             trustedPerson={trustedPerson}
-            onSelect={id => update({ client_id: id })}
+            onSelect={selectClient}
             onTrustedPersonChange={setTrustedPerson}
             onClientCreated={client => setAllClients(prev => [...prev, client])}
             onNext={() => setStep(1)}
@@ -137,6 +160,10 @@ export function OrderForm({ clients: initialClients, equipment }: OrderFormProps
             endDate={values.end_date ?? ''}
             depositAmount={values.deposit_amount ?? 0}
             notes={values.notes ?? ''}
+            fulfillmentMethod={values.fulfillment_method ?? 'pickup'}
+            deliveryAddress={values.delivery_address ?? null}
+            deliveryFee={values.delivery_fee}
+            clientAddress={allClients.find(client => client.id === values.client_id)?.address_actual ?? null}
             selectedItems={values.items ?? []}
             equipment={equipment}
             onUpdate={patch => update(patch)}

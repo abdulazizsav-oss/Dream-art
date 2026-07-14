@@ -5,7 +5,7 @@ import { Client, Equipment, EquipmentCategory } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 import { TrustedPersonData } from './StepClient'
-import { FileText, UserCheck } from 'lucide-react'
+import { FileText, MapPin, Truck, UserCheck } from 'lucide-react'
 import { LiveTotal } from './LiveTotal'
 import { describeShift, describeUnits, getPricingParts, recalculateOrderItems } from '@/lib/rental'
 
@@ -31,6 +31,9 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
   }))
 
   const total = itemsWithDetails.reduce((s, i) => s + i.subtotal, 0)
+  const isDelivery = values.fulfillment_method === 'delivery'
+  const deliveryFee = isDelivery ? values.delivery_fee : 0
+  const grandTotal = total + deliveryFee
 
   return (
     <div>
@@ -42,6 +45,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           endDate={values.end_date}
           items={values.items}
           equipment={equipment}
+          deliveryFee={deliveryFee}
+          showDelivery={isDelivery}
         />
       </div>
 
@@ -82,6 +87,19 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           </p>
         </div>
 
+        {isDelivery && (
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+            <p className="mb-1.5 flex items-center gap-1.5 text-xs text-blue-600">
+              <Truck className="h-3.5 w-3.5" />
+              Доставка к началу аренды
+            </p>
+            <p className="flex items-start gap-2 text-sm font-medium text-zinc-900">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+              <span className="whitespace-pre-wrap">{values.delivery_address}</span>
+            </p>
+          </div>
+        )}
+
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-xs text-gray-500 mb-2">Техника</p>
           <div className="space-y-2">
@@ -102,8 +120,18 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
 
         <div className="border-t pt-3 space-y-1.5">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Итого аренда</span>
-            <span className="font-semibold">{formatCurrency(total)}</span>
+            <span className="text-gray-600">Аренда</span>
+            <span>{formatCurrency(total)}</span>
+          </div>
+          {isDelivery && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Доставка</span>
+              <span>{deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee)}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-zinc-100 pt-2">
+            <span className="font-medium text-zinc-700">Итого к оплате</span>
+            <span className="font-semibold tabular-nums">{formatCurrency(grandTotal)}</span>
           </div>
           {(values.deposit_amount ?? 0) > 0 && (
             <div className="flex justify-between text-sm">

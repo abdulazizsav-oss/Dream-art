@@ -5,7 +5,7 @@ import { formatCurrency, formatDate, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } 
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, TrendingUp, Camera, Users, ClipboardList, Plus } from 'lucide-react'
+import { AlertTriangle, TrendingUp, Camera, Users, ClipboardList, Plus, Truck } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -128,7 +128,15 @@ export default async function DashboardPage() {
                 <Link key={o.id} href={`/orders/${o.id}`}
                   className="flex justify-between items-center py-2 border-b last:border-0 hover:bg-gray-50 px-1 rounded">
                   <div>
-                    <p className="text-sm font-medium text-blue-600">{o.order_number}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-blue-600">{o.order_number}</p>
+                      {(o as any).fulfillment_method === 'delivery' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                          <Truck className="h-3 w-3" />
+                          Доставка
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400">
                       {(o.clients as { full_name: string } | null)?.full_name} · до {formatDate(o.end_date)}
                     </p>
