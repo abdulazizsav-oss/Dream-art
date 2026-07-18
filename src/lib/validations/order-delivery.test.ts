@@ -2,86 +2,50 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { orderSchema } from './order'
 
-const validOrder = {
-  client_id: '1c55ae4b-bdce-4bda-9189-bf67e1d7a769',
-  start_date: '2026-06-13',
-  end_date: '2026-06-14',
-  deposit_amount: 0,
+const baseOrder = {
+  client_id: '00000000-0000-4000-8000-000000000001',
+  start_date: '2026-07-18',
+  end_date: '2026-07-18',
   items: [{
-    equipment_id: '74234787-fb59-43b2-b7fb-1b50a2c9d86f',
+    equipment_id: '00000000-0000-4000-8000-000000000002',
     daily_rate: 100_000,
     days: 1,
     subtotal: 100_000,
   }],
 }
 
-test('legacy order is normalized to pickup without delivery fields', () => {
-  const result = orderSchema.safeParse(validOrder)
-
+test('new order defaults to no delivery services', () => {
+  const result = orderSchema.safeParse(baseOrder)
   assert.equal(result.success, true)
   if (result.success) {
-    assert.equal(result.data.fulfillment_method, 'pickup')
-    assert.equal(result.data.delivery_address, null)
-    assert.equal(result.data.delivery_fee, 0)
+    assert.equal(result.data.delivery_to_client, false)
+    assert.equal(result.data.delivery_from_client, false)
   }
 })
 
-test('pickup discards stale delivery values', () => {
+test('both fixed delivery services are accepted independently', () => {
   const result = orderSchema.safeParse({
-    ...validOrder,
-    fulfillment_method: 'pickup',
-    delivery_address: '  старый адрес  ',
-    delivery_fee: 50_000,
+    ...baseOrder,
+    delivery_to_client: true,
+    delivery_from_client: true,
   })
-
   assert.equal(result.success, true)
   if (result.success) {
-    assert.equal(result.data.delivery_address, null)
-    assert.equal(result.data.delivery_fee, 0)
+    assert.equal(result.data.delivery_to_client, true)
+    assert.equal(result.data.delivery_from_client, true)
   }
 })
 
-test('delivery accepts an explicitly entered zero fee and trims address', () => {
+test('legacy delivery payload becomes the outbound service', () => {
   const result = orderSchema.safeParse({
-    ...validOrder,
+    ...baseOrder,
     fulfillment_method: 'delivery',
-    delivery_address: '  Ташкент, ул. Навои, 1  ',
-    delivery_fee: 0,
+    delivery_address: 'Старый адрес',
+    delivery_fee: 75_000,
   })
-
   assert.equal(result.success, true)
   if (result.success) {
-    assert.equal(result.data.delivery_address, 'Ташкент, ул. Навои, 1')
-    assert.equal(result.data.delivery_fee, 0)
-  }
-})
-
-test('delivery requires an explicitly entered fee', () => {
-  const result = orderSchema.safeParse({
-    ...validOrder,
-    fulfillment_method: 'delivery',
-    delivery_address: 'Ташкент, ул. Навои, 1',
-  })
-
-  assert.equal(result.success, false)
-  if (!result.success) {
-    assert.equal(result.error.issues.some(issue => issue.path.join('.') === 'delivery_fee'), true)
-  }
-})
-
-test('delivery rejects a blank address and a fractional or negative fee', () => {
-  for (const deliveryFee of [-1, 1.5]) {
-    const result = orderSchema.safeParse({
-      ...validOrder,
-      fulfillment_method: 'delivery',
-      delivery_address: '   ',
-      delivery_fee: deliveryFee,
-    })
-
-    assert.equal(result.success, false)
-    if (!result.success) {
-      assert.equal(result.error.issues.some(issue => issue.path.join('.') === 'delivery_address'), true)
-      assert.equal(result.error.issues.some(issue => issue.path.join('.') === 'delivery_fee'), true)
-    }
+    assert.equal(result.data.delivery_to_client, true)
+    assert.equal(result.data.delivery_from_client, false)
   }
 })

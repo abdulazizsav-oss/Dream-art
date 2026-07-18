@@ -15,8 +15,8 @@ interface ContractData {
     pricingLines: { shiftLabel: string; rate: number; unitsLabel: string }[]
     subtotal: number
   }[]
-  fulfillmentMethod: 'pickup' | 'delivery'
-  deliveryAddress: string | null
+  deliveryToClient: boolean
+  deliveryFromClient: boolean
   rentalAmount: number
   deliveryFee: number
   totalAmount: number
@@ -95,13 +95,12 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   line(`С ${data.startDate} ${data.startTime} по ${data.endDate} ${data.endTime}`)
   gap()
 
-  // Pickup / delivery
-  line('ПОЛУЧЕНИЕ ЗАКАЗА:', 50, 11, true)
+  // Fixed delivery services
+  line('УСЛУГИ ДОСТАВКИ:', 50, 11, true)
   gap(0.5)
-  line(`Способ получения: ${data.fulfillmentMethod === 'delivery' ? 'Доставка' : 'Самовывоз'}`)
-  if (data.fulfillmentMethod === 'delivery' && data.deliveryAddress) {
-    wrappedLine(`Адрес доставки: ${data.deliveryAddress}`, 50, 9, false, 78)
-  }
+  if (data.deliveryToClient) line('Отправить клиенту')
+  if (data.deliveryFromClient) line('Забрать у клиента')
+  if (!data.deliveryToClient && !data.deliveryFromClient) line('Не выбраны')
   gap()
 
   // Equipment list
@@ -122,8 +121,8 @@ export async function generateContract(data: ContractData): Promise<Uint8Array> 
   line('─'.repeat(70), 50, 10)
   gap(0.3)
   line(`Итого за аренду: ${data.rentalAmount.toLocaleString('ru')} сум`)
-  if (data.fulfillmentMethod === 'delivery') {
-    line(`Доставка: ${data.deliveryFee === 0 ? 'Бесплатно' : `${data.deliveryFee.toLocaleString('ru')} сум`}`)
+  if (data.deliveryFee > 0) {
+    line(`Услуги доставки: ${data.deliveryFee.toLocaleString('ru')} сум`)
   } else {
     line('Доставка: —')
   }

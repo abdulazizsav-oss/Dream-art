@@ -11,8 +11,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
-import { CheckCircle, Plus, Trash2 } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, CheckCircle, Plus, Trash2 } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS, formatCurrency, cn } from '@/lib/utils'
+import { DELIVERY_SERVICE_FEE } from '@/lib/delivery'
 
 type PaymentMethod = 'cash' | 'transfer' | 'card'
 
@@ -30,6 +31,8 @@ interface CloseOrderButtonProps {
   items?: CloseOrderItem[]
   deliveryFee?: number
   deliveryPaid?: number
+  deliveryToClient?: boolean
+  deliveryFromClient?: boolean
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm' | 'lg'
   className?: string
@@ -46,6 +49,8 @@ export function CloseOrderButton({
   items = [],
   deliveryFee = 0,
   deliveryPaid = 0,
+  deliveryToClient = false,
+  deliveryFromClient = false,
   variant = 'default',
   size = 'default',
   className,
@@ -58,6 +63,8 @@ export function CloseOrderButton({
   const [splits, setSplits] = useState<Split[]>([{ method: 'cash', amount: initialAmount }])
   const [notes, setNotes] = useState('')
   const [leaveDebt, setLeaveDebt] = useState(false)
+  const [toClient, setToClient] = useState(deliveryToClient)
+  const [fromClient, setFromClient] = useState(deliveryFromClient)
 
   // Kit tracking: по умолчанию считаем, что вернулся весь комплект —
   // менеджер снимает отметку только с того, что НЕ вернули (забытая батарейка).
@@ -75,9 +82,15 @@ export function CloseOrderButton({
     () => items.reduce((sum, it) => sum + (Number(it.current_subtotal) || 0), 0),
     [items],
   )
-  const deliveryRemaining = Math.max(0, deliveryFee - deliveryPaid)
-  const remainingDebt = Math.max(0, debt - paidNow)
-  const paymentIsTooLarge = paidNow > debt + 0.01
+  const additionalDeliveryFee = (
+    (!deliveryToClient && toClient ? DELIVERY_SERVICE_FEE : 0)
+    + (!deliveryFromClient && fromClient ? DELIVERY_SERVICE_FEE : 0)
+  )
+  const closingDeliveryFee = deliveryFee + additionalDeliveryFee
+  const closingDebt = debt + additionalDeliveryFee
+  const deliveryRemaining = Math.max(0, closingDeliveryFee - deliveryPaid)
+  const remainingDebt = Math.max(0, closingDebt - paidNow)
+  const paymentIsTooLarge = paidNow > closingDebt + 0.01
 
   const missingTotals = useMemo(() => {
     let total = 0
@@ -114,7 +127,7 @@ export function CloseOrderButton({
         ? {
             ...split,
             method,
-            amount: wasDebt && i === 0 && debt > 0 ? String(debt) : split.amount,
+            amount: wasDebt && i === 0 && closingDebt > 0 ? String(closingDebt) : split.amount,
           }
         : split
     )))
@@ -123,6 +136,25 @@ export function CloseOrderButton({
   function selectDebt() {
     setLeaveDebt(true)
     setSplits([{ method: 'cash', amount: '' }])
+  }
+
+  function toggleDelivery(direction: 'to' | 'from') {
+    const locked = direction === 'to' ? deliveryToClient : deliveryFromClient
+    if (locked) return
+
+    const wasActive = direction === 'to' ? toClient : fromClient
+    const delta = wasActive ? -DELIVERY_SERVICE_FEE : DELIVERY_SERVICE_FEE
+    const previousDebt = closingDebt
+
+    if (direction === 'to') setToClient(!wasActive)
+    else setFromClient(!wasActive)
+
+    if (!leaveDebt) {
+      setSplits(current => {
+        if (current.length !== 1 || Number(current[0].amount) !== previousDebt) return current
+        return [{ ...current[0], amount: String(Math.max(0, previousDebt + delta)) }]
+      })
+    }
   }
 
   function addSplit() {
@@ -171,6 +203,8 @@ export function CloseOrderButton({
           items: returnItems,
           payment_splits: validSplits,
           payment_notes: notes || null,
+          delivery_to_client: toClient,
+          delivery_from_client: fromClient,
         }),
       })
       if (!closeRes.ok) {
@@ -222,7 +256,7 @@ export function CloseOrderButton({
           <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
             <span className="text-gray-600">Задолженность по заказу</span>
             <span className={debt > 0 ? 'font-semibold text-red-600' : 'font-semibold text-green-700'}>
-              {formatCurrency(Math.max(0, debt))}
+              {formatCurrency(Math.max(0, closingDebt))}
             </span>
           </div>
           <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
@@ -231,21 +265,34 @@ export function CloseOrderButton({
               {formatCurrency(Math.max(0, closingItemsTotal))}
             </span>
           </div>
-          {deliveryFee > 0 && (
-            <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 flex items-center justify-between gap-3 text-sm">
+          <div className="space-y-2 rounded-xl border border-sky-200 bg-sky-50 p-3">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sky-700">Доставка</p>
-                {deliveryPaid > 0 && (
-                  <p className="mt-0.5 text-[11px] text-sky-600">
-                    Уже оплачено: {formatCurrency(deliveryPaid)}
-                  </p>
-                )}
+                <p className="text-sm font-medium text-sky-800">Услуги доставки</p>
+                <p className="text-[11px] text-sky-600">Можно добавить забытый выезд перед закрытием.</p>
               </div>
-              <span className="font-semibold text-sky-900">
-                {formatCurrency(deliveryRemaining)}
-              </span>
+              <span className="text-sm font-semibold text-sky-900">{formatCurrency(deliveryRemaining)}</span>
             </div>
-          )}
+            <div className="grid gap-2 sm:grid-cols-2">
+              <DeliveryCloseToggle
+                active={toClient}
+                locked={deliveryToClient}
+                onClick={() => toggleDelivery('to')}
+                icon={<ArrowUpFromLine className="h-4 w-4" />}
+                label="Отправить клиенту"
+              />
+              <DeliveryCloseToggle
+                active={fromClient}
+                locked={deliveryFromClient}
+                onClick={() => toggleDelivery('from')}
+                icon={<ArrowDownToLine className="h-4 w-4" />}
+                label="Забрать у клиента"
+              />
+            </div>
+            {deliveryPaid > 0 && (
+              <p className="text-[11px] text-sky-600">Уже оплачено за доставку: {formatCurrency(deliveryPaid)}</p>
+            )}
+          </div>
 
           {/* Kit checklist */}
           {hasKit && (
@@ -323,7 +370,7 @@ export function CloseOrderButton({
                         {PAYMENT_METHOD_LABELS[m]}
                       </button>
                     ))}
-                    {i === 0 && debt > 0 && (
+                    {i === 0 && closingDebt > 0 && (
                       <button
                         type="button"
                         onClick={selectDebt}
@@ -380,17 +427,17 @@ export function CloseOrderButton({
             {leaveDebt ? (
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 Оплата не проводится. Заказ закроется, а клиент останется должником на{' '}
-                <strong>{formatCurrency(Math.max(0, debt))}</strong>.
+                <strong>{formatCurrency(Math.max(0, closingDebt))}</strong>.
               </p>
             ) : (
               <p className="text-[11px] text-gray-500">
-                Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, debt))}</span>.
+                Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, closingDebt))}</span>.
                 Можно вписать меньше — остаток автоматически останется долгом.
               </p>
             )}
             {paymentIsTooLarge && (
               <p className="text-xs font-medium text-red-600">
-                Нельзя принять больше {formatCurrency(Math.max(0, debt))} — это текущий остаток по заказу.
+                Нельзя принять больше {formatCurrency(Math.max(0, closingDebt))} — это текущий остаток по заказу.
               </p>
             )}
           </div>
@@ -411,7 +458,7 @@ export function CloseOrderButton({
             </Button>
             <Button
               type="submit"
-              disabled={loading || paymentIsTooLarge || (!leaveDebt && debt > 0 && paidNow <= 0)}
+              disabled={loading || paymentIsTooLarge || (!leaveDebt && closingDebt > 0 && paidNow <= 0)}
             >
               {loading
                 ? 'Закрытие...'
@@ -426,5 +473,37 @@ export function CloseOrderButton({
       </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+function DeliveryCloseToggle({
+  active,
+  locked,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean
+  locked: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'flex min-h-[48px] items-center justify-between gap-2 rounded-lg border px-3 text-left text-xs font-medium transition-colors',
+        active
+          ? 'border-sky-500 bg-white text-sky-800'
+          : 'border-sky-200 bg-sky-100/50 text-sky-700 hover:border-sky-400',
+        locked && 'cursor-default',
+      )}
+    >
+      <span className="flex items-center gap-1.5">{icon}{label}</span>
+      <span className="shrink-0 tabular-nums">{locked ? '✓' : `+${DELIVERY_SERVICE_FEE.toLocaleString('ru')}`}</span>
+    </button>
   )
 }

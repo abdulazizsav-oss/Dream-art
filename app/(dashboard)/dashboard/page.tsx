@@ -130,10 +130,10 @@ export default async function DashboardPage() {
                   <div>
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-medium text-blue-600">{o.order_number}</p>
-                      {(o as any).fulfillment_method === 'delivery' && (
+                      {Number((o as any).delivery_fee ?? 0) > 0 && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
                           <Truck className="h-3 w-3" />
-                          Доставка
+                          Доставка {formatCurrency(Number((o as any).delivery_fee ?? 0))}
                         </span>
                       )}
                     </div>

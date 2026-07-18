@@ -10,17 +10,16 @@ import { OrderFormValues, OrderItemFormValue } from '@/lib/validations/order'
 import type { Equipment, EquipmentCategory } from '@/types/database'
 import { LiveTotal } from './LiveTotal'
 import { describeBreakdown, getAutoBillingBreakdown, recalculateOrderItems } from '@/lib/rental'
-import { MapPin, Package, Truck } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
+import { calculateDeliveryFee, DELIVERY_SERVICE_FEE } from '@/lib/delivery'
 
 interface StepDatesProps {
   startDate: string
   endDate: string
   depositAmount: number
   notes: string
-  fulfillmentMethod: OrderFormValues['fulfillment_method']
-  deliveryAddress: string | null
-  deliveryFee?: number
-  clientAddress: string | null
+  deliveryToClient: boolean
+  deliveryFromClient: boolean
   selectedItems: OrderItemFormValue[]
   equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
   onUpdate: (patch: Partial<OrderFormValues>) => void
@@ -33,10 +32,8 @@ export function StepDates({
   endDate,
   depositAmount,
   notes,
-  fulfillmentMethod,
-  deliveryAddress,
-  deliveryFee,
-  clientAddress,
+  deliveryToClient,
+  deliveryFromClient,
   selectedItems,
   equipment,
   onUpdate,
@@ -47,57 +44,32 @@ export function StepDates({
   const [end, setEnd] = useState(endDate || getTashkentDate())
   const [deposit, setDeposit] = useState(depositAmount)
   const [note, setNote] = useState(notes)
-  const [method, setMethod] = useState<OrderFormValues['fulfillment_method']>(fulfillmentMethod)
-  const [address, setAddress] = useState(deliveryAddress?.trim() || clientAddress?.trim() || '')
-  const [deliveryFeeInput, setDeliveryFeeInput] = useState(
-    fulfillmentMethod === 'delivery' && deliveryFee !== undefined ? String(deliveryFee) : '',
-  )
-  const [showDeliveryErrors, setShowDeliveryErrors] = useState(false)
+  const [toClient, setToClient] = useState(deliveryToClient)
+  const [fromClient, setFromClient] = useState(deliveryFromClient)
 
   const previewItems = useMemo(() => recalculateOrderItems(selectedItems, equipment, {
     start_date: start,
     end_date: end,
   }), [end, equipment, selectedItems, start])
 
-  const trimmedAddress = address.trim()
-  const trimmedDeliveryFee = deliveryFeeInput.trim()
-  const parsedDeliveryFee = Number(trimmedDeliveryFee)
-  const hasValidDeliveryFee = /^\d+$/.test(trimmedDeliveryFee)
-    && Number.isSafeInteger(parsedDeliveryFee)
-    && parsedDeliveryFee >= 0
-  const needsDeliveryAddress = method === 'delivery' && !trimmedAddress
-  const needsDeliveryFee = method === 'delivery' && !hasValidDeliveryFee
-  const previewDeliveryFee = method === 'delivery' && hasValidDeliveryFee ? parsedDeliveryFee : 0
+  const previewDeliveryFee = calculateDeliveryFee({
+    delivery_to_client: toClient,
+    delivery_from_client: fromClient,
+  })
 
   function persistDraft() {
-    const deliveryPatch: Partial<OrderFormValues> = method === 'delivery'
-      ? {
-          fulfillment_method: 'delivery',
-          delivery_address: trimmedAddress || null,
-          delivery_fee: hasValidDeliveryFee ? parsedDeliveryFee : undefined,
-        }
-      : {
-          fulfillment_method: 'pickup',
-          delivery_address: null,
-          delivery_fee: 0,
-        }
-
     onUpdate({
       start_date: start,
       end_date: end,
       deposit_amount: deposit,
       notes: note,
       items: previewItems,
-      ...deliveryPatch,
+      delivery_to_client: toClient,
+      delivery_from_client: fromClient,
     })
   }
 
   function handleNext() {
-    if (needsDeliveryAddress || needsDeliveryFee) {
-      setShowDeliveryErrors(true)
-      return
-    }
-
     persistDraft()
     onNext()
   }
@@ -105,14 +77,6 @@ export function StepDates({
   function handleBack() {
     persistDraft()
     onBack()
-  }
-
-  function selectMethod(nextMethod: OrderFormValues['fulfillment_method']) {
-    setMethod(nextMethod)
-    setShowDeliveryErrors(false)
-    if (nextMethod === 'delivery' && !address.trim()) {
-      setAddress(clientAddress?.trim() || '')
-    }
   }
 
   const days = start && end ? calcDays(start, end) : 0
@@ -150,100 +114,32 @@ export function StepDates({
         </div>
       )}
 
-      <div className="mb-4 space-y-3">
-        <div>
-          <Label className="mb-2 block">Получение заказа</Label>
-          <div
-            role="radiogroup"
-            aria-label="Способ получения заказа"
-            className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={method === 'pickup'}
-              onClick={() => selectMethod('pickup')}
-              className={cn(
-                'flex min-h-[42px] items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors',
-                method === 'pickup'
-                  ? 'bg-white text-zinc-900 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800',
-              )}
-            >
-              <Package className="h-4 w-4" />
-              Самовывоз
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={method === 'delivery'}
-              onClick={() => selectMethod('delivery')}
-              className={cn(
-                'flex min-h-[42px] items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors',
-                method === 'delivery'
-                  ? 'bg-white text-blue-700 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800',
-              )}
-            >
-              <Truck className="h-4 w-4" />
-              Доставка
-            </button>
+      <div className="mb-4 space-y-2">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <Label className="block">Услуги доставки</Label>
+            <p className="mt-1 text-xs text-zinc-500">Адрес не нужен. Каждое направление стоит 50 000 UZS.</p>
           </div>
+          {previewDeliveryFee > 0 && (
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-blue-700">
+              +{previewDeliveryFee.toLocaleString('ru')} UZS
+            </span>
+          )}
         </div>
-
-        {method === 'delivery' && (
-          <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
-            <div className="mb-3 flex items-start gap-2 text-xs text-blue-700">
-              <Truck className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Дата доставки совпадает с датой начала аренды.</span>
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
-              <div className="space-y-1.5">
-                <Label htmlFor="delivery-address">Адрес доставки *</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
-                  <Textarea
-                    id="delivery-address"
-                    value={address}
-                    onChange={event => setAddress(event.target.value)}
-                    maxLength={500}
-                    rows={2}
-                    placeholder="Улица, дом, квартира или ориентир"
-                    className={cn(
-                      'min-h-[72px] resize-none pl-9',
-                      showDeliveryErrors && needsDeliveryAddress && 'border-red-400 focus-visible:ring-red-200',
-                    )}
-                  />
-                </div>
-                {showDeliveryErrors && needsDeliveryAddress && (
-                  <p className="text-xs text-red-600">Укажите адрес доставки</p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="delivery-fee">Стоимость, UZS *</Label>
-                <Input
-                  id="delivery-fee"
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  step="1"
-                  value={deliveryFeeInput}
-                  onChange={event => setDeliveryFeeInput(event.target.value)}
-                  placeholder="Например, 50 000"
-                  className={cn(
-                    'min-h-[44px]',
-                    showDeliveryErrors && needsDeliveryFee && 'border-red-400 focus-visible:ring-red-200',
-                  )}
-                />
-                {showDeliveryErrors && needsDeliveryFee ? (
-                  <p className="text-xs text-red-600">Введите целое число от 0</p>
-                ) : (
-                  <p className="text-xs text-zinc-500">0 — бесплатная доставка</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="grid gap-2 md:grid-cols-2">
+          <DeliveryToggle
+            active={toClient}
+            onClick={() => setToClient(value => !value)}
+            icon={<ArrowUpFromLine className="h-4 w-4" />}
+            title="Отправить клиенту"
+          />
+          <DeliveryToggle
+            active={fromClient}
+            onClick={() => setFromClient(value => !value)}
+            icon={<ArrowDownToLine className="h-4 w-4" />}
+            title="Забрать у клиента"
+          />
+        </div>
       </div>
 
       {previewItems.length > 0 && (
@@ -254,7 +150,7 @@ export function StepDates({
             items={previewItems}
             equipment={equipment}
             deliveryFee={previewDeliveryFee}
-            showDelivery={method === 'delivery'}
+            showDelivery={previewDeliveryFee > 0}
           />
         </div>
       )}
@@ -281,5 +177,37 @@ export function StepDates({
         </Button>
       </div>
     </div>
+  )
+}
+
+function DeliveryToggle({
+  active,
+  onClick,
+  icon,
+  title,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  title: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'flex min-h-[64px] items-center justify-between gap-3 rounded-xl border px-4 text-left transition-colors',
+        active
+          ? 'border-blue-500 bg-blue-50 text-blue-800'
+          : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
+      )}
+    >
+      <span className="flex items-center gap-2 text-sm font-medium">
+        {icon}
+        {title}
+      </span>
+      <span className="text-xs font-semibold tabular-nums">+{DELIVERY_SERVICE_FEE.toLocaleString('ru')}</span>
+    </button>
   )
 }

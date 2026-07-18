@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertTriangle,
   CalendarSearch,
+  ChevronLeft,
+  ChevronRight,
   LockKeyhole,
   Moon,
   Search,
@@ -359,6 +361,10 @@ export default function CalendarPage() {
     replaceUrl({ days: next })
   }
 
+  const shiftPeriod = (direction: -1 | 1) => {
+    changeFrom(addDays(from, direction * daysVisible))
+  }
+
   const requestNearest = () => {
     nearestRequested.current = true
     setNearestRequest(value => value + 1)
@@ -459,8 +465,35 @@ export default function CalendarPage() {
               </SegmentButton>
             ))}
           </div>
-          <div className="ml-auto text-sm text-zinc-500">
-            {formatShortDate(from)} – {formatShortDate(to)}
+          <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => shiftPeriod(-1)}
+              className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl"
+              aria-label={`Предыдущий период: ${daysVisible} дней`}
+              title="Предыдущий период"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center rounded-xl bg-zinc-50 px-3 text-center sm:min-w-[148px]">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Период</span>
+              <span className="text-sm font-medium tabular-nums text-zinc-700">
+                {formatShortDate(from)} – {formatShortDate(to)}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => shiftPeriod(1)}
+              className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl"
+              aria-label={`Следующий период: ${daysVisible} дней`}
+              title="Следующий период"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>

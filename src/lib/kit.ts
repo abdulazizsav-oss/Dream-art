@@ -158,3 +158,19 @@ export function reconcileKitSelection(
   }
   return out
 }
+
+/** Existing issued accessories may stay or grow, but never disappear/reprice. */
+export function isAdditiveKitSelection(
+  current: KitSelectionEntry[] | null | undefined,
+  next: KitSelectionEntry[] | null | undefined,
+): boolean {
+  const nextByName = new Map((next ?? []).map(entry => [entry.name, entry]))
+  return (current ?? []).every(entry => {
+    const candidate = nextByName.get(entry.name)
+    return Boolean(
+      candidate
+      && candidate.qty >= entry.qty
+      && candidate.unit_price === entry.unit_price,
+    )
+  })
+}

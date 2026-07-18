@@ -12,6 +12,7 @@ import {
 import { formatCurrency } from '@/lib/utils'
 import { Moon, PackagePlus, Search, Sun } from 'lucide-react'
 import { supportsNightShift } from '@/lib/rental'
+import { defaultKitSelection, kitSelectionToNames, sanitizeKitCatalog } from '@/lib/kit'
 
 interface EquipmentOption {
   id: string
@@ -23,6 +24,7 @@ interface EquipmentOption {
   currency: 'UZS' | 'USD'
   brand: string | null
   kit_items?: string[] | null
+  kit?: unknown
   equipment_categories?: { name: string | null } | null
   brands?: { name: string | null } | null
 }
@@ -76,6 +78,7 @@ export function AddItemsModal({ orderId, equipment, variant = 'outline', size = 
       const item = equipment.find(candidate => candidate.id === id)!
       const dayRate = item.day_rate ?? item.daily_rate ?? 0
       const nightRate = supportsNightShift(item) ? (item.night_rate ?? dayRate) : dayRate
+      const kitSelection = defaultKitSelection(sanitizeKitCatalog(item.kit))
       return {
         equipment_id: item.id,
         daily_rate: dayRate,
@@ -88,7 +91,10 @@ export function AddItemsModal({ orderId, equipment, variant = 'outline', size = 
         day_units: 1,
         night_units: 0,
         condition_on_issue: 'Хорошее',
-        selected_kit_items: item.kit_items ?? [],
+        selected_kit_items: kitSelection.length > 0
+          ? kitSelectionToNames(kitSelection)
+          : item.kit_items ?? [],
+        kit_selection: kitSelection,
       }
     })
 

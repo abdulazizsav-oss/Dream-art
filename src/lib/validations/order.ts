@@ -46,16 +46,8 @@ const normalizedOrderSchema = z.object({
   notes: z.string().nullable().optional(),
   trusted_person: z.string().nullable().optional(),
   trusted_person_doc_type: z.string().nullable().optional(),
-  fulfillment_method: z.enum(['pickup', 'delivery']),
-  delivery_address: z.string()
-    .trim()
-    .min(1, 'Укажите адрес доставки')
-    .max(500, 'Адрес не должен быть длиннее 500 символов')
-    .nullable()
-    .default(null),
-  delivery_fee: z.number({ error: 'Укажите стоимость доставки' })
-    .int('Стоимость доставки должна быть целым числом')
-    .min(0, 'Стоимость доставки не может быть отрицательной'),
+  delivery_to_client: z.boolean().default(false),
+  delivery_from_client: z.boolean().default(false),
   items: z.array(orderItemSchema).min(1, 'Добавьте хотя бы одну единицу техники'),
 }).superRefine((data, ctx) => {
   if (data.end_date < data.start_date) {
@@ -65,34 +57,21 @@ const normalizedOrderSchema = z.object({
       path: ['end_date'],
     })
   }
-
-  if (data.fulfillment_method === 'delivery' && data.delivery_address === null) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Укажите адрес доставки',
-      path: ['delivery_address'],
-    })
-  }
 })
 
 /**
- * Старые клиенты не передают способ получения. Считаем их самовывозом
- * и на границе схемы обнуляем поля доставки, чтобы они не попали в payload.
- * Для delivery поле delivery_fee намеренно не имеет default: менеджер должен ввести
- * стоимость явно, в том числе 0 для бесплатной доставки.
+ * Старый интерфейс передавал fulfillment_method. На границе схемы превращаем его
+ * в новую простую услугу «отправить клиенту», чтобы старый открытый браузер не
+ * создал заказ без выбранной доставки после обновления сервера.
  */
 export const orderSchema = z.preprocess(input => {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return input
 
   const raw = input as Record<string, unknown>
-  const method = raw.fulfillment_method ?? 'pickup'
-  if (method !== 'pickup') return input
-
   return {
     ...raw,
-    fulfillment_method: 'pickup',
-    delivery_address: null,
-    delivery_fee: 0,
+    delivery_to_client: raw.delivery_to_client ?? raw.fulfillment_method === 'delivery',
+    delivery_from_client: raw.delivery_from_client ?? false,
   }
 }, normalizedOrderSchema)
 

@@ -45,9 +45,8 @@ export async function POST(req: NextRequest) {
     items,
     trusted_person,
     trusted_person_doc_type,
-    fulfillment_method,
-    delivery_address,
-    delivery_fee,
+    delivery_to_client,
+    delivery_from_client,
   } = parsed.data
   const service = await createServiceClient()
 
@@ -68,7 +67,7 @@ export async function POST(req: NextRequest) {
 
   // Время не собираем на форме — расчёт суммы идёт от actual_start_at → now() при закрытии.
   // Для RPC передаём пустые строки: внутри COALESCE(NULLIF(...,'')::time, '09:30'/'23:00'::time)
-  const { data: orderId, error } = await service.rpc('create_order_atomic_v2', {
+  const { data: orderId, error } = await service.rpc('create_order_atomic_v3', {
     p_client_id: client_id,
     p_start_date: start_date,
     p_end_date: end_date,
@@ -78,10 +77,9 @@ export async function POST(req: NextRequest) {
     p_notes: notes ?? '',
     p_created_by: user.id,
     p_items: normalizedItems,
-    p_fulfillment_method: fulfillment_method,
-    p_delivery_address: fulfillment_method === 'delivery' ? delivery_address : null,
-    p_delivery_fee: fulfillment_method === 'delivery' ? delivery_fee : 0,
-  })
+    p_delivery_to_client: delivery_to_client,
+    p_delivery_from_client: delivery_from_client,
+  } as never)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 

@@ -92,7 +92,7 @@ export function LiveTotal({
             <span className="tabular-nums">{formatCurrency(total, currency)}</span>
           </div>
           <div className="flex items-center justify-between gap-3 text-zinc-500">
-            <span>Доставка</span>
+            <span>Услуги доставки</span>
             <span className="tabular-nums">
               {deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee, 'UZS')}
             </span>

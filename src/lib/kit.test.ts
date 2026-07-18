@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   expandKitUnits, groupKitUnits, formatKitGroup,
   kitPerShift, defaultKitSelection, kitSelectionToNames, reconcileKitSelection,
+  isAdditiveKitSelection,
 } from './kit'
 
 test('expandKitUnits: qty >= 2 produces numbered units', () => {
@@ -73,4 +74,11 @@ test('kitSelectionToNames expands qty into numbered units', () => {
     kitSelectionToNames([{ name: 'Акк', qty: 2, unit_price: 0 }, { name: 'SD', qty: 1, unit_price: 0 }]),
     ['Акк 1', 'Акк 2', 'SD'],
   )
+})
+
+test('isAdditiveKitSelection allows additions but rejects removal and repricing', () => {
+  const current = [{ name: 'Акк', qty: 1, unit_price: 30_000 }]
+  assert.equal(isAdditiveKitSelection(current, [{ name: 'Акк', qty: 2, unit_price: 30_000 }]), true)
+  assert.equal(isAdditiveKitSelection(current, []), false)
+  assert.equal(isAdditiveKitSelection(current, [{ name: 'Акк', qty: 1, unit_price: 40_000 }]), false)
 })

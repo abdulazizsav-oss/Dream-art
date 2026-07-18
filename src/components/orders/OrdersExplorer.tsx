@@ -8,11 +8,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  MapPin,
   PackageCheck,
   Plus,
   Search,
-  Store,
   Truck,
   WalletCards,
 } from 'lucide-react'
@@ -29,7 +27,7 @@ import {
 
 type OrderStatus = 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
 type QueueFilter = 'active' | 'overdue' | 'debt' | 'returned' | 'all'
-type FulfillmentFilter = 'all' | 'pickup' | 'delivery'
+type DeliveryFilter = 'all' | 'with' | 'without'
 type SortOrder = 'newest' | 'oldest' | 'debt'
 
 interface CloseItem {
@@ -52,7 +50,8 @@ export interface OrderListItem {
   actualStartAt: string | null
   actualEndAt: string | null
   createdBy: string | null
-  fulfillmentMethod: 'pickup' | 'delivery'
+  deliveryToClient: boolean
+  deliveryFromClient: boolean
   equipmentNames: string[]
   effectiveTotal: number
   paidRental: number
@@ -114,7 +113,7 @@ function orderPeriod(order: OrderListItem) {
 export function OrdersExplorer({ orders, totalCount }: Props) {
   const [queue, setQueue] = useState<QueueFilter>('active')
   const [query, setQuery] = useState('')
-  const [fulfillment, setFulfillment] = useState<FulfillmentFilter>('all')
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>('all')
   const [sort, setSort] = useState<SortOrder>('newest')
   const [page, setPage] = useState(1)
 
@@ -135,7 +134,8 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
     const normalizedQuery = query.trim().toLocaleLowerCase('ru')
     const result = orders.filter(order => {
       if (!matchesQueue(order, queue)) return false
-      if (fulfillment !== 'all' && order.fulfillmentMethod !== fulfillment) return false
+      if (deliveryFilter === 'with' && order.deliveryFee <= 0) return false
+      if (deliveryFilter === 'without' && order.deliveryFee > 0) return false
       if (!normalizedQuery) return true
 
       return [
@@ -153,14 +153,14 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
       const bTime = b.createdAt ? Date.parse(b.createdAt) : 0
       return sort === 'oldest' ? aTime - bTime : bTime - aTime
     })
-  }, [fulfillment, orders, query, queue, sort])
+  }, [deliveryFilter, orders, query, queue, sort])
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
   const visibleOrders = filteredOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   useEffect(() => {
     setPage(1)
-  }, [fulfillment, query, queue, sort])
+  }, [deliveryFilter, query, queue, sort])
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
@@ -172,7 +172,7 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
 
   function resetFilters() {
     setQuery('')
-    setFulfillment('all')
+    setDeliveryFilter('all')
     setSort('newest')
   }
 
@@ -268,15 +268,15 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
               />
             </label>
             <label className="relative">
-              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Truck className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <select
-                value={fulfillment}
-                onChange={event => setFulfillment(event.target.value as FulfillmentFilter)}
+                value={deliveryFilter}
+                onChange={event => setDeliveryFilter(event.target.value as DeliveryFilter)}
                 className="min-h-[44px] w-full appearance-none rounded-xl border bg-white pl-10 pr-3 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
               >
-                <option value="all">Все способы получения</option>
-                <option value="pickup">Самовывоз</option>
-                <option value="delivery">Доставка</option>
+                <option value="all">Все заказы</option>
+                <option value="with">С доставкой</option>
+                <option value="without">Без доставки</option>
               </select>
             </label>
             <label className="relative">
@@ -310,7 +310,7 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
             ))}
           </div>
         ) : (
-          <EmptyOrders hasFilters={Boolean(query) || fulfillment !== 'all'} onReset={resetFilters} />
+          <EmptyOrders hasFilters={Boolean(query) || deliveryFilter !== 'all'} onReset={resetFilters} />
         )}
 
         {filteredOrders.length > PAGE_SIZE && (
@@ -400,89 +400,96 @@ function OrderRow({ order }: { order: OrderListItem }) {
   const isOpen = ['active', 'overdue'].includes(order.status)
   const period = orderPeriod(order)
   const hasDebt = order.debt > 0.01 && order.status !== 'cancelled'
+  const orderHref = `/orders/${order.id}`
 
   return (
-    <article className="grid gap-4 px-4 py-4 transition-colors hover:bg-zinc-50/70 md:grid-cols-[minmax(0,1.45fr)_minmax(0,1.15fr)_minmax(135px,.7fr)_minmax(145px,.75fr)] md:items-center">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/orders/${order.id}`}
-            className="font-semibold tracking-tight text-zinc-950 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-zinc-400"
-          >
-            {order.orderNumber}
-          </Link>
-          {order.fulfillmentMethod === 'delivery' ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-1 text-[10px] font-medium text-sky-700">
-              <Truck className="h-3 w-3" /> Доставка
+    <article className="group relative transition-colors hover:bg-zinc-50/80 active:bg-zinc-100">
+      <Link
+        href={orderHref}
+        aria-label={`Открыть заказ ${order.orderNumber}`}
+        className="absolute inset-0 z-0 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-500"
+      >
+        <span className="sr-only">Открыть заказ {order.orderNumber}</span>
+      </Link>
+
+      <div className="pointer-events-none relative z-10 grid min-h-[132px] gap-4 px-4 py-4 md:grid-cols-[minmax(0,1.45fr)_minmax(0,1.15fr)_minmax(135px,.7fr)_minmax(155px,.78fr)] md:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold tracking-tight text-zinc-950 transition-colors group-hover:text-blue-700">
+              {order.orderNumber}
             </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-medium text-zinc-500">
-              <Store className="h-3 w-3" /> Самовывоз
-            </span>
+            {order.deliveryFee > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-1 text-[10px] font-medium text-sky-700">
+                <Truck className="h-3 w-3" /> Доставка · {formatCurrency(order.deliveryFee)}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 truncate text-sm font-medium text-zinc-800">{order.clientName}</p>
+          <p className="mt-0.5 truncate text-xs text-zinc-400">
+            {order.clientPhone ?? 'Телефон не указан'}
+            {order.createdAt ? ` · создан ${formatDateTime(order.createdAt)}` : ''}
+          </p>
+          {order.missingKitItems.length > 0 && (
+            <p className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Не возвращено: {order.missingKitItems.join(', ')}
+            </p>
           )}
         </div>
-        <p className="mt-1 truncate text-sm font-medium text-zinc-800">{order.clientName}</p>
-        <p className="mt-0.5 truncate text-xs text-zinc-400">
-          {order.clientPhone ?? 'Телефон не указан'}
-          {order.createdAt ? ` · создан ${formatDateTime(order.createdAt)}` : ''}
-        </p>
-        {order.missingKitItems.length > 0 && (
-          <p className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-700">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            Не возвращено: {order.missingKitItems.join(', ')}
+
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">{period.label}</p>
+          <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-700">{period.value}</p>
+          <p className="mt-2 truncate text-xs text-zinc-500" title={order.equipmentNames.join(', ')}>
+            <PackageCheck className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-zinc-400" />
+            {equipmentSummary(order.equipmentNames)}
           </p>
-        )}
-      </div>
+          {order.createdBy && <p className="mt-1 truncate text-[11px] text-zinc-400">Оформил: {order.createdBy}</p>}
+        </div>
 
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">{period.label}</p>
-        <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-700">{period.value}</p>
-        <p className="mt-2 truncate text-xs text-zinc-500" title={order.equipmentNames.join(', ')}>
-          <PackageCheck className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-zinc-400" />
-          {equipmentSummary(order.equipmentNames)}
-        </p>
-        {order.createdBy && <p className="mt-1 truncate text-[11px] text-zinc-400">Оформил: {order.createdBy}</p>}
-      </div>
-
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Расчёт</p>
-        <p className="mt-1 font-semibold tabular-nums text-zinc-900">{formatCurrency(order.effectiveTotal)}</p>
-        <p className="mt-1 text-[11px] tabular-nums text-emerald-700">
-          Оплачено: {formatCurrency(order.paidRental)}
-        </p>
-        {hasDebt && (
-          <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold tabular-nums text-amber-700">
-            <WalletCards className="h-3 w-3" />
-            Долг: {formatCurrency(order.debt)}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Расчёт</p>
+          <p className="mt-1 font-semibold tabular-nums text-zinc-900">{formatCurrency(order.effectiveTotal)}</p>
+          <p className="mt-1 text-[11px] tabular-nums text-emerald-700">
+            Оплачено: {formatCurrency(order.paidRental)}
           </p>
-        )}
-      </div>
+          {hasDebt && (
+            <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold tabular-nums text-amber-700">
+              <WalletCards className="h-3 w-3" />
+              Долг: {formatCurrency(order.debt)}
+            </p>
+          )}
+        </div>
 
-      <div className="flex items-center justify-between gap-3 md:flex-col md:items-stretch">
-        <span className={cn(
-          'inline-flex w-fit rounded-md px-2 py-1 text-xs font-medium',
-          ORDER_STATUS_COLORS[order.status],
-        )}>
-          {ORDER_STATUS_LABELS[order.status]}
-        </span>
-        {isOpen ? (
-          <CloseOrderButton
-            orderId={order.id}
-            debt={order.debt}
-            items={order.closeItems}
-            deliveryFee={order.deliveryFee}
-            deliveryPaid={order.deliveryPaid}
-            variant="outline"
-            size="sm"
-            className="justify-center text-xs"
-          />
-        ) : (
-          <Link href={`/orders/${order.id}`} className="md:w-full">
-            <Button variant="outline" size="sm" className="w-full text-xs">
-              Открыть заказ
-            </Button>
+        <div className="flex flex-wrap items-center gap-2 md:flex-col md:items-stretch">
+          <span className={cn(
+            'inline-flex w-fit rounded-md px-2 py-1 text-xs font-medium',
+            ORDER_STATUS_COLORS[order.status],
+          )}>
+            {ORDER_STATUS_LABELS[order.status]}
+          </span>
+          {isOpen && (
+            <CloseOrderButton
+              orderId={order.id}
+              debt={order.debt}
+              items={order.closeItems}
+              deliveryFee={order.deliveryFee}
+              deliveryPaid={order.deliveryPaid}
+              deliveryToClient={order.deliveryToClient}
+              deliveryFromClient={order.deliveryFromClient}
+              variant="outline"
+              size="sm"
+              className="pointer-events-auto min-h-10 min-w-[132px] flex-1 justify-center text-xs md:w-full"
+            />
+          )}
+          <Link
+            href={orderHref}
+            className="pointer-events-auto inline-flex min-h-10 min-w-[132px] flex-1 items-center justify-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-800 shadow-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 md:w-full"
+          >
+            Открыть заказ
+            <ChevronRight className="h-4 w-4" />
           </Link>
-        )}
+        </div>
       </div>
     </article>
   )

@@ -401,6 +401,8 @@ export type Database = {
           fulfillment_method: FulfillmentMethod
           delivery_address: string | null
           delivery_fee: number
+          delivery_to_client: boolean
+          delivery_from_client: boolean
           created_by: string | null
           created_at: string
           updated_at: string
@@ -427,6 +429,8 @@ export type Database = {
           fulfillment_method?: FulfillmentMethod
           delivery_address?: string | null
           delivery_fee?: number
+          delivery_to_client?: boolean
+          delivery_from_client?: boolean
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -453,6 +457,8 @@ export type Database = {
           fulfillment_method?: FulfillmentMethod
           delivery_address?: string | null
           delivery_fee?: number
+          delivery_to_client?: boolean
+          delivery_from_client?: boolean
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -954,6 +960,22 @@ export type Database = {
         }
         Returns: string
       }
+      create_order_atomic_v3: {
+        Args: {
+          p_client_id: string
+          p_start_date: string
+          p_end_date: string
+          p_start_time: string
+          p_end_time: string
+          p_deposit_amount: number
+          p_notes: string
+          p_created_by: string
+          p_items: Json
+          p_delivery_to_client?: boolean
+          p_delivery_from_client?: boolean
+        }
+        Returns: string
+      }
       return_order_atomic: {
         Args: { p_order_id: string; p_items: Json; p_actual_return_date?: string | null }
         Returns: void
@@ -981,6 +1003,19 @@ export type Database = {
           p_created_by?: string | null
           p_notes?: string | null
           p_actual_end_at?: string | null
+        }
+        Returns: Json
+      }
+      return_order_items_with_payments_atomic_v3: {
+        Args: {
+          p_order_id: string
+          p_items: Json
+          p_payment_splits?: Json
+          p_created_by?: string | null
+          p_notes?: string | null
+          p_actual_end_at?: string | null
+          p_delivery_to_client?: boolean
+          p_delivery_from_client?: boolean
         }
         Returns: Json
       }
@@ -1029,6 +1064,15 @@ export type Database = {
           p_fulfillment_method: string
           p_delivery_address: string | null
           p_delivery_fee: number
+        }
+        Returns: Json
+      }
+      update_order_item_kit_atomic: {
+        Args: {
+          p_order_id: string
+          p_order_item_id: string
+          p_kit_selection: Json
+          p_selected_kit_items: string[]
         }
         Returns: Json
       }

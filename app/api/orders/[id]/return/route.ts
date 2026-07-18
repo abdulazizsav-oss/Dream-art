@@ -23,6 +23,8 @@ const returnRequestSchema = z.object({
   }).strict()).max(3).optional(),
   payment_notes: z.string().max(2000).nullable().optional(),
   actual_end_at: z.string().datetime({ offset: true }).nullable().optional(),
+  delivery_to_client: z.boolean().optional(),
+  delivery_from_client: z.boolean().optional(),
 }).strict()
 
 function parseActualEndAt(value: string | null | undefined) {
@@ -34,7 +36,7 @@ function parseActualEndAt(value: string | null | undefined) {
 /**
  * POST /api/orders/[id]/return
  *
- * Закрывает выбранные позиции заказа (или все) через RPC `return_order_items_with_payments_atomic_v2`.
+ * Закрывает выбранные позиции заказа (или все) через RPC `return_order_items_with_payments_atomic_v3`.
  * Для каждой позиции рассчитывает final_subtotal по правилам computeActiveOrderTotal:
  *   - manual → сохранённый subtotal
  *   - auto   → computeOrderBilling(actual_start_at → now())
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // 1. Загружаем заказ + все позиции с equipment-ставками
   const { data: order, error: orderErr } = await service
     .from('orders')
-    .select('id, client_id, actual_start_at, delivery_fee, order_delivery_payment_allocations(amount), order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, kit_selection, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, order_item_payment_allocations(amount), equipment(day_rate, night_rate, daily_rate, day_night))')
+    .select('id, client_id, actual_start_at, delivery_fee, delivery_to_client, delivery_from_client, order_delivery_payment_allocations(amount), order_items(id, equipment_id, rate_source, subtotal, manual_subtotal, kit_selection, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, order_item_payment_allocations(amount), equipment(day_rate, night_rate, daily_rate, day_night))')
     .eq('id', id)
     .single()
 
@@ -175,13 +177,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     )
   }
 
-  const { data: rpcData, error: rpcErr } = await service.rpc('return_order_items_with_payments_atomic_v2', {
+  const { data: rpcData, error: rpcErr } = await service.rpc('return_order_items_with_payments_atomic_v3', {
     p_order_id: id,
     p_items: itemsForRpc,
     p_payment_splits: paymentSplits,
     p_created_by: user.id,
     p_notes: body.payment_notes ?? null,
     p_actual_end_at: actualEndAt.toISOString(),
+    p_delivery_to_client: body.delivery_to_client ?? Boolean(o.delivery_to_client),
+    p_delivery_from_client: body.delivery_from_client ?? Boolean(o.delivery_from_client),
   } as never)
 
   if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 400 })

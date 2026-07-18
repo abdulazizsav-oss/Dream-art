@@ -5,9 +5,10 @@ import { Client, Equipment, EquipmentCategory } from '@/types/database'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 import { TrustedPersonData } from './StepClient'
-import { FileText, MapPin, Truck, UserCheck } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, FileText, UserCheck } from 'lucide-react'
 import { LiveTotal } from './LiveTotal'
 import { describeShift, describeUnits, getPricingParts, recalculateOrderItems } from '@/lib/rental'
+import { calculateDeliveryFee } from '@/lib/delivery'
 
 interface StepSummaryProps {
   values: OrderFormValues
@@ -31,8 +32,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
   }))
 
   const total = itemsWithDetails.reduce((s, i) => s + i.subtotal, 0)
-  const isDelivery = values.fulfillment_method === 'delivery'
-  const deliveryFee = isDelivery ? values.delivery_fee : 0
+  const deliveryFee = calculateDeliveryFee(values)
+  const hasDelivery = deliveryFee > 0
   const grandTotal = total + deliveryFee
 
   return (
@@ -46,7 +47,7 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           items={values.items}
           equipment={equipment}
           deliveryFee={deliveryFee}
-          showDelivery={isDelivery}
+          showDelivery={hasDelivery}
         />
       </div>
 
@@ -87,16 +88,17 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           </p>
         </div>
 
-        {isDelivery && (
+        {hasDelivery && (
           <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-            <p className="mb-1.5 flex items-center gap-1.5 text-xs text-blue-600">
-              <Truck className="h-3.5 w-3.5" />
-              Доставка к началу аренды
-            </p>
-            <p className="flex items-start gap-2 text-sm font-medium text-zinc-900">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-              <span className="whitespace-pre-wrap">{values.delivery_address}</span>
-            </p>
+            <p className="mb-2 text-xs font-medium text-blue-600">Выбраны услуги доставки</p>
+            <div className="space-y-1.5 text-sm font-medium text-zinc-900">
+              {values.delivery_to_client && (
+                <p className="flex items-center gap-2"><ArrowUpFromLine className="h-4 w-4 text-blue-500" />Отправить клиенту</p>
+              )}
+              {values.delivery_from_client && (
+                <p className="flex items-center gap-2"><ArrowDownToLine className="h-4 w-4 text-blue-500" />Забрать у клиента</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -123,10 +125,10 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
             <span className="text-gray-600">Аренда</span>
             <span>{formatCurrency(total)}</span>
           </div>
-          {isDelivery && (
+          {hasDelivery && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Доставка</span>
-              <span>{deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee)}</span>
+              <span className="text-gray-600">Услуги доставки</span>
+              <span>{formatCurrency(deliveryFee)}</span>
             </div>
           )}
           <div className="flex justify-between border-t border-zinc-100 pt-2">

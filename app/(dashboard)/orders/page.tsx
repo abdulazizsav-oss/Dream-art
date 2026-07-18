@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
+import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
 import {
   OrdersExplorer,
   type OrderListItem,
@@ -10,7 +11,7 @@ export default async function OrdersPage() {
   const { data: orders, count } = await supabase
     .from('orders')
     .select(
-      '*, clients(full_name, phone), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate, day_night))',
+      '*, clients(full_name, phone), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, kit_selection, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate, day_night))',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })
@@ -18,7 +19,7 @@ export default async function OrdersPage() {
 
   const rawOrders = (orders ?? []) as any[]
   const deliveryOrderIds = rawOrders
-    .filter(order => order.fulfillment_method === 'delivery')
+    .filter(order => Number(order.delivery_fee ?? 0) > 0)
     .map(order => order.id as string)
   const deliveryPaidByOrder = new Map<string, number>()
 
@@ -53,12 +54,9 @@ export default async function OrdersPage() {
 function normalizeOrder(order: any, deliveryPaid: number): OrderListItem {
   const isActive = order.status === 'active' || order.status === 'overdue'
   const isClosed = order.status === 'returned'
-  const fulfillmentMethod: 'pickup' | 'delivery' = order.fulfillment_method === 'delivery'
-    ? 'delivery'
-    : 'pickup'
-  const deliveryFee = fulfillmentMethod === 'delivery'
-    ? Math.max(0, Number(order.delivery_fee ?? 0))
-    : 0
+  const deliveryToClient = Boolean(order.delivery_to_client) || order.fulfillment_method === 'delivery'
+  const deliveryFromClient = Boolean(order.delivery_from_client)
+  const deliveryFee = Math.max(0, Number(order.delivery_fee ?? 0))
   const paidRental = (order.payments ?? [])
     .filter((payment: any) => payment.payment_type === 'rental')
     .reduce((sum: number, payment: any) => sum + Number(payment.amount ?? 0), 0)
@@ -92,6 +90,7 @@ function normalizeOrder(order: any, deliveryPaid: number): OrderListItem {
         day_units: item.day_units ?? 0,
         night_units: item.night_units ?? 0,
         shift_type: item.shift_type ?? 'day',
+        kit_per_shift: kitPerShift(sanitizeKitSelection(item.kit_selection)),
       }
     })
     const live = computeActiveOrderTotal({
@@ -134,7 +133,8 @@ function normalizeOrder(order: any, deliveryPaid: number): OrderListItem {
     actualStartAt: order.actual_start_at ?? null,
     actualEndAt: order.actual_end_at ?? null,
     createdBy: order.created_by_profile?.full_name ?? null,
-    fulfillmentMethod,
+    deliveryToClient,
+    deliveryFromClient,
     equipmentNames,
     effectiveTotal,
     paidRental,

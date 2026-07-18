@@ -8,17 +8,17 @@ import {
   PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { FileText, MapPin, RotateCcw, Store, Truck, UserCheck, User } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, FileText, RotateCcw, Truck, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
 import { PayReturnedItemButton } from '@/components/orders/PayReturnedItemButton'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import { AddItemsModal } from '@/components/orders/AddItemsModal'
+import { EditOrderKitModal } from '@/components/orders/EditOrderKitModal'
 import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
-import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
+import { kitPerShift, sanitizeKitCatalog, sanitizeKitSelection } from '@/lib/kit'
 import { formatMissingKitAge, formatMissingSinceDateTime } from '@/lib/missing-kit'
-import { DeliveryEditor } from '@/components/orders/DeliveryEditor'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,7 +26,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
   const { data: order } = await supabase
     .from('orders')
-    .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate, day_night), order_item_payment_allocations(amount)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
+    .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate, day_night, kit), order_item_payment_allocations(amount)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
     .eq('id', id)
     .order('paid_at', { referencedTable: 'payments', ascending: false })
     .single()
@@ -37,7 +37,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { data: availableEquipment } = isOrderOpen
     ? await supabase
         .from('equipment')
-        .select('id, name, daily_rate, day_rate, night_rate, day_night, currency, brand, kit_items, equipment_categories(name), brands(name)')
+        .select('id, name, daily_rate, day_rate, night_rate, day_night, currency, brand, kit_items, kit, equipment_categories(name), brands(name)')
         .order('sort_order')
         .order('name')
     : { data: [] }
@@ -49,7 +49,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const items = (order.order_items as {
     id: string
     equipment_id: string
-    equipment: { name: string; currency: 'UZS' | 'USD'; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null; day_night?: 'day' | 'night' | 'both' | null } | null
+    equipment: { name: string; currency: 'UZS' | 'USD'; day_rate?: number | null; night_rate?: number | null; daily_rate?: number | null; day_night?: 'day' | 'night' | 'both' | null; kit?: unknown } | null
     daily_rate: number
     day_rate_snapshot?: number
     night_rate_snapshot?: number
@@ -75,20 +75,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     order_item_payment_allocations?: { amount: number }[] | null
   }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; payment_group_id?: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
-  const fulfillmentMethod: 'pickup' | 'delivery' = (order as any).fulfillment_method === 'delivery'
-    ? 'delivery'
-    : 'pickup'
-  const deliveryAddress = typeof (order as any).delivery_address === 'string'
-    ? (order as any).delivery_address
-    : null
+  const deliveryToClient = Boolean((order as any).delivery_to_client)
+    || (order as any).fulfillment_method === 'delivery'
+  const deliveryFromClient = Boolean((order as any).delivery_from_client)
   const rawDeliveryFee = Number((order as any).delivery_fee ?? 0)
-  const deliveryFee = fulfillmentMethod === 'delivery' && Number.isFinite(rawDeliveryFee)
-    ? Math.max(0, rawDeliveryFee)
-    : 0
+  const deliveryFee = Number.isFinite(rawDeliveryFee) ? Math.max(0, rawDeliveryFee) : 0
   const rentalPayments = payments.filter(payment => payment.payment_type === 'rental')
-  const hasRentalPayments = rentalPayments.length > 0
   let deliveryPaid = 0
-  if (fulfillmentMethod === 'delivery') {
+  if (deliveryFee > 0) {
     // Отдельный best-effort запрос сохраняет совместимость с локальной БД до
     // применения миграции: отсутствие новой таблицы не ломает основной заказ.
     const { data: deliveryAllocations } = await (supabase as any)
@@ -225,6 +219,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     currency: item.currency,
                     brand: (item as any).brand,
                     kit_items: (item as any).kit_items ?? [],
+                    kit: (item as any).kit ?? [],
                     equipment_categories: (item as any).equipment_categories ?? null,
                     brands: (item as any).brands ?? null,
                   }))}
@@ -234,6 +229,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   debt={Math.max(0, debt)}
                   deliveryFee={deliveryFee}
                   deliveryPaid={deliveryPaid}
+                  deliveryToClient={deliveryToClient}
+                  deliveryFromClient={deliveryFromClient}
                   variant="default"
                   items={items.filter(it => !it.returned).map(it => ({
                     id: it.id,
@@ -334,8 +331,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="font-semibold mt-1">{formatCurrency(effectiveTotal)}</p>
           <div className="mt-1 space-y-0.5 text-[11px] text-gray-500">
             <p>Аренда: {formatCurrency(effectiveRentalAmount)}</p>
-            {fulfillmentMethod === 'delivery' && (
-              <p>Доставка: {deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee)}</p>
+            {deliveryFee > 0 && (
+              <p>Услуги доставки: {formatCurrency(deliveryFee)}</p>
             )}
           </div>
           {liveBilling && (
@@ -352,54 +349,30 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      {/* Pickup / delivery */}
+      {/* Fixed delivery services */}
       <div className="bg-white rounded-xl border p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              {fulfillmentMethod === 'delivery'
-                ? <Truck className="h-4 w-4 text-blue-600" />
-                : <Store className="h-4 w-4 text-zinc-500" />}
-              <h2 className="font-semibold">Получение заказа</h2>
-              <span className={cn(
-                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                fulfillmentMethod === 'delivery'
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'bg-zinc-100 text-zinc-600',
-              )}>
-                {fulfillmentMethod === 'delivery' ? 'Доставка' : 'Самовывоз'}
-              </span>
-            </div>
-
-            {fulfillmentMethod === 'delivery' ? (
-              <div className="mt-3 space-y-2 text-sm">
-                <p className="flex items-start gap-2 text-zinc-700">
-                  <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-zinc-400" />
-                  <span className="break-words">{deliveryAddress || 'Адрес не указан'}</span>
-                </p>
-                <p className="text-zinc-500">
-                  К началу аренды: {formatDate(order.start_date)}
-                </p>
-                <p>
-                  Стоимость: <span className="font-medium">
-                    {deliveryFee === 0 ? 'Бесплатно' : formatCurrency(deliveryFee)}
-                  </span>
-                </p>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-zinc-500">Клиент забирает технику самостоятельно.</p>
-            )}
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-blue-600" />
+          <h2 className="font-semibold">Услуги доставки</h2>
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+            {deliveryFee > 0 ? formatCurrency(deliveryFee) : 'Не выбраны'}
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <div className={cn(
+            'flex items-center gap-2 rounded-xl border px-3 py-3 text-sm',
+            deliveryToClient ? 'border-blue-200 bg-blue-50 text-blue-800' : 'text-zinc-400',
+          )}>
+            <ArrowUpFromLine className="h-4 w-4" />
+            {deliveryToClient ? 'Отправить клиенту' : 'Не отправляем клиенту'}
           </div>
-
-          {isOrderOpen && (
-            <DeliveryEditor
-              orderId={id}
-              fulfillmentMethod={fulfillmentMethod}
-              deliveryAddress={deliveryAddress}
-              deliveryFee={deliveryFee}
-              hasRentalPayments={hasRentalPayments}
-            />
-          )}
+          <div className={cn(
+            'flex items-center gap-2 rounded-xl border px-3 py-3 text-sm',
+            deliveryFromClient ? 'border-blue-200 bg-blue-50 text-blue-800' : 'text-zinc-400',
+          )}>
+            <ArrowDownToLine className="h-4 w-4" />
+            {deliveryFromClient ? 'Забрать у клиента' : 'Клиент возвращает сам'}
+          </div>
         </div>
       </div>
 
@@ -477,6 +450,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                         )
                       })}
                     </div>
+                  )}
+                  {isOrderOpen && !item.returned && (
+                    <EditOrderKitModal
+                      orderId={id}
+                      orderItemId={item.id}
+                      equipmentName={item.equipment?.name ?? 'Техника'}
+                      catalog={sanitizeKitCatalog(item.equipment?.kit)}
+                      currentSelection={sanitizeKitSelection(item.kit_selection)}
+                    />
                   )}
                   {missing.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
