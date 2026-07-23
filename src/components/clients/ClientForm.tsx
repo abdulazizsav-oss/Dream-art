@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { ReliabilityRating } from './ReliabilityRating'
 import { ImageUpload } from '@/components/ui/ImageUpload'
+import { PotentialClientDuplicateWarning } from './PotentialClientDuplicateWarning'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
@@ -34,6 +35,8 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   const segment = (watch('segment') as string | undefined) ?? 'other'
   const docType = (watch('document_type') as string | undefined) ?? 'passport_id'
   const photoUrl = (watch('photo_url') as string | undefined) ?? null
+  const fullName = (watch('full_name') as string | undefined) ?? ''
+  const phone = (watch('phone') as string | undefined) ?? ''
 
   async function onSubmit(data: ClientFormValues) {
     const url = clientId ? `/api/clients/${clientId}` : '/api/clients'
@@ -125,6 +128,11 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
           <Input {...register('phone')} placeholder="+998 90 123-45-67" className="min-h-[44px] bg-white" />
           {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
         </div>
+        <PotentialClientDuplicateWarning
+          fullName={fullName}
+          phone={phone}
+          excludeClientId={clientId}
+        />
       </section>
 
       {/* ── Контакты ── */}

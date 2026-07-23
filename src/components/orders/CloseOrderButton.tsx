@@ -14,6 +14,7 @@ import {
 import { ArrowDownToLine, ArrowUpFromLine, CheckCircle, Plus, Trash2 } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS, formatCurrency, cn } from '@/lib/utils'
 import { DELIVERY_SERVICE_FEE } from '@/lib/delivery'
+import { buildCloseChecklist, canCloseEveryItem } from '@/lib/order-close'
 
 type PaymentMethod = 'cash' | 'transfer' | 'card'
 
@@ -65,6 +66,7 @@ export function CloseOrderButton({
   const [leaveDebt, setLeaveDebt] = useState(false)
   const [toClient, setToClient] = useState(deliveryToClient)
   const [fromClient, setFromClient] = useState(deliveryFromClient)
+  const [confirmedItems, setConfirmedItems] = useState<Set<string>>(new Set())
 
   // Kit tracking: по умолчанию считаем, что вернулся весь комплект —
   // менеджер снимает отметку только с того, что НЕ вернули (забытая батарейка).
@@ -103,6 +105,36 @@ export function CloseOrderButton({
     }
     return { total, byItem }
   }, [items, returnedKit])
+
+  const closeChecklist = useMemo(
+    () => buildCloseChecklist(items, confirmedItems),
+    [confirmedItems, items],
+  )
+  const allItemsConfirmed = canCloseEveryItem(closeChecklist)
+  const unconfirmedCount = closeChecklist.filter(row => !row.confirmed).length
+
+  function showDialog() {
+    const nextReturnedKit: Record<string, Set<string>> = {}
+    for (const item of items) nextReturnedKit[item.id] = new Set(item.selected_kit_items)
+
+    setConfirmedItems(new Set())
+    setReturnedKit(nextReturnedKit)
+    setSplits([{ method: 'cash', amount: initialAmount }])
+    setNotes('')
+    setLeaveDebt(false)
+    setToClient(deliveryToClient)
+    setFromClient(deliveryFromClient)
+    setOpen(true)
+  }
+
+  function toggleItemConfirmation(itemId: string) {
+    setConfirmedItems(current => {
+      const next = new Set(current)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
 
   function toggleKit(itemId: string, kit: string) {
     setReturnedKit(prev => {
@@ -168,6 +200,10 @@ export function CloseOrderButton({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!allItemsConfirmed) {
+      toast.error('Подтвердите возврат каждой позиции заказа')
+      return
+    }
     setLoading(true)
     try {
       const validSplits = splits
@@ -235,11 +271,16 @@ export function CloseOrderButton({
     }
   }
 
-  const hasKit = items.some(it => it.selected_kit_items.length > 0)
-
   return (
     <>
-      <Button type="button" variant={variant} size={size} className={className} onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        variant={variant}
+        size={size}
+        className={className}
+        onClick={showDialog}
+        disabled={items.length === 0}
+      >
         <CheckCircle className="w-4 h-4 mr-2" />
         Закрыть заказ
       </Button>
@@ -294,53 +335,88 @@ export function CloseOrderButton({
             )}
           </div>
 
-          {/* Kit checklist */}
-          {hasKit && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Комплектация</Label>
-                <span className={cn(
-                  'text-xs font-medium',
-                  missingTotals.total > 0 ? 'text-orange-700' : 'text-zinc-500',
-                )}>
-                  {missingTotals.total > 0 ? `Не сдано: ${missingTotals.total}` : 'Все сдано'}
-                </span>
-              </div>
-              <div className="space-y-2 rounded-xl border bg-zinc-50/60 p-2">
-                {items.filter(it => it.selected_kit_items.length > 0).map(it => {
-                  const returned = returnedKit[it.id] ?? new Set<string>()
-                  return (
-                    <div key={it.id} className="rounded-lg bg-white border p-2">
-                      <p className="text-xs font-medium text-gray-700 mb-1.5">{it.name}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {it.selected_kit_items.map(k => {
-                          const active = returned.has(k)
-                          return (
-                            <button
-                              key={k}
-                              type="button"
-                              onClick={() => toggleKit(it.id, k)}
-                              className={cn(
-                                'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
-                                active
-                                  ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
-                                  : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600',
-                              )}
-                            >
-                              {active ? '✓ ' : ''}{k}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <p className="text-[11px] text-gray-500">
-                По умолчанию всё сдано (зачёркнуто). Нажмите на элемент, который НЕ вернули — станет оранжевым.
-              </p>
+          {/* Equipment + kit checklist */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <Label>Техника к возврату</Label>
+              <span className={cn(
+                'text-xs font-medium',
+                allItemsConfirmed ? 'text-emerald-700' : 'text-orange-700',
+              )}>
+                {allItemsConfirmed ? 'Все позиции подтверждены' : `Подтвердите: ${unconfirmedCount}`}
+              </span>
             </div>
-          )}
+            <div className="space-y-2 rounded-xl border bg-zinc-50/60 p-2">
+              {closeChecklist.map(({ item, confirmed }) => {
+                const returned = returnedKit[item.id] ?? new Set<string>()
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      'rounded-lg border bg-white p-3 transition-colors',
+                      confirmed ? 'border-emerald-400' : 'border-zinc-200',
+                    )}
+                  >
+                    <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={confirmed}
+                        onChange={() => toggleItemConfirmation(item.id)}
+                        className="h-5 w-5 shrink-0 accent-emerald-600"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-zinc-900">{item.name}</span>
+                        <span className="mt-0.5 block text-[11px] text-zinc-500">
+                          {item.selected_kit_items.length > 0
+                            ? `Комплект: ${item.selected_kit_items.length}`
+                            : 'Без дополнительных аксессуаров'}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold tabular-nums text-zinc-700">
+                        {formatCurrency(item.current_subtotal, item.currency)}
+                      </span>
+                    </label>
+
+                    {confirmed && item.selected_kit_items.length > 0 && (
+                      <div className="mt-2 border-t pt-2">
+                        <p className="mb-1.5 text-[11px] text-zinc-500">
+                          Нажмите на аксессуар, который не вернули:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.selected_kit_items.map(kit => {
+                            const active = returned.has(kit)
+                            return (
+                              <button
+                                key={kit}
+                                type="button"
+                                onClick={() => toggleKit(item.id, kit)}
+                                className={cn(
+                                  'min-h-[32px] rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                                  active
+                                    ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                                    : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600',
+                                )}
+                              >
+                                {active ? '✓ ' : ''}{kit}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {missingTotals.total > 0 && (
+              <p className="text-xs font-medium text-orange-700">
+                Не возвращено элементов комплекта: {missingTotals.total}
+              </p>
+            )}
+            <p className="text-[11px] text-gray-500">
+              Заказ закроется только после подтверждения каждой позиции. Аксессуары по умолчанию считаются возвращёнными.
+            </p>
+          </div>
 
           {/* Split payments */}
           <div className="space-y-2">
@@ -458,7 +534,12 @@ export function CloseOrderButton({
             </Button>
             <Button
               type="submit"
-              disabled={loading || paymentIsTooLarge || (!leaveDebt && closingDebt > 0 && paidNow <= 0)}
+              disabled={
+                loading
+                || !allItemsConfirmed
+                || paymentIsTooLarge
+                || (!leaveDebt && closingDebt > 0 && paidNow <= 0)
+              }
             >
               {loading
                 ? 'Закрытие...'

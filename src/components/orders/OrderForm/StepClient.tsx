@@ -11,6 +11,8 @@ import {
 import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS, cn } from '@/lib/utils'
 import { Search, UserPlus, ChevronRight, FileText, UserCheck, Phone } from 'lucide-react'
 import { toast } from 'sonner'
+import { PotentialClientDuplicateWarning } from '@/components/clients/PotentialClientDuplicateWarning'
+import { ClientOrderAlerts } from '@/components/orders/ClientOrderAlerts'
 
 export interface TrustedPersonData {
   name: string
@@ -228,6 +230,19 @@ export function StepClient({
                   className="min-h-[44px] sm:max-w-[calc(50%-0.375rem)]"
                 />
               </div>
+              <PotentialClientDuplicateWarning
+                fullName={newName}
+                phone={newPhone}
+                onUseExistingId={clientId => {
+                  const existing = clients.find(client => client.id === clientId)
+                  if (!existing) {
+                    toast.error('Клиент найден, но его нет в текущем списке')
+                    return
+                  }
+                  handleSelectClient(existing)
+                  setShowCreate(false)
+                }}
+              />
             </div>
 
             <div className="flex gap-2 pt-2 border-t sticky bottom-0 bg-white -mx-4 -mb-4 px-4 pb-4">
@@ -255,6 +270,7 @@ export function StepClient({
       {/* ── Доверенное лицо (после выбора клиента) ── */}
       {selectedClientId && (
         <div className="border-t pt-5 space-y-4">
+          <ClientOrderAlerts clientId={selectedClientId} />
           <div>
             <h3 className="font-semibold text-base flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-blue-500" />
