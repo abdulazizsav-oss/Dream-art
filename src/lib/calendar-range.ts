@@ -1,6 +1,6 @@
 export interface CalendarAnchorOrder {
   start_date: string
-  end_date: string
+  end_date: string | null
   status: string
 }
 
@@ -45,7 +45,7 @@ export function buildCalendarWindow(anchorDate: string, daysVisible: number, day
 function distanceFromReference(order: CalendarAnchorOrder, referenceDate: string) {
   const reference = dateNumber(referenceDate)
   const start = dateNumber(order.start_date)
-  const end = dateNumber(order.end_date)
+  const end = dateNumber(order.end_date ?? order.start_date)
   if (start <= reference && end >= reference) return 0
   return Math.min(Math.abs(start - reference), Math.abs(end - reference))
 }

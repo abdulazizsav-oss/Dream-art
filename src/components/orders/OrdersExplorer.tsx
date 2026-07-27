@@ -42,10 +42,11 @@ export interface OrderListItem {
   id: string
   orderNumber: string
   status: OrderStatus
+  isOverdue: boolean
   clientName: string
   clientPhone: string | null
   startDate: string
-  endDate: string
+  endDate: string | null
   createdAt: string | null
   actualStartAt: string | null
   actualEndAt: string | null
@@ -79,7 +80,7 @@ const QUEUES: { value: QueueFilter; label: string }[] = [
 
 function matchesQueue(order: OrderListItem, queue: QueueFilter) {
   if (queue === 'active') return ['active', 'overdue'].includes(order.status)
-  if (queue === 'overdue') return order.status === 'overdue'
+  if (queue === 'overdue') return order.isOverdue
   if (queue === 'debt') return order.debt > 0.01 && order.status !== 'cancelled'
   if (queue === 'returned') return order.status === 'returned'
   return true
@@ -106,7 +107,9 @@ function orderPeriod(order: OrderListItem) {
   }
   return {
     label: 'Плановый период',
-    value: `${formatDate(order.startDate)} — ${formatDate(order.endDate)}`,
+    value: order.endDate
+      ? `${formatDate(order.startDate)} — ${formatDate(order.endDate)}`
+      : `${formatDate(order.startDate)} — срок не записан`,
   }
 }
 
@@ -401,9 +404,17 @@ function OrderRow({ order }: { order: OrderListItem }) {
   const period = orderPeriod(order)
   const hasDebt = order.debt > 0.01 && order.status !== 'cancelled'
   const orderHref = `/orders/${order.id}`
+  const displayStatus: OrderStatus = order.isOverdue
+    ? 'overdue'
+    : order.status === 'overdue'
+      ? 'active'
+      : order.status
 
   return (
-    <article className="group relative transition-colors hover:bg-zinc-50/80 active:bg-zinc-100">
+    <article className={cn(
+      'group relative transition-colors hover:bg-zinc-50/80 active:bg-zinc-100',
+      order.isOverdue && 'border-l-4 border-l-red-500 bg-red-50/70 hover:bg-red-50',
+    )}>
       <Link
         href={orderHref}
         aria-label={`Открыть заказ ${order.orderNumber}`}
@@ -435,6 +446,12 @@ function OrderRow({ order }: { order: OrderListItem }) {
               Не возвращено: {order.missingKitItems.join(', ')}
             </p>
           )}
+          {order.isOverdue && (
+            <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-red-700">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Срок возврата истёк, техника не возвращена
+            </p>
+          )}
         </div>
 
         <div className="min-w-0">
@@ -464,9 +481,9 @@ function OrderRow({ order }: { order: OrderListItem }) {
         <div className="flex flex-wrap items-center gap-2 md:flex-col md:items-stretch">
           <span className={cn(
             'inline-flex w-fit rounded-md px-2 py-1 text-xs font-medium',
-            ORDER_STATUS_COLORS[order.status],
+            ORDER_STATUS_COLORS[displayStatus],
           )}>
-            {ORDER_STATUS_LABELS[order.status]}
+            {ORDER_STATUS_LABELS[displayStatus]}
           </span>
           {isOpen && (
             <CloseOrderButton

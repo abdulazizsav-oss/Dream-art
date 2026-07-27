@@ -8,7 +8,7 @@ import {
   PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { ArrowDownToLine, ArrowUpFromLine, FileText, RotateCcw, Truck, UserCheck, User } from 'lucide-react'
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, FileText, RotateCcw, Truck, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
 import { PayReturnedItemButton } from '@/components/orders/PayReturnedItemButton'
@@ -19,6 +19,12 @@ import { describeShift, describeUnits, getPricingParts } from '@/lib/rental'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 import { kitPerShift, sanitizeKitCatalog, sanitizeKitSelection } from '@/lib/kit'
 import { formatMissingKitAge, formatMissingSinceDateTime } from '@/lib/missing-kit'
+import {
+  applicableRentalEndDate,
+  isRentalOverdue,
+  resolveRentalEndDate,
+  type RentalOverdueInput,
+} from '@/lib/order-overdue'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -75,6 +81,51 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     order_item_payment_allocations?: { amount: number }[] | null
   }[]) ?? []
   const payments = (order.payments as unknown as { id: string; amount: number; payment_method: string; payment_type: string; paid_at: string; notes: string | null; payment_group_id?: string | null; created_by_profile?: { full_name: string } | null }[]) ?? []
+  const overdueNow = new Date()
+  const overdueInputs: RentalOverdueInput[] = items.map(item => ({
+    status: order.status,
+    startDate: order.start_date,
+    endDate: applicableRentalEndDate({
+      orderEndDate: order.end_date,
+      orderActualStartAt: (order as any).actual_start_at,
+      itemActualStartAt: item.actual_start_at,
+    }),
+    startTime: (order as any).start_time,
+    endTime: (order as any).end_time,
+    actualStartAt: item.actual_start_at ?? (order as any).actual_start_at,
+    actualEndAt: item.actual_end_at,
+    actualReturnDate: (order as any).actual_return_date,
+    returned: item.returned,
+    dayUnits: item.day_units,
+    nightUnits: item.night_units,
+    days: item.days,
+    now: overdueNow,
+  }))
+  const fallbackOverdueInput: RentalOverdueInput = {
+    status: order.status,
+    startDate: order.start_date,
+    endDate: order.end_date,
+    startTime: (order as any).start_time,
+    endTime: (order as any).end_time,
+    actualStartAt: (order as any).actual_start_at,
+    actualEndAt: (order as any).actual_end_at,
+    actualReturnDate: (order as any).actual_return_date,
+    now: overdueNow,
+  }
+  const isOrderOverdue = overdueInputs.length > 0
+    ? overdueInputs.some(isRentalOverdue)
+    : isRentalOverdue(fallbackOverdueInput)
+  const resolvedOrderEndDate = overdueInputs
+    .map(resolveRentalEndDate)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1)
+    ?? resolveRentalEndDate(fallbackOverdueInput)
+  const displayStatus = isOrderOverdue
+    ? 'overdue'
+    : order.status === 'overdue'
+      ? 'active'
+      : order.status
   const deliveryToClient = Boolean((order as any).delivery_to_client)
     || (order as any).fulfillment_method === 'delivery'
   const deliveryFromClient = Boolean((order as any).delivery_from_client)
@@ -296,12 +347,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         }
       />
 
+      {isOrderOverdue && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-red-900">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
+          <div>
+            <p className="font-semibold">Аренда просрочена</p>
+            <p className="mt-0.5 text-sm text-red-700">
+              Назначенная смена закончилась, но техника ещё не возвращена. Это отдельный статус и он не зависит от долга.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Status + dates */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border p-4">
+        <div className={cn(
+          'rounded-xl border p-4',
+          isOrderOverdue ? 'border-red-300 bg-red-50' : 'bg-white',
+        )}>
           <p className="text-xs text-gray-500">Статус</p>
-          <span className={cn('mt-1 inline-flex text-xs px-2 py-0.5 rounded-full font-medium', ORDER_STATUS_COLORS[order.status])}>
-            {ORDER_STATUS_LABELS[order.status]}
+          <span className={cn('mt-1 inline-flex text-xs px-2 py-0.5 rounded-full font-medium', ORDER_STATUS_COLORS[displayStatus])}>
+            {ORDER_STATUS_LABELS[displayStatus]}
           </span>
           {order.created_at && (
             <p className="text-[11px] text-gray-400 mt-1">{formatDateTime(order.created_at)}</p>
@@ -316,7 +382,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Период</p>
           <p className="font-medium text-sm mt-1">
-            {formatDate(order.start_date)} — {formatDate(order.end_date)}
+            {formatDate(order.start_date)} — {resolvedOrderEndDate
+              ? formatDate(resolvedOrderEndDate)
+              : 'срок не записан'}
           </p>
           {((order as any).actual_start_at || (order as any).actual_end_at) && (
             <p className="text-[11px] text-gray-400 mt-1">

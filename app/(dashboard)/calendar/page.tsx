@@ -26,6 +26,7 @@ interface CalendarOrder {
   order_number: string
   start_date: string
   end_date: string
+  timeline_end_date: string
   start_time: string
   end_time: string
   actual_start_at: string | null
@@ -536,7 +537,8 @@ export default function CalendarPage() {
 
       <div className="flex flex-wrap gap-3 rounded-xl border bg-white px-4 py-3 text-xs text-zinc-600">
         <Legend color="bg-emerald-200" label="Активная аренда" />
-        <Legend color="bg-red-200" label="Просрочка / конфликт" />
+        <Legend color="bg-red-200" label="Просроченная аренда" />
+        <Legend color="bg-white ring-2 ring-red-400" label="Конфликт бронирований" />
         <Legend color="bg-zinc-200" label="Закрытый заказ" />
         <Legend color="bg-violet-200" label="ТО" icon={<Wrench className="h-3 w-3" />} />
         <Legend color="bg-amber-200" label="Блокировка" icon={<LockKeyhole className="h-3 w-3" />} />
@@ -703,11 +705,19 @@ function OrderTimelineRow({
   days: string[]
   today: string
 }) {
-  const span = clampEvent(order.start_date, order.end_date, from, to)
+  const span = clampEvent(order.start_date, order.timeline_end_date, from, to)
   const config = STATUS_CONFIG[order.status]
   return (
     <div className="grid min-h-24 border-b" style={{ gridTemplateColumns: `${LEFT_WIDTH}px ${days.length * DAY_WIDTH}px` }}>
-      <Link href={`/orders/${order.id}`} className="sticky left-0 z-10 border-r bg-white px-4 py-3 hover:bg-zinc-50">
+      <Link
+        href={`/orders/${order.id}`}
+        className={cn(
+          'sticky left-0 z-10 border-r px-4 py-3',
+          order.status === 'overdue'
+            ? 'border-l-4 border-l-red-500 bg-red-50 hover:bg-red-100'
+            : 'bg-white hover:bg-zinc-50',
+        )}
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-zinc-900">{order.client?.full_name ?? 'Клиент'}</p>
@@ -828,7 +838,9 @@ function EquipmentTimelineRow({
                         : 'не закрыт'}`
                     : ''}`}
               >
-                {conflict && <AlertTriangle className="mr-1 h-3 w-3 shrink-0 text-red-700" />}
+                {(conflict || event.status === 'overdue') && (
+                  <AlertTriangle className="mr-1 h-3 w-3 shrink-0 text-red-700" />
+                )}
                 <span className="truncate">{event.order_number} · {event.client_name}</span>
               </Link>
             )
@@ -904,7 +916,7 @@ function MobileAgenda({
   return (
     <div className="space-y-3">
       {days.map(day => {
-        const dayOrders = orders.filter(order => order.start_date <= day && order.end_date >= day)
+        const dayOrders = orders.filter(order => order.start_date <= day && order.timeline_end_date >= day)
         const dayBlocked = (data?.blocked ?? []).filter(event => event.start_date <= day && event.end_date >= day)
         const dayMaintenance = (data?.maintenance ?? []).filter(event => event.start_date <= day && event.end_date >= day)
         if (dayOrders.length + dayBlocked.length + dayMaintenance.length === 0) return null
@@ -918,7 +930,14 @@ function MobileAgenda({
               {dayOrders.map(order => {
                 const config = STATUS_CONFIG[order.status]
                 return (
-                  <Link key={order.id} href={`/orders/${order.id}`} className="block px-4 py-3 active:bg-zinc-50">
+                  <Link
+                    key={order.id}
+                    href={`/orders/${order.id}`}
+                    className={cn(
+                      'block px-4 py-3 active:bg-zinc-50',
+                      order.status === 'overdue' && 'border-l-4 border-red-500 bg-red-50 text-red-950',
+                    )}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold">{order.client?.full_name ?? 'Клиент'}</p>

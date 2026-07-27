@@ -2,6 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { computeActiveOrderTotal, type ActiveItemInput } from '@/lib/billing'
 import { kitPerShift, sanitizeKitSelection } from '@/lib/kit'
 import {
+  applicableRentalEndDate,
+  isRentalOverdue,
+  resolveRentalEndDate,
+  type RentalOverdueInput,
+} from '@/lib/order-overdue'
+import {
   OrdersExplorer,
   type OrderListItem,
 } from '@/components/orders/OrdersExplorer'
@@ -11,7 +17,7 @@ export default async function OrdersPage() {
   const { data: orders, count } = await supabase
     .from('orders')
     .select(
-      '*, clients(full_name, phone), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, shift_type, kit_selection, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate, day_night))',
+      '*, clients(full_name, phone), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name), payments(amount, payment_type), order_items(id, equipment_id, rate_source, subtotal, daily_rate, day_rate_snapshot, night_rate_snapshot, day_units, night_units, days, shift_type, kit_selection, actual_start_at, actual_end_at, final_subtotal, final_day_units, final_night_units, returned, selected_kit_items, missing_kit_items, equipment(name, currency, day_rate, night_rate, daily_rate, day_night))',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })
@@ -38,9 +44,11 @@ export default async function OrdersPage() {
     }
   }
 
+  const now = new Date()
   const normalizedOrders = rawOrders.map(order => normalizeOrder(
     order,
     deliveryPaidByOrder.get(order.id) ?? 0,
+    now,
   ))
 
   return (
@@ -51,9 +59,48 @@ export default async function OrdersPage() {
   )
 }
 
-function normalizeOrder(order: any, deliveryPaid: number): OrderListItem {
+function normalizeOrder(order: any, deliveryPaid: number, now: Date): OrderListItem {
   const isActive = order.status === 'active' || order.status === 'overdue'
   const isClosed = order.status === 'returned'
+  const overdueInputs: RentalOverdueInput[] = (order.order_items ?? []).map((item: any) => ({
+    status: order.status,
+    endDate: applicableRentalEndDate({
+      orderEndDate: order.end_date,
+      orderActualStartAt: order.actual_start_at,
+      itemActualStartAt: item.actual_start_at,
+    }),
+    startDate: order.start_date,
+    startTime: order.start_time,
+    endTime: order.end_time,
+    actualStartAt: item.actual_start_at ?? order.actual_start_at,
+    actualEndAt: item.actual_end_at,
+    actualReturnDate: order.actual_return_date,
+    returned: item.returned,
+    dayUnits: item.day_units,
+    nightUnits: item.night_units,
+    days: item.days,
+    now,
+  }))
+  const fallbackOverdueInput: RentalOverdueInput = {
+    status: order.status,
+    endDate: order.end_date,
+    startDate: order.start_date,
+    startTime: order.start_time,
+    endTime: order.end_time,
+    actualStartAt: order.actual_start_at,
+    actualEndAt: order.actual_end_at,
+    actualReturnDate: order.actual_return_date,
+    now,
+  }
+  const isOverdue = overdueInputs.length > 0
+    ? overdueInputs.some(isRentalOverdue)
+    : isRentalOverdue(fallbackOverdueInput)
+  const resolvedEndDate = overdueInputs
+    .map(resolveRentalEndDate)
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1)
+    ?? resolveRentalEndDate(fallbackOverdueInput)
   const deliveryToClient = Boolean(order.delivery_to_client) || order.fulfillment_method === 'delivery'
   const deliveryFromClient = Boolean(order.delivery_from_client)
   const deliveryFee = Math.max(0, Number(order.delivery_fee ?? 0))
@@ -125,10 +172,11 @@ function normalizeOrder(order: any, deliveryPaid: number): OrderListItem {
     id: order.id,
     orderNumber: order.order_number,
     status: order.status,
+    isOverdue,
     clientName: order.clients?.full_name ?? 'Клиент не указан',
     clientPhone: order.clients?.phone ?? null,
     startDate: order.start_date,
-    endDate: order.end_date,
+    endDate: resolvedEndDate,
     createdAt: order.created_at ?? null,
     actualStartAt: order.actual_start_at ?? null,
     actualEndAt: order.actual_end_at ?? null,

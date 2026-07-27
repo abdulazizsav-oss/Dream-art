@@ -6,6 +6,12 @@ import {
   chooseNearestCalendarAnchor,
   findCalendarConflicts,
 } from '@/lib/calendar-range'
+import {
+  applicableRentalEndDate,
+  isRentalOverdue,
+  resolveRentalEndDate,
+  type RentalOverdueInput,
+} from '@/lib/order-overdue'
 import { getTashkentDate } from '@/lib/utils'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -28,11 +34,12 @@ type RawOrder = {
   id: string
   order_number: string
   start_date: string
-  end_date: string
+  end_date: string | null
   start_time: string | null
   end_time: string | null
   actual_start_at: string | null
   actual_end_at: string | null
+  actual_return_date: string | null
   status: string
   created_at: string | null
   created_by: string | null
@@ -43,6 +50,12 @@ type RawOrder = {
     equipment_id: string
     shift_type: string
     daily_rate: number
+    day_units: number | null
+    night_units: number | null
+    days: number | null
+    actual_start_at: string | null
+    actual_end_at: string | null
+    returned: boolean | null
     equipment: {
       id?: string
       name?: string
@@ -96,6 +109,7 @@ export async function GET(req: NextRequest) {
         end_time,
         actual_start_at,
         actual_end_at,
+        actual_return_date,
         status,
         created_at,
         created_by,
@@ -106,11 +120,17 @@ export async function GET(req: NextRequest) {
           equipment_id,
           shift_type,
           daily_rate,
+          day_units,
+          night_units,
+          days,
+          actual_start_at,
+          actual_end_at,
+          returned,
           equipment(id, name, category_id, currency)
         )
       `)
       .lte('start_date', rangeTo)
-      .gte('end_date', rangeFrom)
+      .or(`end_date.gte.${rangeFrom},end_date.is.null,status.in.(active,overdue)`)
       .order('start_date')
       .order('created_at')
   }
@@ -182,36 +202,94 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: metadataError.message }, { status: 500 })
   }
 
+  const now = new Date()
   const orders = ((rawOrders ?? []) as unknown as RawOrder[])
-    .map(order => ({
-      id: order.id,
-      order_number: order.order_number,
-      start_date: order.start_date,
-      end_date: order.end_date,
-      start_time: order.start_time || '09:30',
-      end_time: order.end_time || '23:00',
-      actual_start_at: order.actual_start_at,
-      actual_end_at: order.actual_end_at,
-      status: order.status,
-      created_at: order.created_at,
-      created_by: order.created_by,
-      created_by_name: order.created_by_profile?.full_name ?? null,
-      client: order.clients
-        ? {
-            full_name: order.clients.full_name ?? 'Клиент',
-            phone: order.clients.phone ?? null,
-          }
-        : null,
-      items: (order.order_items ?? []).map(item => ({
-        id: item.id,
-        equipment_id: item.equipment_id,
-        name: item.equipment?.name ?? 'Техника',
-        category_id: item.equipment?.category_id ?? null,
-        currency: item.equipment?.currency ?? 'UZS',
-        shift_type: item.shift_type,
-        daily_rate: item.daily_rate,
-      })),
-    }))
+    .map(order => {
+      const items = (order.order_items ?? []).map(item => {
+        const overdueInput: RentalOverdueInput = {
+          status: order.status,
+          endDate: applicableRentalEndDate({
+            orderEndDate: order.end_date,
+            orderActualStartAt: order.actual_start_at,
+            itemActualStartAt: item.actual_start_at,
+          }),
+          startDate: order.start_date,
+          startTime: order.start_time,
+          endTime: order.end_time,
+          actualStartAt: item.actual_start_at ?? order.actual_start_at,
+          actualEndAt: item.actual_end_at,
+          actualReturnDate: order.actual_return_date,
+          returned: item.returned,
+          dayUnits: item.day_units,
+          nightUnits: item.night_units,
+          days: item.days,
+          now,
+        }
+        const resolvedEndDate = resolveRentalEndDate(overdueInput) ?? order.start_date
+        const isOverdue = isRentalOverdue(overdueInput)
+        const isReturned = Boolean(item.returned || item.actual_end_at || order.actual_return_date)
+
+        return {
+          id: item.id,
+          equipment_id: item.equipment_id,
+          name: item.equipment?.name ?? 'Техника',
+          category_id: item.equipment?.category_id ?? null,
+          currency: item.equipment?.currency ?? 'UZS',
+          shift_type: item.shift_type,
+          daily_rate: item.daily_rate,
+          returned: isReturned,
+          is_overdue: isOverdue,
+          end_date: resolvedEndDate,
+          timeline_end_date: isOverdue && resolvedEndDate < today ? today : resolvedEndDate,
+        }
+      })
+      const isOverdue = items.some(item => item.is_overdue)
+      const resolvedEndDate = items
+        .map(item => item.end_date)
+        .sort()
+        .at(-1)
+        ?? resolveRentalEndDate({
+          status: order.status,
+          endDate: order.end_date,
+          startDate: order.start_date,
+          startTime: order.start_time,
+          endTime: order.end_time,
+          actualStartAt: order.actual_start_at,
+          actualEndAt: order.actual_end_at,
+          actualReturnDate: order.actual_return_date,
+          now,
+        })
+        ?? order.start_date
+      const displayStatus = isOverdue
+        ? 'overdue'
+        : order.status === 'overdue'
+          ? 'active'
+          : order.status
+
+      return {
+        id: order.id,
+        order_number: order.order_number,
+        start_date: order.start_date,
+        end_date: resolvedEndDate,
+        timeline_end_date: isOverdue && resolvedEndDate < today ? today : resolvedEndDate,
+        start_time: order.start_time || '09:30',
+        end_time: order.end_time || '23:00',
+        actual_start_at: order.actual_start_at,
+        actual_end_at: order.actual_end_at,
+        status: displayStatus,
+        created_at: order.created_at,
+        created_by: order.created_by,
+        created_by_name: order.created_by_profile?.full_name ?? null,
+        client: order.clients
+          ? {
+              full_name: order.clients.full_name ?? 'Клиент',
+              phone: order.clients.phone ?? null,
+            }
+          : null,
+        items,
+      }
+    })
+    .filter(order => order.start_date <= to && order.timeline_end_date >= from)
     .filter(order => {
       if (status === 'active' && !['active', 'overdue'].includes(order.status)) return false
       if (status !== 'active' && status !== 'all' && order.status !== status) return false
@@ -223,12 +301,12 @@ export async function GET(req: NextRequest) {
 
   const activeSegments = orders.flatMap(order => (
     ['active', 'overdue', 'draft'].includes(order.status)
-      ? order.items.map(item => ({
+      ? order.items.filter(item => !item.returned).map(item => ({
           key: `${order.id}:${item.id}`,
           orderId: order.id,
           equipmentId: item.equipment_id,
           from: order.start_date,
-          to: order.end_date,
+          to: item.timeline_end_date,
         }))
       : []
   ))
@@ -245,12 +323,12 @@ export async function GET(req: NextRequest) {
         equipment_id: item.equipment_id,
         equipment_name: item.name,
         start_date: order.start_date,
-        end_date: order.end_date,
+        end_date: item.timeline_end_date,
         start_time: order.start_time,
         end_time: order.end_time,
         actual_start_at: order.actual_start_at,
         actual_end_at: order.actual_end_at,
-        status: order.status,
+        status: item.returned ? 'returned' : item.is_overdue ? 'overdue' : order.status,
         shift_type: item.shift_type,
         client_name: order.client?.full_name ?? 'Клиент',
         client_phone: order.client?.phone ?? null,

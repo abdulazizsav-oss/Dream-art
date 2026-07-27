@@ -54,6 +54,18 @@ test('chooseNearestCalendarAnchor falls back to latest order when none are activ
   assert.equal(anchor?.start_date, '2026-05-01')
 })
 
+test('chooseNearestCalendarAnchor tolerates an active order without end date', () => {
+  const anchor = chooseNearestCalendarAnchor([
+    {
+      start_date: '2026-07-20',
+      end_date: null,
+      status: 'active',
+    },
+  ], '2026-07-27')
+
+  assert.equal(anchor?.start_date, '2026-07-20')
+})
+
 test('buildCalendarWindow centers the anchor with two days before it', () => {
   assert.deepEqual(buildCalendarWindow('2026-04-23', 14), {
     from: '2026-04-21',
