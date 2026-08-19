@@ -1,8 +1,21 @@
 import { z } from 'zod'
+import { formatClientPhoneInput, normalizeClientPhone } from '@/lib/client-duplicates'
+
+const optionalPhoneSchema = z.preprocess(
+  value => value === '' ? null : value,
+  z.string()
+    .transform(formatClientPhoneInput)
+    .refine(value => normalizeClientPhone(value).length >= 9, 'Укажите номер полностью')
+    .nullable()
+    .optional(),
+)
 
 export const clientSchema = z.object({
   full_name: z.string().min(1, 'ФИО обязательно'),
-  phone: z.string().min(1, 'Укажите номер телефона'),
+  phone: z.string()
+    .min(1, 'Укажите номер телефона')
+    .transform(formatClientPhoneInput)
+    .refine(value => normalizeClientPhone(value).length >= 9, 'Укажите номер полностью'),
   // Контакты (email/telegram/instagram/facebook)
   email: z.preprocess(v => v === '' ? null : v, z.string().email('Некорректный email').nullable().optional()),
   telegram_username: z.string().nullable().optional(),
@@ -26,7 +39,7 @@ export const clientSchema = z.object({
   notes: z.string().nullable().optional(),
   // Доверенное лицо — хранится на карточке клиента
   trusted_person_name: z.string().nullable().optional(),
-  trusted_person_phone: z.string().nullable().optional(),
+  trusted_person_phone: optionalPhoneSchema,
   trusted_person_relation: z.string().nullable().optional(),
 })
 

@@ -17,6 +17,11 @@ import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 import { UserCheck, Camera, AtSign, MapPin, Download, User, FileText, Star, StickyNote } from 'lucide-react'
+import {
+  beginClientPhoneInput,
+  finishClientPhoneInput,
+  formatClientPhoneInput,
+} from '@/lib/client-duplicates'
 
 interface ClientFormProps {
   defaultValues?: Partial<ClientFormValues>
@@ -28,7 +33,13 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } =
     useForm<ClientFormInput, unknown, ClientFormValues>({
       resolver: zodResolver(clientSchema),
-      defaultValues: defaultValues ?? { reliability_rating: 3, segment: 'other', deposit_held: 0, document_type: 'passport_id' },
+      defaultValues: defaultValues
+        ? {
+            ...defaultValues,
+            phone: formatClientPhoneInput(defaultValues.phone),
+            trusted_person_phone: formatClientPhoneInput(defaultValues.trusted_person_phone),
+          }
+        : { reliability_rating: 3, segment: 'other', deposit_held: 0, document_type: 'passport_id' },
     })
 
   const rating = Number(watch('reliability_rating') ?? 3)
@@ -37,6 +48,9 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   const photoUrl = (watch('photo_url') as string | undefined) ?? null
   const fullName = (watch('full_name') as string | undefined) ?? ''
   const phone = (watch('phone') as string | undefined) ?? ''
+  const trustedPersonPhone = (watch('trusted_person_phone') as string | undefined) ?? ''
+  const phoneField = register('phone')
+  const trustedPersonPhoneField = register('trusted_person_phone')
 
   async function onSubmit(data: ClientFormValues) {
     const url = clientId ? `/api/clients/${clientId}` : '/api/clients'
@@ -125,8 +139,29 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label>Телефон *</Label>
-          <Input {...register('phone')} placeholder="+998 90 123-45-67" className="min-h-[44px] bg-white" />
+          <Input
+            type="tel"
+            {...phoneField}
+            value={phone}
+            onChange={event => setValue('phone', formatClientPhoneInput(event.target.value), {
+              shouldDirty: true,
+              shouldValidate: true,
+            })}
+            onFocus={() => setValue('phone', beginClientPhoneInput(phone), { shouldDirty: false })}
+            onBlur={event => {
+              phoneField.onBlur(event)
+              setValue('phone', finishClientPhoneInput(event.target.value), {
+                shouldDirty: true,
+                shouldValidate: true,
+                shouldTouch: true,
+              })
+            }}
+            placeholder="+998 90 123-45-67"
+            className="min-h-[44px] bg-white"
+            autoComplete="tel"
+          />
           {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
+          <p className="text-[11px] text-blue-700/60">Поддерживаются +998, +7 и номер без кода — маска применится автоматически.</p>
         </div>
         <PotentialClientDuplicateWarning
           fullName={fullName}
@@ -291,7 +326,22 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
           <div className="space-y-1.5">
             <Label>Телефон</Label>
             <Input
-              {...register('trusted_person_phone')}
+              type="tel"
+              {...trustedPersonPhoneField}
+              value={trustedPersonPhone}
+              onChange={event => setValue('trusted_person_phone', formatClientPhoneInput(event.target.value), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })}
+              onFocus={() => setValue('trusted_person_phone', beginClientPhoneInput(trustedPersonPhone), { shouldDirty: false })}
+              onBlur={event => {
+                trustedPersonPhoneField.onBlur(event)
+                setValue('trusted_person_phone', finishClientPhoneInput(event.target.value), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                  shouldTouch: true,
+                })
+              }}
               placeholder="+998 90 000-00-00"
               className="min-h-[44px] bg-white"
             />

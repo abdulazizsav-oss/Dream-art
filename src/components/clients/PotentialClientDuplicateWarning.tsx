@@ -4,25 +4,33 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, ArrowRight, LoaderCircle, UserRoundCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  findPotentialClientDuplicates,
+  normalizeClientPhone,
+  type ClientDuplicateCandidate,
+  type ClientDuplicateReason,
+} from '@/lib/client-duplicates'
 
 export interface PotentialDuplicateClient {
   id: string
   full_name: string
   phone: string | null
   birth_date?: string | null
-  reason: 'exact_phone' | 'exact_name' | 'similar_name'
+  reason: ClientDuplicateReason
 }
 
 interface Props {
   fullName: string
   phone: string
   excludeClientId?: string
+  candidates?: readonly ClientDuplicateCandidate[]
   onUseExistingId?: (clientId: string) => void
   className?: string
 }
 
 const reasonLabel = {
   exact_phone: 'Совпадает телефон',
+  similar_phone: 'Совпадает часть телефона',
   exact_name: 'Совпадает ФИО',
   similar_name: 'Похожее ФИО',
 } as const
@@ -31,6 +39,7 @@ export function PotentialClientDuplicateWarning({
   fullName,
   phone,
   excludeClientId,
+  candidates,
   onUseExistingId,
   className,
 }: Props) {
@@ -38,9 +47,18 @@ export function PotentialClientDuplicateWarning({
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const phoneDigits = phone.replace(/\D/g, '')
-    if (fullName.trim().length < 3 && phoneDigits.length < 9) {
+    const phoneDigits = normalizeClientPhone(phone)
+    if (fullName.trim().length < 3 && phoneDigits.length < 7) {
       setMatches([])
+      setLoading(false)
+      return
+    }
+
+    if (candidates) {
+      setMatches(findPotentialClientDuplicates(candidates, {
+        full_name: fullName,
+        phone,
+      }).filter(client => client.id !== excludeClientId).slice(0, 5))
       setLoading(false)
       return
     }
@@ -69,7 +87,7 @@ export function PotentialClientDuplicateWarning({
       controller.abort()
       window.clearTimeout(timeout)
     }
-  }, [excludeClientId, fullName, phone])
+  }, [candidates, excludeClientId, fullName, phone])
 
   if (loading && matches.length === 0) {
     return (
@@ -87,7 +105,7 @@ export function PotentialClientDuplicateWarning({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-amber-900">Возможно, такой клиент уже есть</p>
           <p className="mt-0.5 text-xs text-amber-800">
-            Проверьте совпадение перед созданием новой карточки. Это предупреждение не блокирует работу.
+            Проверьте совпадение перед созданием новой карточки. Точный дубль телефона система не сохранит.
           </p>
         </div>
       </div>

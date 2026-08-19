@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Client } from '@/types/database'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,6 +13,13 @@ import { Search, UserPlus, ChevronRight, FileText, UserCheck, Phone } from 'luci
 import { toast } from 'sonner'
 import { PotentialClientDuplicateWarning } from '@/components/clients/PotentialClientDuplicateWarning'
 import { ClientOrderAlerts } from '@/components/orders/ClientOrderAlerts'
+import {
+  beginClientPhoneInput,
+  clientMatchesSearch,
+  finishClientPhoneInput,
+  formatClientPhoneInput,
+  normalizeClientPhone,
+} from '@/lib/client-duplicates'
 
 export interface TrustedPersonData {
   name: string
@@ -56,15 +63,14 @@ export function StepClient({
     trusted_person_relation?: string | null
   }) | undefined
 
-  const filtered = clients.filter(c =>
-    c.full_name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone?.includes(search) ||
-    c.telegram_username?.toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(
+    () => clients.filter(client => clientMatchesSearch(client, search)),
+    [clients, search],
   )
 
   async function handleCreateClient() {
     if (!newName.trim()) { toast.error('Введите ФИО'); return }
-    if (!newPhone.trim()) { toast.error('Укажите номер телефона'); return }
+    if (normalizeClientPhone(newPhone).length < 9) { toast.error('Укажите номер телефона полностью'); return }
 
     setCreating(true)
     const res = await fetch('/api/clients', {
@@ -78,7 +84,8 @@ export function StepClient({
       }),
     })
     if (!res.ok) {
-      toast.error('Ошибка создания клиента')
+      const result = await res.json().catch(() => ({}))
+      toast.error(typeof result.error === 'string' ? result.error : 'Ошибка создания клиента')
       setCreating(false)
       return
     }
@@ -117,7 +124,7 @@ export function StepClient({
   // Телефон доверенного лица обязателен — без него нельзя идти дальше.
   const canProceed = !!selectedClientId
     && !!trustedPerson.name.trim()
-    && !!trustedPerson.phone.trim()
+    && normalizeClientPhone(trustedPerson.phone).length >= 9
     && !!trustedPerson.doc_type
 
   return (
@@ -133,11 +140,14 @@ export function StepClient({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 className="pl-9 min-h-[44px]"
-                placeholder="Поиск по имени, телефону или @telegram"
+                placeholder="Имя на кириллице/латинице, телефон или @telegram"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <p className="-mt-1 mb-3 text-[11px] text-zinc-400">
+              Например: «Бегзод» = «Begzod»; номер можно вводить с +998/+7, без кода и без маски.
+            </p>
 
             <div className="space-y-1 max-h-56 overflow-y-auto rounded-lg">
               {filtered.map(c => (
@@ -204,7 +214,9 @@ export function StepClient({
                   <Input
                     type="tel"
                     value={newPhone}
-                    onChange={e => setNewPhone(e.target.value)}
+                    onChange={e => setNewPhone(formatClientPhoneInput(e.target.value))}
+                    onFocus={() => setNewPhone(beginClientPhoneInput(newPhone))}
+                    onBlur={e => setNewPhone(finishClientPhoneInput(e.target.value))}
                     placeholder="+998 90 123-45-67"
                     className={cn('min-h-[44px]', !newPhone.trim() && newName.trim() ? 'border-orange-300' : '')}
                     autoComplete="tel"
@@ -215,7 +227,9 @@ export function StepClient({
                   <Input
                     type="tel"
                     value={newAdditionalPhone}
-                    onChange={e => setNewAdditionalPhone(e.target.value)}
+                    onChange={e => setNewAdditionalPhone(formatClientPhoneInput(e.target.value))}
+                    onFocus={() => setNewAdditionalPhone(beginClientPhoneInput(newAdditionalPhone))}
+                    onBlur={e => setNewAdditionalPhone(finishClientPhoneInput(e.target.value))}
                     placeholder="Запасной контакт"
                     className="min-h-[44px]"
                   />
@@ -233,6 +247,7 @@ export function StepClient({
               <PotentialClientDuplicateWarning
                 fullName={newName}
                 phone={newPhone}
+                candidates={clients}
                 onUseExistingId={clientId => {
                   const existing = clients.find(client => client.id === clientId)
                   if (!existing) {
@@ -249,7 +264,7 @@ export function StepClient({
               <Button
                 type="button"
                 onClick={handleCreateClient}
-                disabled={creating || !newName.trim() || !newPhone.trim()}
+                disabled={creating || !newName.trim() || normalizeClientPhone(newPhone).length < 9}
                 className="flex-1 min-h-[44px]"
               >
                 {creating ? 'Добавляем...' : 'Добавить клиента'}
@@ -311,7 +326,18 @@ export function StepClient({
                 </Label>
                 <Input
                   value={trustedPerson.phone}
-                  onChange={e => onTrustedPersonChange({ ...trustedPerson, phone: e.target.value })}
+                  onChange={e => onTrustedPersonChange({
+                    ...trustedPerson,
+                    phone: formatClientPhoneInput(e.target.value),
+                  })}
+                  onFocus={() => onTrustedPersonChange({
+                    ...trustedPerson,
+                    phone: beginClientPhoneInput(trustedPerson.phone),
+                  })}
+                  onBlur={e => onTrustedPersonChange({
+                    ...trustedPerson,
+                    phone: finishClientPhoneInput(e.target.value),
+                  })}
                   placeholder="+998 90 000-00-00"
                   className={cn('min-h-[44px]', trustedPerson.name.trim() && !trustedPerson.phone.trim() ? 'border-orange-300' : '')}
                 />
