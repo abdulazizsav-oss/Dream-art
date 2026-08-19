@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { orderItemSchema } from '@/lib/validations/order'
 import { normalizeOrderItemsForBilling, OrderPricingError } from '@/lib/orders/pricing'
-import { getTashkentDate, getTashkentTime } from '@/lib/utils'
+import { resolveAddedItemBillingWindow } from '@/lib/orders/add-items'
 import { z } from 'zod'
 
 const addItemsSchema = z.object({
@@ -32,14 +32,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const now = new Date()
+  const billingWindow = resolveAddedItemBillingWindow({
+    now,
+    orderEndDate: order.end_date,
+    orderEndTime: order.end_time,
+  })
   let normalizedItems
   try {
-    normalizedItems = await normalizeOrderItemsForBilling(service, parsed.data.items, {
-      start_date: getTashkentDate(now),
-      end_date: order.end_date < getTashkentDate(now) ? getTashkentDate(now) : order.end_date,
-      start_time: getTashkentTime(now),
-      end_time: order.end_date < getTashkentDate(now) ? '23:59' : (order.end_time ?? '23:00'),
-    })
+    normalizedItems = await normalizeOrderItemsForBilling(service, parsed.data.items, billingWindow)
   } catch (error) {
     if (error instanceof OrderPricingError) {
       return NextResponse.json({ error: error.message }, { status: error.status })

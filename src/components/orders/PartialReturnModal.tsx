@@ -40,7 +40,7 @@ interface Props {
 }
 
 /**
- * «Сдать часть» — выбираем, какие позиции заказа сейчас возвращаются.
+ * «Вернуть часть техники» — выбираем, какие позиции заказа сейчас возвращаются.
  * Сумма по сданным позициям замораживается на сервере (computeActiveOrderTotal).
  * Заказ остаётся активным, пока остаются несданные позиции.
  */
@@ -191,12 +191,12 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        toast.error(err.error ?? 'Не удалось сдать позиции')
+        toast.error(err.error ?? 'Не удалось вернуть позиции')
         return
       }
       const data = await res.json()
-      if (data.order_closed) toast.success('Все позиции сданы — заказ закрыт')
-      else toast.success(`Сдано позиций: ${data.closed}. Остальные продолжают считаться.`)
+      if (data.order_closed) toast.success('Вся техника возвращена — заказ закрыт')
+      else toast.success(`Возвращено позиций: ${data.closed}. Остальные продолжают считаться.`)
 
       setOpen(false)
       router.refresh()
@@ -211,12 +211,12 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
     <>
       <Button type="button" variant={variant} size={size} className={className} onClick={() => setOpen(true)}>
         <PackageCheck className="w-4 h-4 mr-2" />
-        Сдать часть
+        Вернуть часть техники
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Частичная сдача</DialogTitle>
+            <DialogTitle>Частичный возврат техники</DialogTitle>
             <DialogDescription>
               Отметьте позиции, которые клиент возвращает сейчас. Сумма по ним зафиксируется от фактического открытия до текущего времени. Остальные продолжат считаться.
             </DialogDescription>
@@ -225,7 +225,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">Сдаём сейчас</p>
+                <p className="text-xs text-gray-500">Возвращаем сейчас</p>
                 <p className="mt-1 font-semibold tabular-nums">{formatCurrency(selectedSubtotal)}</p>
               </div>
               <div className="rounded-xl border bg-emerald-50 p-3">
@@ -407,7 +407,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                 Отмена
               </Button>
               <Button type="submit" disabled={loading || picked.size === 0 || (paidTotal > 0 && splitMismatch)}>
-                {loading ? 'Фиксируем...' : `Сдать ${picked.size} позиц${picked.size === 1 ? 'ию' : picked.size < 5 ? 'ии' : 'ий'}`}
+                {loading ? 'Фиксируем...' : `Вернуть ${picked.size} позиц${picked.size === 1 ? 'ию' : picked.size < 5 ? 'ии' : 'ий'}`}
               </Button>
             </DialogFooter>
           </form>

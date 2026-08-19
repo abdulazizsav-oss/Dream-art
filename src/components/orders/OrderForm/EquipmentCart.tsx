@@ -6,9 +6,20 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { describeBreakdown, describeShift, describeUnits, getPricingParts, supportsNightShift } from '@/lib/rental'
 import type { RateSource, ShiftType } from '@/lib/rental'
 import type { OrderItemFormValue } from '@/lib/validations/order'
-import type { EquipmentRow } from './EquipmentGrid'
 import { LiveTotal } from './LiveTotal'
 import { sanitizeKitCatalog, type KitComponent, type KitSelectionEntry } from '@/lib/kit'
+
+export interface EquipmentCartRow {
+  id: string
+  name: string
+  currency: 'UZS' | 'USD'
+  daily_rate: number
+  day_rate: number | null
+  night_rate: number | null
+  day_night: 'day' | 'night' | 'both' | null
+  specs?: string | null
+  kit?: unknown
+}
 
 interface CartGroup {
   key: string
@@ -17,7 +28,8 @@ interface CartGroup {
   shiftType: ShiftType
   rateSource: RateSource
   manualSubtotal: number | null
-  equipment: EquipmentRow | undefined
+  conditionOnIssue: string
+  equipment: EquipmentCartRow | undefined
   entries: { item: OrderItemFormValue; index: number }[]
   kitCatalog: KitComponent[]
   kitSelection: KitSelectionEntry[]
@@ -25,9 +37,11 @@ interface CartGroup {
 
 interface EquipmentCartProps {
   selectedItems: OrderItemFormValue[]
-  equipment: EquipmentRow[]
+  equipment: EquipmentCartRow[]
   startDate?: string
   endDate?: string
+  startTime?: string | null
+  endTime?: string | null
   onIncrement: (equipmentId: string) => void
   onDecrement: (equipmentId: string) => void
   onRemoveAll: (equipmentId: string) => void
@@ -35,9 +49,10 @@ interface EquipmentCartProps {
   onSetShiftMode: (equipmentId: string, mode: 'auto' | ShiftType) => void
   /** value = ручная цена за единицу; null = вернуть авто-расчёт */
   onSetManualPrice: (equipmentId: string, value: number | null) => void
+  onSetConditionOnIssue?: (equipmentId: string, value: string) => void
 }
 
-function groupByEquipment(items: OrderItemFormValue[], equipment: EquipmentRow[]): CartGroup[] {
+function groupByEquipment(items: OrderItemFormValue[], equipment: EquipmentCartRow[]): CartGroup[] {
   const groups = new Map<string, CartGroup>()
 
   items.forEach((item, index) => {
@@ -52,6 +67,7 @@ function groupByEquipment(items: OrderItemFormValue[], equipment: EquipmentRow[]
         shiftType: item.shift_type ?? 'day',
         rateSource: item.rate_source ?? 'auto',
         manualSubtotal: item.manual_subtotal ?? null,
+        conditionOnIssue: item.condition_on_issue ?? 'Хорошее',
         equipment: eq,
         entries: [],
         kitCatalog: sanitizeKitCatalog((eq as { kit?: unknown } | undefined)?.kit),
@@ -70,12 +86,15 @@ export function EquipmentCart({
   equipment,
   startDate,
   endDate,
+  startTime,
+  endTime,
   onIncrement,
   onDecrement,
   onRemoveAll,
   onSetKitQty,
   onSetShiftMode,
   onSetManualPrice,
+  onSetConditionOnIssue,
 }: EquipmentCartProps) {
   const groups = groupByEquipment(selectedItems, equipment)
 
@@ -215,6 +234,21 @@ export function EquipmentCart({
                     )}
                   </div>
 
+                  {onSetConditionOnIssue && (
+                    <div className="mt-3 space-y-1.5 border-t border-zinc-200 pt-3">
+                      <label className="block text-[11px] font-medium text-zinc-500">
+                        Состояние при выдаче
+                      </label>
+                      <input
+                        type="text"
+                        value={group.conditionOnIssue}
+                        onChange={event => onSetConditionOnIssue(group.key, event.target.value)}
+                        placeholder="Например: хорошее, есть царапина"
+                        className="h-9 w-full rounded-lg border bg-white px-2 text-sm focus:border-zinc-400 focus:outline-none"
+                      />
+                    </div>
+                  )}
+
                   {group.kitCatalog.length > 0 && (
                     <div className="mt-3 space-y-1.5 border-t border-zinc-200 pt-3">
                       <p className="text-[11px] font-medium text-zinc-500">Комплект (кол-во на 1 шт.)</p>
@@ -285,6 +319,8 @@ export function EquipmentCart({
         <LiveTotal
           startDate={startDate}
           endDate={endDate}
+          startTime={startTime}
+          endTime={endTime}
           items={selectedItems}
           equipment={equipment}
           className="mt-4"

@@ -8,7 +8,7 @@ import {
   PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, DOCUMENT_TYPE_LABELS
 } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, FileText, RotateCcw, Truck, UserCheck, User } from 'lucide-react'
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, FileText, Truck, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
 import { PayReturnedItemButton } from '@/components/orders/PayReturnedItemButton'
@@ -25,6 +25,7 @@ import {
   resolveRentalEndDate,
   type RentalOverdueInput,
 } from '@/lib/order-overdue'
+import { isOrderItemAddedLater } from '@/lib/orders/add-items'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -43,7 +44,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { data: availableEquipment } = isOrderOpen
     ? await supabase
         .from('equipment')
-        .select('id, name, daily_rate, day_rate, night_rate, day_night, currency, brand, kit_items, kit, equipment_categories(name), brands(name)')
+        .select('id, name, daily_rate, day_rate, night_rate, day_night, currency, brand, specs, kit_items, kit, equipment_categories(name), brands(name)')
         .order('sort_order')
         .order('name')
     : { data: [] }
@@ -260,6 +261,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <>
                 <AddItemsModal
                   orderId={id}
+                  orderEndDate={order.end_date}
+                  orderEndTime={(order as any).end_time}
                   equipment={(availableEquipment ?? []).map(item => ({
                     id: item.id,
                     name: item.name,
@@ -269,6 +272,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     day_night: (item as any).day_night,
                     currency: item.currency,
                     brand: (item as any).brand,
+                    specs: (item as any).specs,
                     kit_items: (item as any).kit_items ?? [],
                     kit: (item as any).kit ?? [],
                     equipment_categories: (item as any).equipment_categories ?? null,
@@ -303,12 +307,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     currency: it.equipment?.currency ?? 'UZS',
                   }))}
                 />
-                <Link href={`/orders/${id}/return`}>
-                  <Button variant="outline">
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Возврат с актом
-                  </Button>
-                </Link>
               </>
             ) : null}
             {order.status === 'returned' && (
@@ -490,10 +488,21 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               ? activeMissingEvents.map(event => event.kit_name)
               : item.missing_kit_items ?? []
             const isClosed = Boolean(item.returned) || order.status === 'returned'
+            const addedLater = isOrderItemAddedLater({
+              orderActualStartAt: orderActualStart ?? (order as any).created_at,
+              itemActualStartAt: item.actual_start_at,
+            })
             return (
               <div key={item.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
                 <div>
-                  <p className="font-medium">{item.equipment?.name}</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="font-medium">{item.equipment?.name}</p>
+                    {addedLater && (
+                      <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                        Добавлено в заказ · с {formatDateTime(item.actual_start_at!)}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400">
                     {item.condition_on_issue && `Состояние при выдаче: ${item.condition_on_issue}`}
                     {item.condition_on_return && ` · При возврате: ${item.condition_on_return}`}

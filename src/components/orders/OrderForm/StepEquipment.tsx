@@ -154,6 +154,14 @@ export function StepEquipment({
     syncItems(next)
   }
 
+  function handleSetConditionOnIssue(equipmentId: string, value: string) {
+    onUpdate(selectedItems.map(item => (
+      item.equipment_id === equipmentId
+        ? { ...item, condition_on_issue: value }
+        : item
+    )))
+  }
+
   return (
     <div>
       <h2 className="mb-1 text-lg font-semibold">Выберите технику</h2>
@@ -187,6 +195,7 @@ export function StepEquipment({
             onSetKitQty={handleSetKitQty}
             onSetShiftMode={handleSetShiftMode}
             onSetManualPrice={handleSetManualPrice}
+            onSetConditionOnIssue={handleSetConditionOnIssue}
           />
         </div>
       </div>

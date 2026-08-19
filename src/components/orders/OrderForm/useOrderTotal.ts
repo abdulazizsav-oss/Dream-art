@@ -19,13 +19,17 @@ export function useOrderTotal(
   endDate: string | undefined | null,
   items: OrderItemFormValue[],
   equipment: Pick<Equipment, 'id' | 'currency' | 'day_rate' | 'night_rate' | 'daily_rate' | 'day_night'>[],
+  startTime?: string | null,
+  endTime?: string | null,
 ): OrderTotal {
   return useMemo(() => {
     const pricedItems = recalculateOrderItems(items, equipment, {
       start_date: startDate,
       end_date: endDate,
+      start_time: startTime,
+      end_time: endTime,
     })
-    const breakdown = getAutoBillingBreakdown(startDate, endDate)
+    const breakdown = getAutoBillingBreakdown(startDate, endDate, startTime, endTime)
     const hasNightUnits = pricedItems.some(item => (item.night_units ?? 0) > 0)
     const total = pricedItems.reduce((sum, item) => sum + (item.subtotal ?? 0), 0)
 
@@ -40,5 +44,5 @@ export function useOrderTotal(
       total,
       currency,
     }
-  }, [endDate, equipment, items, startDate])
+  }, [endDate, endTime, equipment, items, startDate, startTime])
 }

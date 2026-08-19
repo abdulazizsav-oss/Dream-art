@@ -342,6 +342,52 @@ test('partial return freezes returned items while open items keep billing live',
   assert.equal(result.perItem.get('open-item')?.subtotal, 150_000)
 })
 
+test('an item added later is billed only from its own actual_start_at', () => {
+  const result = computeActiveOrderTotal({
+    now: buildTashkentDate('2026-08-09', '21:00'),
+    items: [
+      {
+        id: 'original-item',
+        equipment_id: 'camera',
+        rate_source: 'auto',
+        actual_start_at: buildTashkentDate('2026-08-08', '10:00').toISOString(),
+        actual_end_at: null,
+        final_subtotal: null,
+        final_day_units: null,
+        final_night_units: null,
+        day_rate: 100_000,
+        night_rate: 100_000,
+        day_night: 'both',
+        subtotal: 100_000,
+        day_units: 1,
+        night_units: 0,
+        shift_type: 'day',
+      },
+      {
+        id: 'added-item',
+        equipment_id: 'light',
+        rate_source: 'auto',
+        actual_start_at: buildTashkentDate('2026-08-09', '20:15').toISOString(),
+        actual_end_at: null,
+        final_subtotal: null,
+        final_day_units: null,
+        final_night_units: null,
+        day_rate: 50_000,
+        night_rate: 80_000,
+        day_night: 'both',
+        subtotal: 50_000,
+        day_units: 1,
+        night_units: 0,
+        shift_type: 'day',
+      },
+    ],
+  })
+
+  assert.equal(result.perItem.get('original-item')?.subtotal, 200_000)
+  assert.equal(result.perItem.get('added-item')?.subtotal, 80_000)
+  assert.equal(result.total_amount, 280_000)
+})
+
 test('computeActiveOrderTotal adds delivery once and keeps rental breakdown separate', () => {
   const result = computeActiveOrderTotal({
     now: buildTashkentDate('2026-04-25', '18:26'),
