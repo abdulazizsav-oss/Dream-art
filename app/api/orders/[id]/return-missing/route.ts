@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { returnMissingKitSchema } from '@/lib/validations/return-missing'
 
 /**
  * POST /api/orders/[id]/return-missing
@@ -16,11 +17,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json() as {
-    items: { order_item_id: string; returned_now: string[] }[]
-  }
-  if (!Array.isArray(body.items) || body.items.length === 0) {
-    return NextResponse.json({ error: 'Нет элементов для возврата' }, { status: 400 })
+  const parsed = returnMissingKitSchema.safeParse(await req.json().catch(() => null))
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Укажите позиции заказа и элементы для возврата' }, { status: 400 })
   }
 
   const service = await createServiceClient()
@@ -33,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data, error } = await service.rpc('return_missing_kit_events_atomic', {
     p_order_id: orderId,
-    p_items: body.items,
+    p_items: parsed.data.items,
     p_marked_returned_by: user.id,
   } as never)
 

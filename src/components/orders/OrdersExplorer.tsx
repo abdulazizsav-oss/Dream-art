@@ -25,43 +25,12 @@ import {
   formatDateTime,
 } from '@/lib/utils'
 
-type OrderStatus = 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
-type QueueFilter = 'active' | 'overdue' | 'debt' | 'returned' | 'all'
+import { matchesQueue, matchesOrderSearch, type OrderStatus, type QueueFilter, type OrderListItem } from '@/lib/orders/list'
+import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
+export type { OrderListItem } from '@/lib/orders/list'
+
 type DeliveryFilter = 'all' | 'with' | 'without'
 type SortOrder = 'newest' | 'oldest' | 'debt'
-
-interface CloseItem {
-  id: string
-  name: string
-  selected_kit_items: string[]
-  current_subtotal: number
-  currency: 'UZS' | 'USD'
-}
-
-export interface OrderListItem {
-  id: string
-  orderNumber: string
-  status: OrderStatus
-  isOverdue: boolean
-  clientName: string
-  clientPhone: string | null
-  startDate: string
-  endDate: string | null
-  createdAt: string | null
-  actualStartAt: string | null
-  actualEndAt: string | null
-  createdBy: string | null
-  deliveryToClient: boolean
-  deliveryFromClient: boolean
-  equipmentNames: string[]
-  effectiveTotal: number
-  paidRental: number
-  debt: number
-  deliveryFee: number
-  deliveryPaid: number
-  missingKitItems: string[]
-  closeItems: CloseItem[]
-}
 
 interface Props {
   orders: OrderListItem[]
@@ -74,17 +43,10 @@ const QUEUES: { value: QueueFilter; label: string }[] = [
   { value: 'active', label: 'В работе' },
   { value: 'overdue', label: 'Просрочки' },
   { value: 'debt', label: 'С долгом' },
+  { value: 'missing', label: 'Не возвращено' },
   { value: 'returned', label: 'Завершённые' },
   { value: 'all', label: 'Все' },
 ]
-
-function matchesQueue(order: OrderListItem, queue: QueueFilter) {
-  if (queue === 'active') return ['active', 'overdue'].includes(order.status)
-  if (queue === 'overdue') return order.isOverdue
-  if (queue === 'debt') return order.debt > 0.01 && order.status !== 'cancelled'
-  if (queue === 'returned') return order.status === 'returned'
-  return true
-}
 
 function equipmentSummary(names: string[]) {
   if (names.length === 0) return 'Техника не указана'
@@ -124,6 +86,7 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
     active: orders.filter(order => matchesQueue(order, 'active')).length,
     overdue: orders.filter(order => matchesQueue(order, 'overdue')).length,
     debt: orders.filter(order => matchesQueue(order, 'debt')).length,
+    missing: orders.filter(order => matchesQueue(order, 'missing')).length,
     returned: orders.filter(order => matchesQueue(order, 'returned')).length,
     all: orders.length,
   }), [orders])
@@ -141,13 +104,7 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
       if (deliveryFilter === 'without' && order.deliveryFee > 0) return false
       if (!normalizedQuery) return true
 
-      return [
-        order.orderNumber,
-        order.clientName,
-        order.clientPhone,
-        order.createdBy,
-        ...order.equipmentNames,
-      ].filter(Boolean).join(' ').toLocaleLowerCase('ru').includes(normalizedQuery)
+      return matchesOrderSearch(order, query)
     })
 
     return result.sort((a, b) => {
@@ -197,7 +154,7 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
         </Link>
       </header>
 
-      <section className="grid overflow-hidden rounded-2xl border bg-white sm:grid-cols-2 md:grid-cols-4">
+      <section className="grid overflow-hidden rounded-2xl border bg-white sm:grid-cols-2 xl:grid-cols-5">
         <MetricButton
           label="В работе"
           value={String(counts.active)}
@@ -221,6 +178,14 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
           tone={totalDebt > 0 ? 'warning' : 'neutral'}
           active={queue === 'debt'}
           onClick={() => selectQueue('debt')}
+        />
+        <MetricButton
+          label="Не возвращено"
+          value={String(counts.missing)}
+          caption="Забытый комплект и техника с просрочкой"
+          tone={counts.missing > 0 ? 'warning' : 'neutral'}
+          active={queue === 'missing'}
+          onClick={() => selectQueue('missing')}
         />
         <MetricButton
           label="Завершено"
@@ -258,6 +223,13 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
               </button>
             ))}
           </nav>
+
+          {queue === 'missing' && (
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Здесь заказы с не сданными элементами комплекта (в том числе после частичного возврата)
+              и техникой с истёкшим сроком аренды. После возврата всех позиций заказ исчезнет из этой вкладки.
+            </p>
+          )}
 
           <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_190px_190px]">
             <label className="relative block md:col-span-2 lg:col-span-1">
@@ -383,7 +355,7 @@ function MetricButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative min-h-28 border-b px-4 py-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-500 sm:border-r md:border-b-0',
+        'group relative min-h-28 border-b px-4 py-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-500 sm:border-r xl:border-b-0',
         last && 'sm:border-r-0',
         active ? 'bg-zinc-50' : 'hover:bg-zinc-50/70',
       )}
@@ -449,7 +421,7 @@ function OrderRow({ order }: { order: OrderListItem }) {
           {order.isOverdue && (
             <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-red-700">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              Срок возврата истёк, техника не возвращена
+              Срок возврата истёк: {order.overdueEquipmentNames.join(', ') || 'техника не возвращена'}
             </p>
           )}
         </div>
@@ -497,6 +469,13 @@ function OrderRow({ order }: { order: OrderListItem }) {
               variant="outline"
               size="sm"
               className="pointer-events-auto min-h-10 min-w-[132px] flex-1 justify-center text-xs md:w-full"
+            />
+          )}
+          {order.missingKitDetails.length > 0 && (
+            <ReturnMissingKitButton
+              orderId={order.id}
+              items={order.missingKitDetails}
+              className="pointer-events-auto min-h-10"
             />
           )}
           <Link

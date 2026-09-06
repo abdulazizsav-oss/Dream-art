@@ -44,7 +44,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { data: availableEquipment } = isOrderOpen
     ? await supabase
         .from('equipment')
-        .select('id, name, daily_rate, day_rate, night_rate, day_night, currency, brand, specs, kit_items, kit, equipment_categories(name), brands(name)')
+        .select('*, equipment_categories!inner(*), brands(name)')
+        .eq('equipment_categories.is_active', true)
         .order('sort_order')
         .order('name')
     : { data: [] }
@@ -264,19 +265,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   orderEndDate={order.end_date}
                   orderEndTime={(order as any).end_time}
                   equipment={(availableEquipment ?? []).map(item => ({
-                    id: item.id,
-                    name: item.name,
-                    daily_rate: item.daily_rate,
-                    day_rate: (item as any).day_rate,
-                    night_rate: (item as any).night_rate,
-                    day_night: (item as any).day_night,
-                    currency: item.currency,
-                    brand: (item as any).brand,
-                    specs: (item as any).specs,
-                    kit_items: (item as any).kit_items ?? [],
-                    kit: (item as any).kit ?? [],
-                    equipment_categories: (item as any).equipment_categories ?? null,
-                    brands: (item as any).brands ?? null,
+                    ...item,
+                    brand: item.brands?.name ?? item.brand,
                   }))}
                 />
                 <CloseOrderButton
@@ -309,7 +299,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 />
               </>
             ) : null}
-            {order.status === 'returned' && (
+            {order.status !== 'cancelled' && (
               <ReturnMissingKitButton
                 orderId={id}
                 items={items

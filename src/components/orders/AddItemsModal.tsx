@@ -4,13 +4,12 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { Moon, PackagePlus, Search, Sun } from 'lucide-react'
+import { formatDateTime } from '@/lib/utils'
+import { PackagePlus } from 'lucide-react'
 import {
   getAutoShiftType,
   getEquipmentRate,
@@ -25,22 +24,9 @@ import {
 import type { OrderItemFormValue } from '@/lib/validations/order'
 import { resolveAddedItemBillingWindow } from '@/lib/orders/add-items'
 import { EquipmentCart } from '@/components/orders/OrderForm/EquipmentCart'
+import { EquipmentGrid, type EquipmentRow } from '@/components/orders/OrderForm/EquipmentGrid'
 
-interface EquipmentOption {
-  id: string
-  name: string
-  daily_rate: number
-  day_rate: number | null
-  night_rate: number | null
-  day_night: 'day' | 'night' | 'both' | null
-  currency: 'UZS' | 'USD'
-  brand: string | null
-  specs?: string | null
-  kit_items?: string[] | null
-  kit?: unknown
-  equipment_categories?: { name: string | null } | null
-  brands?: { name: string | null } | null
-}
+type EquipmentOption = EquipmentRow
 
 interface Props {
   orderId: string
@@ -64,7 +50,6 @@ export function AddItemsModal({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [search, setSearch] = useState('')
   const [openedAt, setOpenedAt] = useState(() => new Date())
   const [selectedItems, setSelectedItems] = useState<OrderItemFormValue[]>([])
 
@@ -78,20 +63,6 @@ export function AddItemsModal({
     () => equipment.filter(item => item.currency === 'UZS'),
     [equipment],
   )
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return orderableEquipment
-    return orderableEquipment.filter(item => {
-      const haystack = [
-        item.name,
-        item.brand,
-        item.brands?.name,
-        item.equipment_categories?.name,
-        item.specs,
-      ].filter(Boolean).join(' ').toLowerCase()
-      return haystack.includes(q)
-    })
-  }, [orderableEquipment, search])
   const selectedCounts = useMemo(() => {
     const counts = new Map<string, number>()
     for (const item of selectedItems) {
@@ -205,10 +176,10 @@ export function AddItemsModal({
   }
 
   function handleOpenChange(nextOpen: boolean) {
+    if (loading) return
     if (nextOpen) {
       setOpenedAt(new Date())
       setSelectedItems([])
-      setSearch('')
     }
     setOpen(nextOpen)
   }
@@ -240,7 +211,6 @@ export function AddItemsModal({
 
       toast.success(`Добавлено позиций: ${items.length}. Начисление идёт с текущего времени.`)
       setSelectedItems([])
-      setSearch('')
       setOpen(false)
       router.refresh()
     } catch {
@@ -257,7 +227,7 @@ export function AddItemsModal({
         Добавить технику
       </Button>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-6xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[1440px] max-h-[92dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Добавить технику в активный заказ</DialogTitle>
             <DialogDescription>
@@ -265,64 +235,14 @@ export function AddItemsModal({
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,1fr)]">
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                  <Input
-                    value={search}
-                    onChange={event => setSearch(event.target.value)}
-                    placeholder="Поиск техники"
-                    className="pl-9"
-                  />
-                </div>
-
-                <div className="max-h-[34rem] space-y-2 overflow-y-auto rounded-xl border bg-zinc-50/60 p-2">
-                  {filtered.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-zinc-400">Техника не найдена</p>
-                  ) : filtered.map(item => {
-                    const count = selectedCounts.get(item.id) ?? 0
-                    const brand = item.brands?.name ?? item.brand
-                    const rate = item.day_rate ?? item.daily_rate
-                    const hasNightShift = supportsNightShift(item)
-                    return (
-                      <button
-                        type="button"
-                        key={item.id}
-                        onClick={() => addUnit(item)}
-                        className={`flex w-full items-start gap-3 rounded-lg border bg-white p-3 text-left transition-colors ${
-                          count > 0 ? 'border-zinc-900' : 'border-zinc-200 hover:border-zinc-400'
-                        }`}
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-2 text-sm font-medium text-zinc-900">
-                            {item.name}
-                            {count > 0 && (
-                              <span className="rounded-full bg-zinc-900 px-2 py-0.5 text-[11px] font-semibold text-white">×{count}</span>
-                            )}
-                          </span>
-                          <span className="mt-0.5 block text-xs text-zinc-500">
-                            {[brand, item.equipment_categories?.name].filter(Boolean).join(' · ') || 'Без категории'}
-                          </span>
-                          <span className="mt-1 block text-[11px] font-medium text-blue-600">+ Добавить единицу</span>
-                        </span>
-                        <span className="space-y-0.5 text-right text-xs font-medium text-zinc-700">
-                          <span className="flex items-center justify-end gap-1">
-                            <Sun className="h-3 w-3 text-amber-500" />
-                            {formatCurrency(rate, item.currency)}
-                          </span>
-                          {hasNightShift && (
-                            <span className="flex items-center justify-end gap-1">
-                              <Moon className="h-3 w-3 text-indigo-500" />
-                              {formatCurrency(item.night_rate ?? rate, item.currency)}
-                            </span>
-                          )}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
+          <form onSubmit={handleSubmit} className="min-w-0 space-y-4">
+            <fieldset disabled={loading} className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+              <div className="min-w-0 max-h-[50dvh] overflow-y-auto lg:max-h-[65dvh] lg:pr-2">
+                <EquipmentGrid
+                  equipment={orderableEquipment}
+                  selectedCounts={selectedCounts}
+                  onAdd={addUnit}
+                />
               </div>
 
               <EquipmentCart
@@ -343,7 +263,7 @@ export function AddItemsModal({
                 onSetManualPrice={setManualPrice}
                 onSetConditionOnIssue={setConditionOnIssue}
               />
-            </div>
+            </fieldset>
 
             <DialogFooter className="gap-2 sm:gap-2">
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>

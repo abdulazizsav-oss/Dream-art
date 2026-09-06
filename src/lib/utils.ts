@@ -119,6 +119,8 @@ export const PAYMENT_TYPE_LABELS: Record<string, string> = {
 
 export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   passport_id: 'Паспорт ID (биометрический)',
+  passport_id_foreign: 'Паспорт ID (иностран)',
+  passport_foreign: 'Паспорт (иностран)',
   passport_green: 'Паспорт зелёный',
   zagranpassport: 'Загранпаспорт',
   passport_cover: 'Паспорт с чехлом',

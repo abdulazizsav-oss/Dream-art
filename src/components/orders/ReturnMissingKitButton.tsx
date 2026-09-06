@@ -94,6 +94,8 @@ export function ReturnMissingKitButton({ orderId, items, variant = 'outline', si
       setOpen(false)
       setSelected({})
       router.refresh()
+    } catch {
+      toast.error('Не удалось связаться с сервером. Попробуйте ещё раз.')
     } finally {
       setLoading(false)
     }
@@ -103,7 +105,7 @@ export function ReturnMissingKitButton({ orderId, items, variant = 'outline', si
 
   return (
     <>
-      <Button type="button" variant={variant} size={size} className={className} onClick={() => setOpen(true)}>
+      <Button type="button" variant={variant} size={size} className={className} onClick={() => { setSelected({}); setOpen(true) }}>
         <PackageCheck className="w-4 h-4 mr-2" />
         Клиент вернул
       </Button>
