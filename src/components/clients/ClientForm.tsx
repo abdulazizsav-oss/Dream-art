@@ -55,19 +55,23 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
   async function onSubmit(data: ClientFormValues) {
     const url = clientId ? `/api/clients/${clientId}` : '/api/clients'
     const method = clientId ? 'PUT' : 'POST'
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      toast.error(err.error ?? 'Ошибка сохранения')
-      return
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => null)
+        toast.error(typeof err?.error === 'string' ? err.error : 'Ошибка сохранения')
+        return
+      }
+      toast.success(clientId ? 'Клиент обновлён' : 'Клиент добавлен')
+      router.push('/clients')
+      router.refresh()
+    } catch {
+      toast.error('Не удалось получить ответ. Данные остались в форме. Проверьте список клиентов перед повторным сохранением.')
     }
-    toast.success(clientId ? 'Клиент обновлён' : 'Клиент добавлен')
-    router.push('/clients')
-    router.refresh()
   }
 
   async function downloadPhoto() {
@@ -133,14 +137,16 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
           <h3 className="text-sm font-semibold text-blue-900">Основная информация</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>ФИО *</Label>
-          <Input {...register('full_name')} placeholder="Иванов Иван Иванович" className="min-h-[44px] bg-white" />
+          <Label htmlFor="client-full-name">ФИО *</Label>
+          <Input id="client-full-name" {...register('full_name')} placeholder="Иванов Иван Иванович" className="min-h-[52px] text-base md:text-base bg-white" autoComplete="name" />
           {errors.full_name && <p className="text-xs text-red-500">{errors.full_name.message}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label>Телефон *</Label>
+          <Label htmlFor="client-primary-phone">Телефон *</Label>
           <Input
+            id="client-primary-phone"
             type="tel"
+            inputMode="tel"
             {...phoneField}
             value={phone}
             onChange={event => setValue('phone', formatClientPhoneInput(event.target.value), {
@@ -157,7 +163,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
               })
             }}
             placeholder="+998 90 123-45-67"
-            className="min-h-[44px] bg-white"
+            className="min-h-[52px] text-base md:text-base bg-white"
             autoComplete="tel"
           />
           {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
@@ -180,22 +186,22 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label>Email</Label>
-          <Input type="email" {...register('email')} placeholder="client@example.com" className="min-h-[44px] bg-white" />
+          <Input type="email" {...register('email')} placeholder="client@example.com" className="min-h-[52px] text-base md:text-base bg-white" />
           {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Telegram *</Label>
-            <Input {...register('telegram_username')} placeholder="@username" className="min-h-[44px] bg-white" />
+            <Label>Telegram</Label>
+            <Input {...register('telegram_username')} placeholder="@username" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
           <div className="space-y-1.5">
-            <Label>Instagram *</Label>
-            <Input {...register('instagram_username')} placeholder="@username" className="min-h-[44px] bg-white" />
+            <Label>Instagram</Label>
+            <Input {...register('instagram_username')} placeholder="@username" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
         </div>
         <div className="space-y-1.5">
           <Label>Facebook</Label>
-          <Input {...register('facebook_username')} placeholder="fb.com/username" className="min-h-[44px] bg-white" />
+          <Input {...register('facebook_username')} placeholder="fb.com/username" className="min-h-[52px] text-base md:text-base bg-white" />
         </div>
       </section>
 
@@ -208,12 +214,12 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
           <h3 className="text-sm font-semibold text-emerald-900">Адреса</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>Адрес фактический *</Label>
-          <Textarea {...register('address_actual')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white" />
+          <Label>Адрес фактический</Label>
+          <Textarea {...register('address_actual')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white text-base md:text-base" />
         </div>
         <div className="space-y-1.5">
-          <Label>Адрес по прописке *</Label>
-          <Textarea {...register('address_registered')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white" />
+          <Label>Адрес по прописке</Label>
+          <Textarea {...register('address_registered')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white text-base md:text-base" />
         </div>
       </section>
 
@@ -231,12 +237,12 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
             value={segment}
             onValueChange={v => setValue('segment', v as ClientFormValues['segment'])}
           >
-            <SelectTrigger className="min-h-[44px] bg-white">
+            <SelectTrigger className="min-h-[52px] text-base md:text-base bg-white">
               <SelectValue>{CLIENT_SEGMENT_LABELS[segment]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Object.entries(CLIENT_SEGMENT_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+                <SelectItem key={k} value={k} className="min-h-[48px] text-base md:text-base">{v}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -249,7 +255,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label>Депозит на хранении</Label>
-          <Input type="number" {...register('deposit_held')} placeholder="0" className="min-h-[44px] bg-white" />
+          <Input type="number" {...register('deposit_held')} placeholder="0" className="min-h-[52px] text-base md:text-base bg-white" />
         </div>
       </section>
 
@@ -267,12 +273,12 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
             value={docType}
             onValueChange={v => setValue('document_type', v as ClientFormValues['document_type'])}
           >
-            <SelectTrigger className="min-h-[44px] bg-white">
+            <SelectTrigger className="min-h-[52px] text-base md:text-base bg-white">
               <SelectValue>{DOCUMENT_TYPE_LABELS[docType]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+                <SelectItem key={k} value={k} className="min-h-[48px] text-base md:text-base">{v}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -280,25 +286,25 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Серия</Label>
-            <Input {...register('passport_series')} placeholder="AA" className="min-h-[44px] bg-white" />
+            <Input {...register('passport_series')} placeholder="AA" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
           <div className="space-y-1.5">
             <Label>Номер</Label>
-            <Input {...register('passport_number')} placeholder="1234567" className="min-h-[44px] bg-white" />
+            <Input {...register('passport_number')} placeholder="1234567" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
         </div>
         <div className="space-y-1.5">
           <Label>Кем выдан</Label>
-          <Input {...register('passport_issued_by')} className="min-h-[44px] bg-white" />
+          <Input {...register('passport_issued_by')} className="min-h-[52px] text-base md:text-base bg-white" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Дата выдачи</Label>
-            <Input type="date" {...register('passport_issued_date')} className="min-h-[44px] bg-white" />
+            <Input type="date" {...register('passport_issued_date')} className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
           <div className="space-y-1.5">
             <Label>Дата рождения</Label>
-            <Input type="date" {...register('birth_date')} className="min-h-[44px] bg-white" />
+            <Input type="date" {...register('birth_date')} className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
         </div>
       </section>
@@ -319,7 +325,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
           <Input
             {...register('trusted_person_name')}
             placeholder="Иванов Пётр Иванович"
-            className="min-h-[44px] bg-white"
+            className="min-h-[52px] text-base md:text-base bg-white"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -327,6 +333,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
             <Label>Телефон</Label>
             <Input
               type="tel"
+              inputMode="tel"
               {...trustedPersonPhoneField}
               value={trustedPersonPhone}
               onChange={event => setValue('trusted_person_phone', formatClientPhoneInput(event.target.value), {
@@ -343,7 +350,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
                 })
               }}
               placeholder="+998 90 000-00-00"
-              className="min-h-[44px] bg-white"
+              className="min-h-[52px] text-base md:text-base bg-white"
             />
           </div>
           <div className="space-y-1.5">
@@ -351,7 +358,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
             <Input
               {...register('trusted_person_relation')}
               placeholder="Брат, жена, коллега..."
-              className="min-h-[44px] bg-white"
+              className="min-h-[52px] text-base md:text-base bg-white"
             />
           </div>
         </div>
@@ -365,7 +372,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
           </span>
           <h3 className="text-sm font-semibold text-zinc-800">Заметки</h3>
         </div>
-        <Textarea {...register('notes')} rows={3} placeholder="Дополнительная информация..." className="bg-white" />
+        <Textarea {...register('notes')} rows={3} placeholder="Дополнительная информация..." className="bg-white text-base md:text-base" />
       </section>
 
       <div className="flex gap-3 pt-2">

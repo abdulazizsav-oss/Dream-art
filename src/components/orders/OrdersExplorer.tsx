@@ -35,6 +35,7 @@ type SortOrder = 'newest' | 'oldest' | 'debt'
 interface Props {
   orders: OrderListItem[]
   totalCount: number
+  showFinancialSummary?: boolean
 }
 
 const PAGE_SIZE = 10
@@ -75,7 +76,7 @@ function orderPeriod(order: OrderListItem) {
   }
 }
 
-export function OrdersExplorer({ orders, totalCount }: Props) {
+export function OrdersExplorer({ orders, totalCount, showFinancialSummary = false }: Props) {
   const [queue, setQueue] = useState<QueueFilter>('active')
   const [query, setQuery] = useState('')
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>('all')
@@ -92,8 +93,10 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
   }), [orders])
 
   const totalDebt = useMemo(
-    () => orders.reduce((sum, order) => sum + (order.status === 'cancelled' ? 0 : order.debt), 0),
-    [orders],
+    () => showFinancialSummary
+      ? orders.reduce((sum, order) => sum + (order.status === 'cancelled' ? 0 : order.debt), 0)
+      : 0,
+    [orders, showFinancialSummary],
   )
 
   const filteredOrders = useMemo(() => {
@@ -154,7 +157,7 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
         </Link>
       </header>
 
-      <section className="grid overflow-hidden rounded-2xl border bg-white sm:grid-cols-2 xl:grid-cols-5">
+      <section className={cn('grid overflow-hidden rounded-2xl border bg-white sm:grid-cols-2', showFinancialSummary ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
         <MetricButton
           label="В работе"
           value={String(counts.active)}
@@ -171,14 +174,14 @@ export function OrdersExplorer({ orders, totalCount }: Props) {
           active={queue === 'overdue'}
           onClick={() => selectQueue('overdue')}
         />
-        <MetricButton
+        {showFinancialSummary && <MetricButton
           label="Общий долг"
           value={formatCurrency(totalDebt)}
           caption={`${counts.debt} заказов с остатком`}
           tone={totalDebt > 0 ? 'warning' : 'neutral'}
           active={queue === 'debt'}
           onClick={() => selectQueue('debt')}
-        />
+        />}
         <MetricButton
           label="Не возвращено"
           value={String(counts.missing)}

@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { OrdersExplorer } from '@/components/orders/OrdersExplorer'
 import { normalizeOrder } from '@/lib/orders/list'
+import { isSuperAdmin } from '@/lib/supabase/getRole'
 
 export default async function OrdersPage() {
   const supabase = await createClient()
+  const showFinancialSummary = await isSuperAdmin()
   const rawOrders: any[] = []
   // Read all pages: old debts and unreturned kits must not disappear after 500 orders.
   const batchSize = 500
@@ -51,6 +53,7 @@ export default async function OrdersPage() {
     <OrdersExplorer
       orders={normalizedOrders}
       totalCount={normalizedOrders.length}
+      showFinancialSummary={showFinancialSummary}
     />
   )
 }

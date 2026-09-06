@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isSuperAdmin } from '@/lib/supabase/getRole'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { EquipmentForm } from '@/components/equipment/EquipmentForm'
@@ -10,6 +11,7 @@ import { CalendarDays, CircleDollarSign, Layers, Moon, Package, Sun, TrendingUp 
 export default async function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
+  const showFinancialSummary = await isSuperAdmin()
 
   const { data: item } = await supabase
     .from('equipment')
@@ -24,11 +26,12 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   if (!item) notFound()
   const hasNightShift = supportsNightShift(item as { day_night?: 'day' | 'night' | 'both' | null })
 
-  const { data: utilization } = await supabase
+  const { data: utilization } = showFinancialSummary ? await supabase
     .from('v_equipment_utilization')
     .select('total_revenue, roi_percent')
     .eq('id', id)
     .single()
+    : { data: null }
 
   const kitItems = ((item as any).kit_items ?? []) as string[]
   // Каталог комплекта с ценами; для старой техники до миграции выводим из kit_items (цена 0).
@@ -129,7 +132,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       )}
 
       {/* ROI / Заработано */}
-      {utilization && (
+      {showFinancialSummary && utilization && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center gap-2 text-xs text-gray-500">

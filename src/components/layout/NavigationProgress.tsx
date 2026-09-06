@@ -13,21 +13,33 @@ export function NavigationProgress() {
   const [width, setWidth] = useState(0)
   const [visible, setVisible] = useState(false)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hideRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevPath = useRef(pathname)
 
   // Запускаем прогресс при клике по любой ссылке
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      const anchor = (e.target as HTMLElement).closest('a')
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const anchor = e.target instanceof Element ? e.target.closest('a') : null
       if (!anchor) return
       const href = anchor.getAttribute('href')
-      // Только внутренние навигационные ссылки (не скачивание, не внешние)
-      if (!href || href.startsWith('http') || href.startsWith('mailto') || href.startsWith('#')) return
+      if (!href || anchor.hasAttribute('download') || (anchor.target && anchor.target !== '_self')) return
+      const destination = new URL(href, window.location.href)
+      // Query/hash-only changes and the current route do not change pathname.
+      // Starting progress for them previously left a stuck loading bar.
+      if (destination.origin !== window.location.origin || destination.pathname === window.location.pathname) return
       startProgress()
     }
 
+    // Capture before Next Link prevents the browser's default navigation.
     document.addEventListener('click', handleClick, true)
-    return () => document.removeEventListener('click', handleClick, true)
+    return () => {
+      document.removeEventListener('click', handleClick, true)
+      if (tickRef.current) clearInterval(tickRef.current)
+      if (hideRef.current) clearTimeout(hideRef.current)
+      if (fallbackRef.current) clearTimeout(fallbackRef.current)
+    }
   }, [])
 
   // Завершаем прогресс когда pathname сменился
@@ -40,6 +52,8 @@ export function NavigationProgress() {
 
   function startProgress() {
     if (tickRef.current) clearInterval(tickRef.current)
+    if (hideRef.current) clearTimeout(hideRef.current)
+    if (fallbackRef.current) clearTimeout(fallbackRef.current)
     setVisible(true)
     setWidth(15)
 
@@ -56,15 +70,19 @@ export function NavigationProgress() {
         tickRef.current = null
       }
     }, 180)
+    // A failed or interrupted navigation must not leave the global bar stuck.
+    fallbackRef.current = setTimeout(completeProgress, 12_000)
   }
 
   function completeProgress() {
+    if (fallbackRef.current) clearTimeout(fallbackRef.current)
+    if (hideRef.current) clearTimeout(hideRef.current)
     if (tickRef.current) {
       clearInterval(tickRef.current)
       tickRef.current = null
     }
     setWidth(100)
-    setTimeout(() => {
+    hideRef.current = setTimeout(() => {
       setVisible(false)
       setWidth(0)
     }, 380)

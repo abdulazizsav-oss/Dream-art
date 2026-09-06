@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isSuperAdmin } from '@/lib/supabase/getRole'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ClientForm } from '@/components/clients/ClientForm'
@@ -22,6 +23,7 @@ import {
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
+  const showFinancialSummary = await isSuperAdmin()
 
   const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
   if (!client) notFound()
@@ -60,7 +62,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     .flatMap(order => order.items.flatMap(item => item.missing))
     .sort((a, b) => b.age_days - a.age_days || a.missing_since.localeCompare(b.missing_since))[0]
 
-  const totalSpend = orders?.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total_amount, 0) ?? 0
+  const totalSpend = showFinancialSummary
+    ? orders?.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total_amount, 0) ?? 0
+    : 0
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -80,15 +84,15 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <PageHeader title={client.full_name} description="Карточка клиента" />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={cn('grid grid-cols-2 gap-4', showFinancialSummary ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Аренд всего</p>
           <p className="text-2xl font-semibold mt-1">{orders?.length ?? 0}</p>
         </div>
-        <div className="bg-white rounded-xl border p-4">
+        {showFinancialSummary && <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Общий оборот</p>
           <p className="text-2xl font-semibold mt-1">{formatCurrency(totalSpend)}</p>
-        </div>
+        </div>}
         <div className="bg-white rounded-xl border p-4">
           <p className="text-xs text-gray-500">Депозит</p>
           <p className="text-2xl font-semibold mt-1">{formatCurrency(client.deposit_held)}</p>

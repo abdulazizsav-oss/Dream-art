@@ -9,6 +9,7 @@ import { ArrowDownToLine, ArrowUpFromLine, FileText, UserCheck } from 'lucide-re
 import { LiveTotal } from './LiveTotal'
 import { describeShift, describeUnits, getPricingParts, recalculateOrderItems } from '@/lib/rental'
 import { calculateDeliveryFee } from '@/lib/delivery'
+import { formatClientPhoneInput } from '@/lib/client-duplicates'
 
 interface StepSummaryProps {
   values: OrderFormValues
@@ -18,9 +19,10 @@ interface StepSummaryProps {
   onBack: () => void
   onSubmit: () => void
   submitting: boolean
+  hideNavigation?: boolean
 }
 
-export function StepSummary({ values, clients, equipment, trustedPerson, onBack, onSubmit, submitting }: StepSummaryProps) {
+export function StepSummary({ values, clients, equipment, trustedPerson, onBack, onSubmit, submitting, hideNavigation = false }: StepSummaryProps) {
   const client = clients.find(c => c.id === values.client_id)
 
   const itemsWithDetails = recalculateOrderItems(values.items, equipment, {
@@ -38,7 +40,7 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
 
   return (
     <div>
-      <h2 className="font-semibold text-lg mb-4">Подтверждение заказа</h2>
+      {!hideNavigation && <h2 className="font-semibold text-lg mb-4">Подтверждение заказа</h2>}
 
       <div className="mb-4">
         <LiveTotal
@@ -55,13 +57,13 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-xs text-gray-500 mb-1">Клиент</p>
           <p className="font-medium">{client?.full_name}</p>
-          {client?.phone && <p className="text-sm text-gray-600">{client.phone}</p>}
+          {client?.phone && <p className="text-sm text-gray-600">{formatClientPhoneInput(client.phone)}</p>}
         </div>
 
         <div className="bg-blue-50 rounded-lg p-4">
           <p className="text-xs text-blue-500 mb-1.5 flex items-center gap-1.5">
             <UserCheck className="w-3.5 h-3.5" />
-            Доверенное лицо
+            Дополнительный контакт / доверенное лицо
           </p>
           <p className="font-medium text-gray-900">{trustedPerson.name}</p>
           {trustedPerson.relation && (
@@ -107,7 +109,10 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           <div className="space-y-2">
             {itemsWithDetails.map((item, index) => (
               <div key={`${item.equipment_id}-${index}`} className="flex justify-between gap-3 text-sm">
-                <span>{item.equipment?.name ?? 'Неизвестно'}</span>
+                <span className="min-w-0 flex-1">{item.equipment?.name ?? 'Неизвестно'}
+                  <span className="mt-1 block text-xs text-zinc-500">Комплект: {item.kit_selection?.filter(entry => entry.qty > 0).map(entry => `${entry.name} × ${entry.qty}`).join(', ') || 'не выбран'}</span>
+                  <span className="block text-xs text-zinc-500">Состояние: {item.condition_on_issue || 'не указано'}</span>
+                </span>
                 <span className="text-gray-600">
                   {item.manual_subtotal != null
                     ? `Своя цена = ${formatCurrency(item.subtotal, item.equipment?.currency)}`
@@ -147,14 +152,14 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         </div>
       </div>
 
-      <div className="flex gap-3 mt-6">
+      {!hideNavigation && <div className="flex gap-3 mt-6">
         <Button type="button" variant="outline" onClick={onBack} disabled={submitting}>
           Назад
         </Button>
         <Button type="button" onClick={onSubmit} disabled={submitting} className="flex-1">
           {submitting ? 'Создание...' : 'Создать заказ'}
         </Button>
-      </div>
+      </div>}
     </div>
   )
 }

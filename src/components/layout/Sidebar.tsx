@@ -48,7 +48,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
   }
 
   return (
-    <aside className="hidden lg:flex w-64 flex-col bg-white border-r h-screen sticky top-0 shadow-sm">
+    <aside className="hidden xl:flex w-64 shrink-0 flex-col bg-white border-r h-screen sticky top-0 shadow-sm">
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b">
         <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">

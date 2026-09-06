@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight, LoaderCircle, UserRoundCheck } from 'lucide-
 import { cn } from '@/lib/utils'
 import {
   findPotentialClientDuplicates,
+  formatClientPhoneInput,
   normalizeClientPhone,
   type ClientDuplicateCandidate,
   type ClientDuplicateReason,
@@ -115,21 +116,21 @@ export function PotentialClientDuplicateWarning({
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-zinc-900">{client.full_name}</p>
               <p className="text-[11px] text-zinc-500">
-                {[client.phone, client.birth_date, reasonLabel[client.reason]].filter(Boolean).join(' · ')}
+                {[formatClientPhoneInput(client.phone), client.birth_date, reasonLabel[client.reason]].filter(Boolean).join(' · ')}
               </p>
             </div>
             {onUseExistingId ? (
               <button
                 type="button"
                 onClick={() => onUseExistingId(client.id)}
-                className="inline-flex min-h-8 items-center gap-1 rounded-md border border-amber-300 px-2 text-xs font-medium text-amber-900 hover:bg-amber-100"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-amber-300 px-3 text-sm font-medium text-amber-900 hover:bg-amber-100"
               >
                 <UserRoundCheck className="h-3.5 w-3.5" /> Выбрать
               </button>
             ) : (
               <Link
                 href={`/clients/${client.id}`}
-                className="inline-flex min-h-8 items-center gap-1 rounded-md border border-amber-300 px-2 text-xs font-medium text-amber-900 hover:bg-amber-100"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-amber-300 px-3 text-sm font-medium text-amber-900 hover:bg-amber-100"
               >
                 Открыть <ArrowRight className="h-3.5 w-3.5" />
               </Link>

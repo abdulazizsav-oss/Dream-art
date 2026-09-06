@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { OrderForm } from '@/components/orders/OrderForm'
+import { getMyProfile } from '@/lib/supabase/getRole'
 
 export default async function NewOrderPage() {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export default async function NewOrderPage() {
     .order('sort_order')
     .order('name')
 
-  const [{ data: clients }, equipmentResult] = await Promise.all([clientsPromise, equipmentPromise])
+  const [{ data: clients }, equipmentResult, profile] = await Promise.all([clientsPromise, equipmentPromise, getMyProfile()])
   let equipment = equipmentResult.data
 
   if (equipmentResult.error) {
@@ -26,8 +27,8 @@ export default async function NewOrderPage() {
 
   return (
     <div>
-      <PageHeader title="Новый заказ" description="Создание аренды" />
-      <OrderForm clients={clients ?? []} equipment={(equipment ?? []) as Parameters<typeof OrderForm>[0]['equipment']} />
+      <PageHeader title="Новый заказ" description="Клиент → техника и оформление" />
+      <OrderForm draftOwnerId={profile?.id} clients={clients ?? []} equipment={(equipment ?? []) as Parameters<typeof OrderForm>[0]['equipment']} />
     </div>
   )
 }
