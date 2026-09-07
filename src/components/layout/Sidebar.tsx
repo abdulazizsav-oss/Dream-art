@@ -10,6 +10,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { BrandLogo } from './BrandLogo'
 
 interface SidebarProps {
   role: string
@@ -50,14 +51,11 @@ export function Sidebar({ role, userName }: SidebarProps) {
   return (
     <aside className="hidden xl:flex w-64 shrink-0 flex-col bg-white border-r h-screen sticky top-0 shadow-sm">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b">
-        <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-          DA
-        </div>
-        <div className="min-w-0">
-          <span className="font-bold text-gray-900 text-sm">Dream Art</span>
-          <p className="text-xs text-gray-400 truncate">CRM система</p>
-        </div>
+      <div className="px-6 py-5 border-b">
+        <Link href="/dashboard" aria-label="Dream Art — на главную" className="block rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900">
+          <BrandLogo />
+        </Link>
+        <p className="mt-3 text-xs text-gray-400">CRM система</p>
       </div>
 
       {/* Nav */}

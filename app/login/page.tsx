@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Delete } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { BrandLogo } from '@/components/layout/BrandLogo'
 
 const PIN_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫']
 
@@ -59,15 +60,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 px-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 px-4 py-8">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white text-2xl font-bold shadow-lg mb-4">
-            DA
-          </div>
-          <h1 className="text-2xl font-bold text-zinc-900">Dream Art</h1>
-          <p className="text-sm text-zinc-500 mt-1">CRM для аренды фото/видео техники</p>
+          <h1><BrandLogo className="mx-auto w-72" /></h1>
+          <p className="text-sm text-zinc-500 mt-5">CRM для аренды фото/видео техники</p>
         </div>
 
         <form onSubmit={handleLogin} className="bg-white rounded-3xl shadow-sm border border-zinc-200 p-6 space-y-5">
