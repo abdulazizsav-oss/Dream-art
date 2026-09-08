@@ -112,7 +112,7 @@ export function EquipmentCart({
           Выберите технику в каталоге, и она появится здесь
         </div>
       ) : (
-        <div className="mt-4 space-y-3 lg:max-h-[calc(100dvh-300px)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
+        <div role="region" aria-label="Позиции корзины" tabIndex={0} className="mt-4 space-y-3 rounded-xl focus-visible:outline-2 focus-visible:outline-zinc-400 lg:max-h-[calc(100dvh-300px)] lg:overflow-y-auto lg:overscroll-y-auto lg:pr-1">
           {groups.map(group => {
             const sampleItem = group.entries[0]?.item
             const breakdownLabel = sampleItem

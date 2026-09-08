@@ -20,7 +20,7 @@ interface RecipientClient {
 /** Existing order workflow: a separate contact, not a choice of who collects. */
 export function resolveOrderContact(client: RecipientClient): TrustedPersonData {
   return {
-    name: client.trusted_person_name ?? client.full_name,
+    name: client.trusted_person_name ?? '',
     // Never copy the main phone into the additional contact field.
     phone: formatClientPhoneInput(client.trusted_person_phone),
     relation: client.trusted_person_relation ?? '',
@@ -35,6 +35,10 @@ export function restoreOrderContact(saved: TrustedPersonData & { pickup_mode?: '
     const stored = resolveOrderContact(client)
     if (saved.name === client.full_name) contact.name = stored.name
     if (normalizeClientPhone(saved.phone) === normalizeClientPhone(client.phone)) contact.phone = stored.phone
+  }
+  // Older drafts included the primary client's name even without a saved contact.
+  if (client && !client.trusted_person_name?.trim() && saved.name.trim() === client.full_name.trim()) {
+    contact.name = ''
   }
   return contact
 }

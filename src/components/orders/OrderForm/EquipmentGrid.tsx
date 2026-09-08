@@ -65,7 +65,7 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
       </div>
 
       {categories.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div role="group" aria-label="Категории техники" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <FilterPill active={categoryFilter === 'all'} onClick={() => setCategoryFilter('all')}>
             Все категории
           </FilterPill>
@@ -86,6 +86,7 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
           Ничего не найдено
         </div>
       ) : (
+        <div role="region" aria-label="Каталог техники" tabIndex={0} className="max-h-[60dvh] overflow-y-auto overscroll-y-auto rounded-xl pr-1 focus-visible:outline-2 focus-visible:outline-zinc-400 lg:max-h-[calc(100dvh-340px)]">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]">
           {filtered.map(item => {
             const count = selectedCounts.get(item.id) ?? 0
@@ -151,6 +152,7 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
             )
           })}
         </div>
+        </div>
       )}
     </div>
   )
@@ -171,7 +173,7 @@ function FilterPill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'min-h-[44px] min-w-[44px] shrink-0 touch-manipulation whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium transition-colors duration-150 active:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 motion-reduce:transition-none',
+        'min-h-[48px] min-w-0 touch-manipulation whitespace-normal break-words rounded-xl border px-3 py-2 text-sm font-medium transition-colors duration-150 active:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 motion-reduce:transition-none',
         active
           ? 'border-zinc-900 bg-zinc-900 text-white'
           : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',

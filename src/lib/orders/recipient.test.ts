@@ -16,9 +16,9 @@ test('order contact uses the stored additional contact, not the main phone', () 
 
 test('missing additional phone stays empty and requires input even with a main phone', () => {
   const contact = resolveOrderContact({ full_name: 'Клиент', phone: '507180400' })
-  assert.equal(contact.name, 'Клиент')
+  assert.equal(contact.name, '')
   assert.equal(contact.phone, '')
-  assert.deepEqual(getRecipientMissingFields(contact), ['дополнительный телефон полностью'])
+  assert.deepEqual(getRecipientMissingFields(contact), ['ФИО дополнительного контакта', 'дополнительный телефон полностью'])
 })
 
 test('switching clients resets contact and document instead of inheriting previous values', () => {
@@ -40,4 +40,16 @@ test('draft restoration preserves manually entered contact details', () => {
   const saved = { name: 'Коллега', phone: '+998 90 555-22-11', relation: 'Ассистент', doc_type: 'passport_foreign' }
   assert.deepEqual(restoreOrderContact(saved, client), saved)
   assert.deepEqual(restoreOrderContact({ ...saved, pickup_mode: 'self' }, client), saved)
+})
+
+
+test('old draft without a stored contact clears only the duplicated client name', () => {
+  const saved = { name: 'Клиент', phone: '+998 90 555-22-11', relation: 'Ассистент', doc_type: 'passport_foreign' }
+  assert.deepEqual(restoreOrderContact(saved, { full_name: 'Клиент' }), { ...saved, name: '' })
+})
+
+test('draft retains a separately entered contact and a saved namesake', () => {
+  const saved = { name: 'Коллега', phone: '+998 90 555-22-11', relation: '', doc_type: 'passport_id' }
+  assert.deepEqual(restoreOrderContact(saved, { full_name: 'Клиент' }), saved)
+  assert.deepEqual(restoreOrderContact(saved, { full_name: 'Коллега', trusted_person_name: 'Коллега' }), saved)
 })
