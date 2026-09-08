@@ -1,5 +1,6 @@
 'use client'
 
+import { signedPaymentAmount } from '@/lib/orders/cancellation'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -511,7 +512,7 @@ function PaymentsTab({
                   </p>
                   {payment.admin_name && <p className="mt-1 text-xs text-zinc-400">Принял: {payment.admin_name}</p>}
                 </div>
-                <span className="shrink-0 font-semibold text-green-700">{formatCurrency(payment.amount)}</span>
+                <span className={cn("shrink-0 font-semibold", signedPaymentAmount(payment) < 0 ? "text-red-700" : "text-green-700")}>{formatCurrency(signedPaymentAmount(payment))}</span>
               </div>
             ))}
             {!data?.payments.length && <EmptyChart label="Платежей за период нет" />}
@@ -766,7 +767,9 @@ function DonutCard({
   const chartData = data.map(item => ({ ...item, displayName: labels[item.name] ?? item.name }))
   return (
     <ChartCard title={title}>
-      {chartData.length ? (
+      {chartData.some(item => item.value < 0) ? (
+        <div className="divide-y px-4 pb-4">{chartData.map(item => <div key={item.name} className="flex justify-between gap-3 py-3 text-sm"><span>{item.displayName}</span><span className={item.value < 0 ? 'text-red-700' : 'text-green-700'}>{formatCurrency(item.value)}</span></div>)}</div>
+      ) : chartData.length ? (
         <ResponsiveContainer width="100%" height={260}>
           <PieChart>
             <Pie data={chartData} dataKey="value" nameKey="displayName" innerRadius={58} outerRadius={88} paddingAngle={3}>

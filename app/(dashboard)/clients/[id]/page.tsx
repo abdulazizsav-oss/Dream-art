@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { isSuperAdmin } from '@/lib/supabase/getRole'
 import { notFound } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { ClientForm } from '@/components/clients/ClientForm'
 import { ReliabilityRating } from '@/components/clients/ReliabilityRating'
 import { formatCurrency, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Plus } from 'lucide-react'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import {
   buildLegacyMissingKitEvents,
@@ -83,6 +84,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         )}
         <PageHeader title={client.full_name} description="Карточка клиента" />
       </div>
+
+      <Link href={`/orders/new?client_id=${id}`} className="inline-flex">
+        <Button className="min-h-12"><Plus className="mr-2 h-4 w-4" />Новый заказ для клиента</Button>
+      </Link>
 
       <div className={cn('grid grid-cols-2 gap-4', showFinancialSummary ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
         <div className="bg-white rounded-xl border p-4">

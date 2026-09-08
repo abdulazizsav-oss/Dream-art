@@ -9,6 +9,7 @@ import { BrandLogo } from './BrandLogo'
 
 export function QuickActions({ userName }: { userName: string }) {
   const pathname = usePathname()
+  const clientId = pathname.match(/^\/clients\/([0-9a-f-]{36})$/i)?.[1]
   const [clientOpen, setClientOpen] = useState(false)
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function QuickActions({ userName }: { userName: string }) {
           </div>
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none sm:gap-3">
             <Link
-              href="/orders/new"
+              href={clientId ? `/orders/new?client_id=${clientId}` : '/orders/new'}
               onClick={event => {
                 if (pathname === '/orders/new') {
                   event.preventDefault()

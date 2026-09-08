@@ -23,12 +23,16 @@ import {
   formatClientPhoneInput,
 } from '@/lib/client-duplicates'
 
+import type { Client } from '@/types/database'
+
 interface ClientFormProps {
   defaultValues?: Partial<ClientFormValues>
   clientId?: string
+  onSaved?: (client: Client) => void
+  onCancel?: () => void
 }
 
-export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
+export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: ClientFormProps) {
   const router = useRouter()
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } =
     useForm<ClientFormInput, unknown, ClientFormValues>({
@@ -67,7 +71,10 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         return
       }
       toast.success(clientId ? 'Клиент обновлён' : 'Клиент добавлен')
-      router.push('/clients')
+      if (onSaved) {
+        const saved: Client = await res.json()
+        onSaved(saved)
+      } else router.push('/clients')
       router.refresh()
     } catch {
       toast.error('Не удалось получить ответ. Данные остались в форме. Проверьте список клиентов перед повторным сохранением.')
@@ -379,7 +386,7 @@ export function ClientForm({ defaultValues, clientId }: ClientFormProps) {
         <Button type="submit" disabled={isSubmitting} className="flex-1 min-h-[48px]">
           {isSubmitting ? 'Сохранение...' : clientId ? 'Сохранить изменения' : 'Добавить клиента'}
         </Button>
-        <Button type="button" variant="outline" className="min-h-[48px]" onClick={() => router.back()}>
+        <Button type="button" variant="outline" className="min-h-[48px]" disabled={isSubmitting} onClick={() => onCancel ? onCancel() : router.back()}>
           Отмена
         </Button>
       </div>

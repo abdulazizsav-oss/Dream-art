@@ -111,7 +111,7 @@ export function PaymentForm({ orders, defaultOrderId, onSuccess }: PaymentFormPr
         <Select value={type} onValueChange={setType}>
           <SelectTrigger><SelectValue placeholder="Тип">{PAYMENT_TYPE_LABELS[type]}</SelectValue></SelectTrigger>
           <SelectContent>
-            {Object.entries(PAYMENT_TYPE_LABELS).map(([k, v]) => (
+            {Object.entries(PAYMENT_TYPE_LABELS).filter(([key]) => key !== 'refund').map(([k, v]) => (
               <SelectItem key={k} value={k}>{v}</SelectItem>
             ))}
           </SelectContent>

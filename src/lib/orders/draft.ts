@@ -33,8 +33,8 @@ const draftSchema = z.object({
   }),
 })
 
-export function orderDraftKey(userId: string) {
-  return `dream-art:order-draft:v1:${userId}`
+export function orderDraftKey(userId: string, clientId?: string) {
+  return `dream-art:order-draft:v1:${userId}${clientId ? `:client:${clientId}` : ''}`
 }
 
 export function encodeOrderDraft(values: Partial<OrderFormValues>, recipient: TrustedPersonData, step: 0 | 1, now = Date.now(), submission: 'editing' | 'submitting' | 'uncertain' = 'editing') {

@@ -1,9 +1,11 @@
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { OrderForm } from '@/components/orders/OrderForm'
 import { getMyProfile } from '@/lib/supabase/getRole'
 
-export default async function NewOrderPage() {
+export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ client_id?: string }> }) {
+  const { client_id } = await searchParams
   const supabase = await createClient()
 
   const clientsPromise = supabase.from('clients').select('*').order('full_name')
@@ -15,6 +17,7 @@ export default async function NewOrderPage() {
     .order('name')
 
   const [{ data: clients }, equipmentResult, profile] = await Promise.all([clientsPromise, equipmentPromise, getMyProfile()])
+  if (client_id && !clients?.some(client => client.id === client_id)) notFound()
   let equipment = equipmentResult.data
 
   if (equipmentResult.error) {
@@ -28,7 +31,7 @@ export default async function NewOrderPage() {
   return (
     <div>
       <PageHeader title="Новый заказ" description="Клиент → техника и оформление" />
-      <OrderForm draftOwnerId={profile?.id} clients={clients ?? []} equipment={(equipment ?? []) as Parameters<typeof OrderForm>[0]['equipment']} />
+      <OrderForm key={client_id ?? 'default'} initialClientId={clients?.find(client => client.id === client_id)?.id} draftOwnerId={profile?.id} clients={clients ?? []} equipment={(equipment ?? []) as Parameters<typeof OrderForm>[0]['equipment']} />
     </div>
   )
 }

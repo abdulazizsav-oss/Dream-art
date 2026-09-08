@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { orderSchema, type OrderFormValues } from '@/lib/validations/order'
 import type { Client, Equipment, EquipmentCategory } from '@/types/database'
+import { EditClientDialog } from '@/components/clients/EditClientDialog'
 import { StepClient, type TrustedPersonData } from './StepClient'
 import { StepEquipment } from './StepEquipment'
 import { RentalOptions } from './RentalOptions'
@@ -20,6 +21,7 @@ import { decodeOrderDraft, encodeOrderDraft, orderDraftKey } from '@/lib/orders/
 interface OrderFormProps {
   clients: Client[]
   equipment: (Equipment & { equipment_categories: EquipmentCategory | null })[]
+  initialClientId?: string
   draftOwnerId?: string
 }
 
@@ -29,12 +31,12 @@ function emptyValues(): Partial<OrderFormValues> {
 }
 const EMPTY_RECIPIENT: TrustedPersonData = { name: '', phone: '', relation: '', doc_type: 'passport_id' }
 
-export function OrderForm({ clients: initialClients, equipment, draftOwnerId }: OrderFormProps) {
+export function OrderForm({ clients: initialClients, equipment, draftOwnerId, initialClientId }: OrderFormProps) {
   const router = useRouter()
   const [step, setStep] = useState<0 | 1>(0)
   const [allClients, setAllClients] = useState<Client[]>(initialClients)
-  const [values, setValues] = useState<Partial<OrderFormValues>>(emptyValues)
-  const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>(EMPTY_RECIPIENT)
+  const [values, setValues] = useState<Partial<OrderFormValues>>(() => ({ ...emptyValues(), client_id: initialClientId }))
+  const [trustedPerson, setTrustedPerson] = useState<TrustedPersonData>(() => resolveOrderContact(initialClients.find(client => client.id === initialClientId) ?? { full_name: '' }))
   const [clientStepReady, setClientStepReady] = useState(false)
   const [externalClientRevision, setExternalClientRevision] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -46,7 +48,7 @@ export function OrderForm({ clients: initialClients, equipment, draftOwnerId }: 
   const submitLock = useRef(false)
   const completed = useRef(false)
   const initialData = useRef({ clients: initialClients, equipment })
-  const storageKey = draftOwnerId ? orderDraftKey(draftOwnerId) : null
+  const storageKey = draftOwnerId ? orderDraftKey(draftOwnerId, initialClientId) : null
 
   useEffect(() => {
     if (storageKey) {
@@ -94,6 +96,20 @@ export function OrderForm({ clients: initialClients, equipment, draftOwnerId }: 
     window.addEventListener('crm:client-created', receiveClient)
     return () => window.removeEventListener('crm:client-created', receiveClient)
   }, [])
+
+  function clientUpdated(client: Client) {
+    setAllClients(previous => previous.map(item => item.id === client.id ? client : item))
+    // Refresh contact fields only when they still match the saved card;
+    // preserve contact details that were entered specifically for this order.
+    const before = resolveOrderContact(allClients.find(item => item.id === client.id) ?? client)
+    const after = resolveOrderContact(client)
+    setTrustedPerson(previous => ({
+      ...previous,
+      name: previous.name === before.name ? after.name : previous.name,
+      phone: previous.phone === before.phone ? after.phone : previous.phone,
+      relation: previous.relation === before.relation ? after.relation : previous.relation,
+    }))
+  }
 
   function update(patch: Partial<OrderFormValues>) {
     setValues(previous => {
@@ -183,14 +199,14 @@ export function OrderForm({ clients: initialClients, equipment, draftOwnerId }: 
           <StepClient key={externalClientRevision} clients={allClients} selectedClientId={values.client_id} trustedPerson={trustedPerson}
             onSelect={clientId => update({ client_id: clientId })} onTrustedPersonChange={setTrustedPerson}
             onClientCreated={client => setAllClients(previous => previous.some(item => item.id === client.id) ? previous : [...previous, client])}
-            onReadyChange={setClientStepReady} hideNavigation onNext={() => goTo(1)} />
+            onClientUpdated={clientUpdated} onReadyChange={setClientStepReady} hideNavigation onNext={() => goTo(1)} />
         </div>
       ) : (
         <>
           <div id="order-workspace" className="grid scroll-mt-24 gap-3 lg:grid-cols-[240px_minmax(0,1fr)]">
           <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-2 lg:flex-col lg:items-start lg:justify-center lg:gap-1">
             <div className="min-w-0"><p className="truncate font-medium">{selectedClient?.full_name}</p><p className="text-sm text-zinc-500">Доп. контакт: {trustedPerson.name}</p></div>
-            <Button variant="outline" className="h-12 shrink-0" onClick={() => goTo(0)}>Изменить</Button>
+            <div className="flex flex-wrap gap-2">{selectedClient && <EditClientDialog client={selectedClient} onSaved={clientUpdated} />}<Button variant="outline" className="h-12 shrink-0" onClick={() => goTo(0)}>Выбрать другого</Button></div>
           </div>
           <RentalOptions values={values} onUpdate={update} />
           </div>

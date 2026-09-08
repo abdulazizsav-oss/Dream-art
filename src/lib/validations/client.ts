@@ -11,7 +11,7 @@ const optionalPhoneSchema = z.preprocess(
 )
 
 export const clientSchema = z.object({
-  full_name: z.string().min(1, 'ФИО обязательно'),
+  full_name: z.string().trim().min(1, 'ФИО обязательно'),
   phone: z.string()
     .min(1, 'Укажите номер телефона')
     .transform(formatClientPhoneInput)
@@ -30,12 +30,12 @@ export const clientSchema = z.object({
   passport_series: z.string().nullable().optional(),
   passport_number: z.string().nullable().optional(),
   passport_issued_by: z.string().nullable().optional(),
-  passport_issued_date: z.string().nullable().optional(),
+  passport_issued_date: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   deposit_held: z.coerce.number().min(0).default(0),
   reliability_rating: z.coerce.number().min(1).max(5).default(3),
   segment: z.enum(['photographer','videographer','studio','agency','one_time','other']).default('other'),
   document_type: z.enum(['passport_id','passport_green','zagranpassport','passport_cover','drivers_license','passport_id_foreign','passport_foreign']).default('passport_id'),
-  birth_date: z.string().nullable().optional(),
+  birth_date: z.preprocess(v => v === '' ? null : v, z.string().nullable().optional()),
   notes: z.string().nullable().optional(),
   // Доверенное лицо — хранится на карточке клиента
   trusted_person_name: z.string().nullable().optional(),

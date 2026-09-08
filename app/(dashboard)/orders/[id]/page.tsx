@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto'
+import { cancellationBalance, signedPaymentAmount } from '@/lib/orders/cancellation'
+import { CancelOrderButton } from '@/components/orders/CancelOrderButton'
+import { CancellationRefundButton } from '@/components/orders/CancellationRefundButton'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -39,6 +43,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     .single()
 
   if (!order) notFound()
+
+  const { data: cancellation } = await supabase.from('order_cancellations').select('reason, cancelled_at, original_total').eq('order_id', id).maybeSingle()
 
   const isOrderOpen = order.status === 'active' || order.status === 'overdue'
   const { data: availableEquipment } = isOrderOpen
@@ -248,8 +254,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   // Per-item breakdown для отображения
   const itemBillingById = liveBilling?.perItem ?? new Map()
 
-  const totalPaid = payments.filter(p => p.payment_type !== 'deposit_return').reduce((s, p) => s + p.amount, 0)
-  const debt = effectiveTotal - rentalPayments.reduce((s, p) => s + p.amount, 0)
+  const totalPaid = payments.reduce((sum, payment) => sum + signedPaymentAmount(payment), 0)
+  const refund = cancellationBalance(payments)
+  const debt = order.status === 'cancelled' ? 0 : effectiveTotal - rentalPayments.reduce((s, p) => s + p.amount, 0)
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -258,6 +265,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         description={`Клиент: ${client?.full_name}`}
         action={
           <div className="flex gap-2 flex-wrap">
+            {(isOrderOpen || order.status === 'draft') && <CancelOrderButton orderId={id} refundDue={refund.rentalDue + refund.depositDue}
+              items={items.map(item => ({ id: item.id, name: item.equipment?.name ?? 'Техника', returned: Boolean(item.returned), selected_kit_items: item.selected_kit_items ?? [], missing_kit_items: item.missing_kit_items ?? [] }))} />}
             {order.status === 'active' || order.status === 'overdue' ? (
               <>
                 <AddItemsModal
@@ -335,6 +344,22 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         }
       />
 
+      {order.status === 'cancelled' && <section className="space-y-3 rounded-xl border border-zinc-300 bg-white p-5">
+        <h2 className="font-semibold">{cancellation ? 'Заказ отменён · вся техника возвращена' : 'Заказ отменён'}</h2>
+        <p className="text-sm text-zinc-600">Начисления за аренду и доставку: 0. Можно оформить другую технику новым заказом.</p>
+        {cancellation && <p className="text-sm text-zinc-600">{formatDateTime(cancellation.cancelled_at)} · {cancellation.reason}</p>}
+        <div className="text-sm">
+          <p>Оплата к возврату: <strong>{formatCurrency(refund.rentalDue)}</strong></p>
+          <p>Депозит к возврату: <strong>{formatCurrency(refund.depositDue)}</strong></p>
+          {refund.refunded > 0 && <p>Уже возвращено: {formatCurrency(refund.refunded)}</p>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {refund.rentalDue > 0 && <CancellationRefundButton orderId={id} amount={refund.rentalDue} paymentType="refund" requestId={randomUUID()} />}
+          {refund.depositDue > 0 && <CancellationRefundButton orderId={id} amount={refund.depositDue} paymentType="deposit_return" requestId={randomUUID()} />}
+          <Link href={`/orders/new?client_id=${order.client_id}`}><Button className="min-h-12">Новый заказ этому клиенту</Button></Link>
+        </div>
+      </section>}
+
       {isOrderOverdue && (
         <div className="flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-red-900">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-700" />
@@ -411,7 +436,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <Truck className="h-4 w-4 text-blue-600" />
           <h2 className="font-semibold">Услуги доставки</h2>
           <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-            {deliveryFee > 0 ? formatCurrency(deliveryFee) : 'Не выбраны'}
+            {order.status === 'cancelled' ? 'Начисления отменены' : deliveryFee > 0 ? formatCurrency(deliveryFee) : 'Не выбраны'}
           </span>
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -623,9 +648,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div className="bg-white rounded-xl border p-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Платежи</h2>
-          <Link href={`/finance?order=${id}`}>
+          {order.status !== 'cancelled' && <Link href={`/finance?order=${id}`}>
             <Button size="sm" variant="outline">+ Добавить платёж</Button>
-          </Link>
+          </Link>}
         </div>
         {paymentGroups.length > 0 ? (
           <div className="space-y-2">
@@ -642,8 +667,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                       </p>
                       {p.notes && <p className="text-xs text-gray-400">{p.notes}</p>}
                     </div>
-                    <span className={cn('font-medium', p.payment_type === 'deposit_return' ? 'text-red-600' : 'text-green-700')}>
-                      {formatCurrency(p.amount)}
+                    <span className={cn('font-medium', signedPaymentAmount(p) < 0 ? 'text-red-600' : 'text-green-700')}>
+                      {formatCurrency(signedPaymentAmount(p))}
                     </span>
                   </div>
                 )
@@ -680,7 +705,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               )
             })}
             <div className="flex justify-between text-sm font-semibold pt-1">
-              <span>Итого получено</span>
+              <span>Получено за вычетом возвратов</span>
               <span>{formatCurrency(totalPaid)}</span>
             </div>
           </div>

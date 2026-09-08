@@ -1,3 +1,4 @@
+import { signedPaymentAmount } from '@/lib/orders/cancellation'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMyProfile } from '@/lib/supabase/getRole'
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
         order?.clients?.full_name,
         row.payment_type,
         row.payment_method,
-        row.amount,
+        signedPaymentAmount(row),
         (row.user_profiles as { full_name?: string } | null)?.full_name,
         row.notes,
       ]

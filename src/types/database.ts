@@ -9,7 +9,7 @@ export type Json =
 export type EquipmentStatus = 'free' | 'rented' | 'maintenance' | 'lost'
 export type OrderStatus = 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
 export type PaymentMethod = 'cash' | 'transfer' | 'card'
-export type PaymentType = 'rental' | 'deposit' | 'deposit_return' | 'extra' | 'fine'
+export type PaymentType = 'rental' | 'deposit' | 'deposit_return' | 'extra' | 'fine' | 'refund'
 export type ClientSegment = 'photographer' | 'videographer' | 'studio' | 'agency' | 'one_time' | 'other'
 export type DocumentType = 'passport_id' | 'passport_green' | 'zagranpassport' | 'passport_cover' | 'drivers_license' | 'passport_id_foreign' | 'passport_foreign'
 export type UserRole = 'admin' | 'super_admin'
@@ -377,6 +377,12 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      order_cancellations: {
+        Row: { order_id: string; reason: string; cancelled_at: string; cancelled_by: string | null; original_total: number; original_delivery_fee: number; original_items: Json }
+        Insert: { order_id: string; reason: string; cancelled_at?: string; cancelled_by?: string | null; original_total: number; original_delivery_fee: number; original_items: Json }
+        Update: { reason?: string }
+        Relationships: [{ foreignKeyName: 'order_cancellations_order_id_fkey'; columns: ['order_id']; isOneToOne: true; referencedRelation: 'orders'; referencedColumns: ['id'] }]
       }
       orders: {
         Row: {
@@ -909,6 +915,14 @@ export type Database = {
       }
     }
     Functions: {
+      cancel_order_atomic: {
+        Args: { p_order_id: string; p_reason: string; p_items: Json; p_created_by: string }
+        Returns: Json
+      }
+      record_cancelled_order_refund_atomic: {
+        Args: { p_order_id: string; p_request_id: string; p_amount: number; p_payment_type: string; p_payment_method: string; p_created_by: string }
+        Returns: string
+      }
       check_equipment_availability: {
         Args: {
           p_equipment_id: string

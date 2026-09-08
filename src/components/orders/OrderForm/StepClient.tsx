@@ -10,6 +10,7 @@ import { CLIENT_SEGMENT_LABELS, DOCUMENT_TYPE_LABELS, cn } from '@/lib/utils'
 import { Search, UserPlus, ChevronRight, FileText, UserCheck, Phone } from 'lucide-react'
 import { toast } from 'sonner'
 import { PotentialClientDuplicateWarning } from '@/components/clients/PotentialClientDuplicateWarning'
+import { EditClientDialog } from '@/components/clients/EditClientDialog'
 import { ClientOrderAlerts } from '@/components/orders/ClientOrderAlerts'
 import {
   beginClientPhoneInput, clientMatchesSearch, finishClientPhoneInput,
@@ -27,6 +28,7 @@ interface StepClientProps {
   trustedPerson: TrustedPersonData
   onSelect: (clientId: string) => void
   onTrustedPersonChange: (tp: TrustedPersonData) => void
+  onClientUpdated: (client: Client) => void
   onClientCreated: (client: Client) => void
   onNext: () => void
   hideNavigation?: boolean
@@ -35,7 +37,7 @@ interface StepClientProps {
 
 export function StepClient({
   clients, selectedClientId, trustedPerson, onSelect,
-  onTrustedPersonChange, onClientCreated, onNext, hideNavigation = false, onReadyChange,
+  onTrustedPersonChange, onClientCreated, onClientUpdated, onNext, hideNavigation = false, onReadyChange,
 }: StepClientProps) {
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -149,9 +151,12 @@ export function StepClient({
               <h2 className="break-words text-lg font-semibold text-zinc-900">{selectedClient.full_name}</h2>
               <p className="mt-0.5 text-sm text-zinc-600">{formatClientPhoneInput(selectedClient.phone)}</p>
             </div>
+            <div className="flex flex-wrap gap-2">
+            <EditClientDialog client={selectedClient} onSaved={onClientUpdated} />
             <Button type="button" variant="outline" className="min-h-[48px] bg-white px-4" onClick={() => setChangingClient(true)}>
               Выбрать другого
             </Button>
+            </div>
           </div>
         ) : !showCreate && (
           <div className="flex items-center justify-between gap-3">
