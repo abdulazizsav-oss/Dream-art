@@ -108,7 +108,7 @@ export function StepDates({
           <p className="mt-1 text-zinc-500">
             Предварительный расчет: <strong>{describeBreakdown(displayDayUnits, displayNightUnits)}</strong>
           </p>
-          <p className="mt-1 text-[11px] text-zinc-400">
+          <p className="mt-1 text-xs text-zinc-400">
             Время выдачи и возврата запишется автоматически. Итоговая сумма пересчитается при закрытии заказа — по фактическому времени.
           </p>
         </div>
@@ -156,7 +156,7 @@ export function StepDates({
       )}
 
       <div className="space-y-1.5 mb-4">
-        <Label>Депозит <span className="text-gray-400 font-normal">(необязательно)</span></Label>
+        <Label>Депозит <span className="text-zinc-400 font-normal">(необязательно)</span></Label>
         <Input
           type="number"
           value={deposit || ''}

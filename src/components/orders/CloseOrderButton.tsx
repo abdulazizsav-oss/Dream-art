@@ -290,15 +290,15 @@ export function CloseOrderButton({
         <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
             <OperationNotice orderId={orderId} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
             <fieldset disabled={loading || operation.uncertain} className="min-w-0 space-y-4">
-          <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
-            <span className="text-gray-600">Задолженность по заказу</span>
+          <div className="rounded-xl border bg-zinc-50 p-3 flex justify-between text-sm">
+            <span className="text-zinc-600">Задолженность по заказу</span>
             <span className={debt > 0 ? 'font-semibold text-red-600' : 'font-semibold text-green-700'}>
               {formatCurrency(Math.max(0, closingDebt))}
             </span>
           </div>
-          <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
-            <span className="text-gray-600">Сумма закрываемых позиций</span>
-            <span className="font-semibold text-gray-900">
+          <div className="rounded-xl border bg-zinc-50 p-3 flex justify-between text-sm">
+            <span className="text-zinc-600">Сумма закрываемых позиций</span>
+            <span className="font-semibold text-zinc-900">
               {formatCurrency(Math.max(0, closingItemsTotal))}
             </span>
           </div>
@@ -414,7 +414,7 @@ export function CloseOrderButton({
                 Не возвращено элементов комплекта: {missingTotals.total}. {items.filter(item => missingTotals.byItem[item.id]?.length).map(item => `${item.name}: ${missingTotals.byItem[item.id].join(', ')}`).join('; ')}
               </p>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-zinc-500">
               Заказ закроется только после подтверждения каждой позиции. Аксессуары по умолчанию считаются возвращёнными.
             </p>
           </div>
@@ -510,7 +510,7 @@ export function CloseOrderButton({
                 <strong>{formatCurrency(Math.max(0, closingDebt))}</strong>.
               </p>
             ) : (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-zinc-500">
                 Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, closingDebt))}</span>.
                 Можно вписать меньше — остаток автоматически останется долгом.
               </p>

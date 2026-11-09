@@ -8,6 +8,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useRouter } from 'next/navigation'
 import { Shield, UserCog, Trash2, Plus, KeyRound, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -28,6 +29,7 @@ export function AdminUsersClient({ users }: { users: UserRow[] }) {
   const [fullName, setFullName] = useState('')
   const [role, setRole] = useState<'admin' | 'super_admin'>('admin')
   const [loading, setLoading] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
   // PIN change per user
   const [pinUserId, setPinUserId] = useState<string | null>(null)
@@ -61,14 +63,19 @@ export function AdminUsersClient({ users }: { users: UserRow[] }) {
     setLoading(false)
   }
 
-  async function handleDelete(userId: string, name: string) {
-    if (!confirm(`Удалить "${name}"?`)) return
-    const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
-    if (res.ok) {
-      toast.success('Пользователь удалён')
-      router.refresh()
-    } else {
-      toast.error('Ошибка удаления')
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    try {
+      const res = await fetch(`/api/admin/users/${pendingDelete.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Пользователь удалён')
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error ?? 'Ошибка удаления')
+      }
+    } catch {
+      toast.error('Ответ сервера не получен. Проверьте список перед повторным удалением.')
     }
   }
 
@@ -120,14 +127,14 @@ export function AdminUsersClient({ users }: { users: UserRow[] }) {
                 <div className="flex items-center gap-2">
                   {u.role === 'super_admin'
                     ? <Shield className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    : <UserCog className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    : <UserCog className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                   }
                   <p className="font-semibold text-sm">{u.full_name}</p>
                   <span className="text-xs text-zinc-400 font-mono bg-zinc-100 px-2 py-0.5 rounded-full">
                     @{u.nickname}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5 ml-6">
+                <p className="text-xs text-zinc-400 mt-0.5 ml-6">
                   {u.role === 'super_admin' ? 'Главный администратор' : 'Администратор'}
                 </p>
               </div>
@@ -155,7 +162,8 @@ export function AdminUsersClient({ users }: { users: UserRow[] }) {
                   size="sm"
                   variant="ghost"
                   className="text-red-400 hover:text-red-600 min-h-[36px] min-w-[36px]"
-                  onClick={() => handleDelete(u.id, u.full_name)}
+                  onClick={() => setPendingDelete({ id: u.id, name: u.full_name || u.nickname })}
+                  aria-label={`Удалить пользователя ${u.full_name || u.nickname}`}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -201,7 +209,7 @@ export function AdminUsersClient({ users }: { users: UserRow[] }) {
           </div>
         ))}
         {users.length === 0 && (
-          <p className="text-center py-10 text-gray-400 text-sm">Нет пользователей</p>
+          <p className="text-center py-10 text-zinc-400 text-sm">Нет пользователей</p>
         )}
       </div>
 
@@ -287,6 +295,13 @@ export function AdminUsersClient({ users }: { users: UserRow[] }) {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={open => { if (!open) setPendingDelete(null) }}
+        title={`Удалить пользователя «${pendingDelete?.name ?? ''}»?`}
+        description="Сотрудник потеряет доступ к CRM. Отменить удаление нельзя."
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

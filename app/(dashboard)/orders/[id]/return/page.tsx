@@ -130,16 +130,16 @@ export default function ReturnPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-gray-400">Загрузка...</div>
+  if (loading) return <div className="p-8 text-zinc-400">Загрузка...</div>
 
-  if (error) return <div role="alert" className="space-y-3 rounded-xl border bg-white p-6"><p>{error}</p><Button onClick={() => setReloadKey(value => value + 1)}>Повторить загрузку</Button></div>
-  if (!canReturn) return <div className="space-y-3 rounded-xl border bg-white p-6"><p>У этого заказа нет техники к возврату.</p><Button variant="outline" onClick={() => router.push(`/orders/${id}`)}>Открыть заказ</Button></div>
+  if (error) return <div role="alert" className="space-y-3 rounded-2xl border bg-white p-6"><p>{error}</p><Button onClick={() => setReloadKey(value => value + 1)}>Повторить загрузку</Button></div>
+  if (!canReturn) return <div className="space-y-3 rounded-2xl border bg-white p-6"><p>У этого заказа нет техники к возврату.</p><Button variant="outline" onClick={() => router.push(`/orders/${id}`)}>Открыть заказ</Button></div>
 
   return (
     <div className="max-w-xl">
       <PageHeader title="Оформление возврата" />
       <OperationNotice orderId={id} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
-      <fieldset disabled={submitting || operation.uncertain} className="min-w-0 bg-white rounded-xl border p-6 space-y-4">
+      <fieldset disabled={submitting || operation.uncertain} className="min-w-0 bg-white rounded-2xl border p-6 space-y-4">
         {/* Actual return date */}
         <div className="pb-4 border-b space-y-2">
           <Label>Фактическое время возврата</Label>
@@ -164,7 +164,7 @@ export default function ReturnPage() {
             </p>
           )}
           {orderEndDate && (
-            <p className="text-[11px] text-gray-500">Плановая дата возврата: {orderEndDate}</p>
+            <p className="text-xs text-zinc-500">Плановая дата возврата: {orderEndDate}</p>
           )}
         </div>
 
@@ -176,10 +176,10 @@ export default function ReturnPage() {
             <div key={item.id} className="border-b pb-4 last:border-0">
               <div className="flex justify-between items-start mb-2">
                 <p className="font-medium text-sm">{item.equipment?.name}</p>
-                <span className="text-xs text-gray-500">{formatCurrency(returnPreview?.closeItems.find(row => row.id === item.id)?.current_subtotal ?? item.subtotal)}</span>
+                <span className="text-xs text-zinc-500">{formatCurrency(returnPreview?.closeItems.find(row => row.id === item.id)?.current_subtotal ?? item.subtotal)}</span>
               </div>
               {item.condition_on_issue && (
-                <p className="text-xs text-gray-400 mb-2">При выдаче: {item.condition_on_issue}</p>
+                <p className="text-xs text-zinc-400 mb-2">При выдаче: {item.condition_on_issue}</p>
               )}
               <div className="space-y-1">
                 <Label htmlFor={`return-condition-${item.id}`} className="text-xs">Состояние при возврате</Label>
@@ -195,7 +195,7 @@ export default function ReturnPage() {
                 <div className="mt-3 rounded-lg border bg-zinc-50 p-3">
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-xs">Комплектация</Label>
-                    <span className={`text-[11px] font-medium ${missingCount > 0 ? 'text-orange-700' : 'text-zinc-500'}`}>
+                    <span className={`text-xs font-medium ${missingCount > 0 ? 'text-orange-700' : 'text-zinc-500'}`}>
                       {missingCount > 0
                         ? `Не сдано: ${missingCount} из ${kit.length}`
                         : `Все сдано (${kit.length})`}
@@ -221,7 +221,7 @@ export default function ReturnPage() {
                       )
                     })}
                   </div>
-                  <p className="mt-2 text-[11px] text-gray-500">
+                  <p className="mt-2 text-xs text-zinc-500">
                     Проверьте каждый аксессуар. По умолчанию комплект отмечен как возвращённый; отсутствующие элементы отметьте «Не возвращено».
                   </p>
                 </div>

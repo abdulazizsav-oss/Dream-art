@@ -164,7 +164,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-zinc-400">
             Нет нужного? <a href="/admin/brands" target="_blank" className="text-blue-500 hover:underline">Добавить бренд →</a>
           </p>
         </div>
@@ -243,7 +243,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
           <Package className="w-4 h-4 text-blue-500" />
           <Label>Комплектация</Label>
         </div>
-        <p className="text-xs text-gray-400 -mt-2">
+        <p className="text-xs text-zinc-400 -mt-2">
           Что входит/выдаётся с техникой. <b>Цена 0</b> — входит в базовую стоимость. <b>Цена &gt; 0</b> — платный доп. (считается за смену, как аренда). <b>Макс.</b> — сколько можно взять (напр. аккумулятор макс. 2).
         </p>
         <KitCatalogEditor

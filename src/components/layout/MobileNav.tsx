@@ -73,7 +73,7 @@ export function MobileNav({ role }: MobileNavProps) {
               )}
               aria-current={active ? 'page' : undefined}
             >
-              <Icon className={cn('w-6 h-6', active ? 'text-blue-600' : 'text-gray-400')} />
+              <Icon className={cn('w-6 h-6', active ? 'text-blue-600' : 'text-zinc-400')} />
               {label}
             </Link>
           )

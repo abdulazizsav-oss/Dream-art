@@ -92,20 +92,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       </Link>
 
       <div className={cn('grid grid-cols-2 gap-4', showFinancialSummary ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Аренд всего</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Аренд всего</p>
           <p className="text-2xl font-semibold mt-1">{orders?.length ?? 0}</p>
         </div>
-        {showFinancialSummary && <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Общий оборот</p>
+        {showFinancialSummary && <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Общий оборот</p>
           <p className="text-2xl font-semibold mt-1">{formatCurrency(totalSpend)}</p>
         </div>}
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Депозит</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Депозит</p>
           <p className="text-2xl font-semibold mt-1">{formatCurrency(client.deposit_held)}</p>
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Надёжность</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Надёжность</p>
           <div className="mt-1.5">
             <ReliabilityRating rating={client.reliability_rating} readonly />
           </div>
@@ -175,20 +175,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         <a href="#client-history" className="inline-flex min-h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium">История аренд</a>
         <a href="#client-data" className="inline-flex min-h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium">Данные клиента</a>
       </nav>
-      {!orders?.length && <div id="client-history" className="scroll-mt-24 rounded-xl border bg-white p-4"><h2 className="font-semibold">История аренд</h2><p className="mt-2 text-sm text-zinc-500">У клиента пока нет заказов.</p></div>}
+      {!orders?.length && <div id="client-history" className="scroll-mt-24 rounded-2xl border bg-white p-4"><h2 className="font-semibold">История аренд</h2><p className="mt-2 text-sm text-zinc-500">У клиента пока нет заказов.</p></div>}
       {orders && orders.length > 0 && (
-        <div id="client-history" className="scroll-mt-24 bg-white rounded-xl border p-4 sm:p-6">
+        <div id="client-history" className="scroll-mt-24 bg-white rounded-2xl border p-4 sm:p-6">
           <h2 className="font-semibold mb-4">История аренд</h2>
           <div className="space-y-2">
             {orders.map(o => (
               <Link
                 key={o.id}
                 href={`/orders/${o.id}`}
-                className="flex items-center justify-between py-2 border-b last:border-0 hover:bg-gray-50 px-2 rounded"
+                className="flex items-center justify-between py-2 border-b last:border-0 hover:bg-zinc-50 px-2 rounded"
               >
                 <div>
                   <p className="text-sm font-medium text-blue-600">{o.order_number}</p>
-                  <p className="text-xs text-gray-400">{formatDate(o.start_date)} — {formatDate(o.end_date)}</p>
+                  <p className="text-xs text-zinc-400">{formatDate(o.start_date)} — {formatDate(o.end_date)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm">{formatCurrency(o.total_amount)}</span>
@@ -201,7 +201,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
       )}
-      <div id="client-data" className="scroll-mt-24 bg-white rounded-xl border p-4 sm:p-6">
+      <div id="client-data" className="scroll-mt-24 bg-white rounded-2xl border p-4 sm:p-6">
         <h2 className="font-semibold mb-4">Редактировать</h2>
         <ClientForm
           clientId={id}

@@ -5,7 +5,7 @@ export default function NewClientPage() {
   return (
     <div>
       <PageHeader title="Добавить клиента" />
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white rounded-2xl border p-6">
         <ClientForm />
       </div>
     </div>

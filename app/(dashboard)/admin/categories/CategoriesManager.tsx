@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ImageUpload } from '@/components/ui/ImageUpload'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Plus, Pencil, Trash2, Check, X, Eye, EyeOff } from 'lucide-react'
 
 interface Category {
@@ -19,6 +20,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
   const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null)
 
   const [name, setName] = useState('')
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
@@ -68,11 +70,16 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Удалить категорию? Техника останется без категории.')) return
-    const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
-    if (res.ok) { setCategories(c => c.filter(x => x.id !== id)); toast.success('Удалено') }
-    else toast.error('Ошибка удаления')
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const { id } = pendingDelete
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
+      if (res.ok) { setCategories(c => c.filter(x => x.id !== id)); toast.success('Категория удалена') }
+      else toast.error('Ошибка удаления')
+    } catch {
+      toast.error('Ответ сервера не получен. Проверьте список перед повторным удалением.')
+    }
   }
 
   return (
@@ -122,11 +129,11 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
             </div>
           ) : (
             <div key={cat.id} className={`bg-white rounded-2xl border overflow-hidden ${!cat.is_active ? 'opacity-50' : ''}`}>
-              <div className="h-32 bg-gray-50 relative overflow-hidden">
+              <div className="h-32 bg-zinc-50 relative overflow-hidden">
                 {cat.photo_url ? (
                   <img src={cat.photo_url} alt={cat.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-200 text-4xl font-bold">
+                  <div className="w-full h-full flex items-center justify-center text-zinc-200 text-4xl font-bold">
                     {cat.name[0]}
                   </div>
                 )}
@@ -140,9 +147,9 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
                 <p className="font-semibold truncate">{cat.name}</p>
                 <div className="flex gap-1 flex-shrink-0">
                   <Button size="sm" variant="ghost" onClick={() => startEdit(cat)} className="min-h-[40px] min-w-[40px]">
-                    <Pencil className="w-4 h-4 text-gray-400" />
+                    <Pencil className="w-4 h-4 text-zinc-400" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(cat.id)} className="min-h-[40px] min-w-[40px]">
+                  <Button size="sm" variant="ghost" onClick={() => setPendingDelete(cat)} aria-label={`Удалить категорию ${cat.name}`} className="min-h-[40px] min-w-[40px]">
                     <Trash2 className="w-4 h-4 text-red-400" />
                   </Button>
                 </div>
@@ -186,6 +193,13 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
           <Plus className="w-4 h-4 mr-2" /> Добавить категорию
         </Button>
       ) : null}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={open => { if (!open) setPendingDelete(null) }}
+        title={`Удалить категорию «${pendingDelete?.name ?? ''}»?`}
+        description="Техника останется в каталоге, но без категории."
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

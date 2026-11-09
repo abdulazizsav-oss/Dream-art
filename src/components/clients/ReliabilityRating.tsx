@@ -26,14 +26,14 @@ export function ReliabilityRating({ rating, onChange, readonly }: ReliabilityRat
           <Star
             className={cn(
               'w-4 h-4',
-              i <= rating ? colors[rating - 1] : 'text-gray-200',
+              i <= rating ? colors[rating - 1] : 'text-zinc-200',
               !readonly && 'hover:scale-110 transition-transform'
             )}
             fill={i <= rating ? 'currentColor' : 'none'}
           />
         </button>
       ))}
-      <span className="text-xs text-gray-500 ml-1">{RELIABILITY_LABELS[rating]}</span>
+      <span className="text-xs text-zinc-500 ml-1">{RELIABILITY_LABELS[rating]}</span>
     </div>
   )
 }

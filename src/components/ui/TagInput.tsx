@@ -94,11 +94,11 @@ export function TagInput({
           onBlur={() => { if (!enableQuantity) commitDraft() }}
           placeholder={value.length === 0 ? placeholder : ''}
           disabled={disabled}
-          className="flex-1 min-w-[120px] bg-transparent outline-none placeholder:text-gray-400 py-1"
+          className="flex-1 min-w-[120px] bg-transparent outline-none placeholder:text-zinc-400 py-1"
         />
         {enableQuantity && (
           <div className="flex items-center gap-1">
-            <span className="text-xs text-gray-400">×</span>
+            <span className="text-xs text-zinc-400">×</span>
             <input
               type="number"
               min={1}
@@ -123,14 +123,14 @@ export function TagInput({
 
       {availableSuggestions.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-xs text-gray-400 self-center">Быстрый выбор:</span>
+          <span className="text-xs text-zinc-400 self-center">Быстрый выбор:</span>
           {availableSuggestions.map(s => (
             <button
               key={s}
               type="button"
               onClick={() => addTags(enableQuantity ? expandKitUnits(s, qty) : [s])}
               disabled={disabled}
-              className="inline-flex items-center gap-1 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-xs text-gray-600 transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 px-2.5 py-0.5 text-xs text-zinc-600 transition-colors"
             >
               <Plus className="w-3 h-3" />
               {s}{enableQuantity && qty > 1 ? ` ×${qty}` : ''}

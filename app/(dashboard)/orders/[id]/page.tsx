@@ -346,7 +346,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         }
       />
 
-      {order.status === 'cancelled' && <section className="space-y-3 rounded-xl border border-zinc-300 bg-white p-5">
+      {order.status === 'cancelled' && <section className="space-y-3 rounded-2xl border border-zinc-300 bg-white p-5">
         <h2 className="font-semibold">{cancellation ? 'Заказ отменён · вся техника возвращена' : 'Заказ отменён'}</h2>
         <p className="text-sm text-zinc-600">Начисления за аренду и доставку: 0. Можно оформить другую технику новым заказом.</p>
         {cancellation && <p className="text-sm text-zinc-600">{formatDateTime(cancellation.cancelled_at)} · {cancellation.reason}</p>}
@@ -380,52 +380,52 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           'rounded-xl border p-4',
           isOrderOverdue ? 'border-red-300 bg-red-50' : 'bg-white',
         )}>
-          <p className="text-xs text-gray-500">Статус</p>
+          <p className="text-xs text-zinc-500">Статус</p>
           <span className={cn('mt-1 inline-flex text-xs px-2 py-0.5 rounded-full font-medium', ORDER_STATUS_COLORS[displayStatus])}>
             {ORDER_STATUS_LABELS[displayStatus]}
           </span>
           {order.created_at && (
-            <p className="text-[11px] text-gray-400 mt-1">{formatDateTime(order.created_at)}</p>
+            <p className="text-xs text-zinc-400 mt-1">{formatDateTime(order.created_at)}</p>
           )}
           {createdByProfile?.full_name && (
-            <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+            <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
               <User className="w-3 h-3" />
-              Оформил: <span className="font-medium text-gray-700">{createdByProfile.full_name}</span>
+              Оформил: <span className="font-medium text-zinc-700">{createdByProfile.full_name}</span>
             </p>
           )}
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Период</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Период</p>
           <p className="font-medium text-sm mt-1">
             {formatDate(order.start_date)} — {resolvedOrderEndDate
               ? formatDate(resolvedOrderEndDate)
               : 'срок не записан'}
           </p>
           {((order as any).actual_start_at || (order as any).actual_end_at) && (
-            <p className="text-[11px] text-gray-400 mt-1">
+            <p className="text-xs text-zinc-400 mt-1">
               Факт: {(order as any).actual_start_at ? formatDateTime((order as any).actual_start_at) : '—'}
               {' → '}
               {(order as any).actual_end_at ? formatDateTime((order as any).actual_end_at) : '…'}
             </p>
           )}
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Итого заказа</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Итого заказа</p>
           <p className="font-semibold mt-1">{formatCurrency(effectiveTotal)}</p>
-          <div className="mt-1 space-y-0.5 text-[11px] text-gray-500">
+          <div className="mt-1 space-y-0.5 text-xs text-zinc-500">
             <p>Аренда: {formatCurrency(effectiveRentalAmount)}</p>
             {deliveryFee > 0 && (
               <p>Услуги доставки: {formatCurrency(deliveryFee)}</p>
             )}
           </div>
           {liveBilling && (
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-xs text-zinc-400 mt-0.5">
               По факту на сейчас
             </p>
           )}
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Задолженность</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Задолженность</p>
           <p className={cn('font-semibold mt-1', debt > 0 ? 'text-red-600' : 'text-green-600')}>
             {formatCurrency(Math.max(0, debt))}
           </p>
@@ -433,7 +433,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Fixed delivery services */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white rounded-2xl border p-6">
         <div className="flex items-center gap-2">
           <Truck className="h-4 w-4 text-blue-600" />
           <h2 className="font-semibold">Услуги доставки</h2>
@@ -460,11 +460,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Client + trusted person */}
-      <div className="bg-white rounded-xl border p-6 space-y-4">
+      <div className="bg-white rounded-2xl border p-6 space-y-4">
         <div>
           <h2 className="font-semibold mb-2">Клиент</h2>
           <p className="font-medium">{client?.full_name}</p>
-          <div className="flex gap-4 mt-1 text-sm text-gray-500">
+          <div className="flex gap-4 mt-1 text-sm text-zinc-500">
             {client?.phone && <span>{client.phone}</span>}
             {client?.telegram_username && <span>@{client.telegram_username.replace(/^@+/, '')}</span>}
           </div>
@@ -478,13 +478,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
         {trustedPerson && (
           <div className="border-t pt-4">
-            <p className="text-xs text-gray-500 mb-1.5 flex items-center gap-1.5">
+            <p className="text-xs text-zinc-500 mb-1.5 flex items-center gap-1.5">
               <UserCheck className="w-3.5 h-3.5" />
               Доверенное лицо
             </p>
-            <p className="font-medium text-gray-900">{trustedPerson}</p>
+            <p className="font-medium text-zinc-900">{trustedPerson}</p>
             {trustedDocType && (
-              <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+              <p className="text-sm text-zinc-500 flex items-center gap-1.5 mt-0.5">
                 <FileText className="w-3.5 h-3.5" />
                 {DOCUMENT_TYPE_LABELS[trustedDocType] ?? trustedDocType}
               </p>
@@ -494,7 +494,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Equipment list */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white rounded-2xl border p-6">
         <h2 className="font-semibold mb-3">Техника</h2>
         <div className="space-y-2">
           {items.map(item => {
@@ -515,18 +515,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   <div className="flex flex-wrap items-center gap-1.5">
                     <p className="font-medium">{item.equipment?.name}</p>
                     {addedLater && (
-                      <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                      <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
                         Добавлено в заказ · с {formatDateTime(item.actual_start_at!)}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-zinc-400">
                     {item.condition_on_issue && `Состояние при выдаче: ${item.condition_on_issue}`}
                     {item.condition_on_return && ` · При возврате: ${item.condition_on_return}`}
                   </p>
                   {kit.length > 0 && (
                     <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
-                      <span className="text-gray-500">Комплект:</span>
+                      <span className="text-zinc-500">Комплект:</span>
                       {kit.map(k => {
                         const wasReturned = returned.includes(k)
                         const wasMissing = missing.includes(k)
@@ -535,8 +535,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                             ? 'bg-amber-50 text-amber-700 line-through'
                             : wasReturned
                               ? 'bg-emerald-50 text-emerald-700'
-                              : 'bg-gray-100 text-gray-700'
-                          : 'bg-gray-100 text-gray-700'
+                              : 'bg-zinc-100 text-zinc-700'
+                          : 'bg-zinc-100 text-zinc-700'
                         return (
                           <span key={k} className={cn('inline-flex items-center rounded-md px-1.5 py-0.5 font-medium', cls)}>
                             {k}
@@ -570,7 +570,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </div>
                   )}
                 </div>
-                <span className="text-gray-700 text-right">
+                <span className="text-zinc-700 text-right">
                   {(() => {
                     const live = itemBillingById.get(item.id)
                     const eq = item.equipment
@@ -611,17 +611,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                           {formatCurrency(displaySubtotal, item.equipment?.currency)}
                         </div>
                         <div className="mt-1 flex justify-end">
-                          <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium', badge.cls)}>
+                          <span className={cn('inline-flex rounded-full border px-2 py-0.5 text-xs font-medium', badge.cls)}>
                             {badge.label}
                           </span>
                         </div>
                         {isReturned && paidForItem > 0 && (
-                          <div className="text-[11px] text-gray-500 mt-0.5">
+                          <div className="text-xs text-zinc-500 mt-0.5">
                             Оплачено по позиции: {formatCurrency(paidForItem, item.equipment?.currency)}
                           </div>
                         )}
                         {live?.frozen && item.actual_end_at && (
-                          <div className="text-[11px] text-emerald-700 mt-0.5">
+                          <div className="text-xs text-emerald-700 mt-0.5">
                             Сдано: {formatDateTime(item.actual_end_at)}
                           </div>
                         )}
@@ -647,7 +647,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Payments */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white rounded-2xl border p-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Платежи</h2>
           {order.status !== 'cancelled' && <OrderPaymentDialog order={{ id, order_number: order.order_number, clients: client ? { full_name: client.full_name } : null }} />}
@@ -661,11 +661,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   <div key={p.id} className="flex justify-between text-sm border-b pb-2 last:border-0">
                     <div>
                       <p>{PAYMENT_TYPE_LABELS[p.payment_type]} · {PAYMENT_METHOD_LABELS[p.payment_method]}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-zinc-400">
                         {formatDate(p.paid_at)}
                         {p.created_by_profile?.full_name && ` · Принял: ${p.created_by_profile.full_name}`}
                       </p>
-                      {p.notes && <p className="text-xs text-gray-400">{p.notes}</p>}
+                      {p.notes && <p className="text-xs text-zinc-400">{p.notes}</p>}
                     </div>
                     <span className={cn('font-medium', signedPaymentAmount(p) < 0 ? 'text-red-600' : 'text-green-700')}>
                       {formatCurrency(signedPaymentAmount(p))}
@@ -679,15 +679,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     <div>
                       <p className="flex items-center gap-1.5">
                         <span>{PAYMENT_TYPE_LABELS[g.payment_type]}</span>
-                        <span className="inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                        <span className="inline-flex rounded-full bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">
                           Сплит · {g.parts.length}
                         </span>
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-zinc-400">
                         {formatDate(g.paid_at)}
                         {g.created_by_profile?.full_name && ` · Принял: ${g.created_by_profile.full_name}`}
                       </p>
-                      {g.notes && <p className="text-xs text-gray-400">{g.notes}</p>}
+                      {g.notes && <p className="text-xs text-zinc-400">{g.notes}</p>}
                     </div>
                     <span className="font-medium text-green-700">
                       {formatCurrency(g.total)}
@@ -695,7 +695,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {g.parts.map((part, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 rounded-md bg-zinc-50 border border-zinc-200 px-2 py-0.5 text-[11px]">
+                      <span key={i} className="inline-flex items-center gap-1 rounded-md bg-zinc-50 border border-zinc-200 px-2 py-0.5 text-xs">
                         <span className="text-zinc-500">{PAYMENT_METHOD_LABELS[part.method]}:</span>
                         <span className="font-medium tabular-nums">{formatCurrency(part.amount)}</span>
                       </span>
@@ -710,14 +710,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-400">Платежей нет</p>
+          <p className="text-sm text-zinc-400">Платежей нет</p>
         )}
       </div>
 
       {order.notes && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white rounded-2xl border p-6">
           <h2 className="font-semibold mb-2">Заметки</h2>
-          <p className="text-sm text-gray-600">{order.notes}</p>
+          <p className="text-sm text-zinc-600">{order.notes}</p>
         </div>
       )}
     </div>

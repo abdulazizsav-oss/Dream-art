@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ImageUpload } from '@/components/ui/ImageUpload'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 
 interface Brand { id: string; name: string; logo_url: string | null; sort_order: number }
@@ -16,6 +17,7 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
   const [brands, setBrands] = useState<Brand[]>(initialBrands)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Brand | null>(null)
 
   // Form state
   const [name, setName] = useState('')
@@ -69,13 +71,18 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Удалить бренд? Техника останется, но без привязки к бренду.')) return
-    const res = await fetch(`/api/brands/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setBrands(b => b.filter(x => x.id !== id))
-      toast.success('Бренд удалён')
-    } else { toast.error('Ошибка удаления') }
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const { id } = pendingDelete
+    try {
+      const res = await fetch(`/api/brands/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setBrands(b => b.filter(x => x.id !== id))
+        toast.success('Бренд удалён')
+      } else { toast.error('Ошибка удаления') }
+    } catch {
+      toast.error('Ответ сервера не получен. Проверьте список перед повторным удалением.')
+    }
   }
 
   const isFormOpen = showForm || !!editingId
@@ -129,16 +136,16 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
                 {brand.logo_url ? (
                   <img src={brand.logo_url} alt={brand.name} className="w-10 h-10 object-contain rounded-lg border bg-white" />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-400">
+                  <div className="w-10 h-10 rounded-lg bg-zinc-100 flex items-center justify-center text-sm font-bold text-zinc-400">
                     {brand.name[0]}
                   </div>
                 )}
                 <p className="flex-1 font-medium text-sm">{brand.name}</p>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => startEdit(brand)} className="min-h-[40px] min-w-[40px]">
-                    <Pencil className="w-4 h-4 text-gray-400" />
+                    <Pencil className="w-4 h-4 text-zinc-400" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(brand.id)} className="min-h-[40px] min-w-[40px]">
+                  <Button size="sm" variant="ghost" onClick={() => setPendingDelete(brand)} aria-label={`Удалить бренд ${brand.name}`} className="min-h-[40px] min-w-[40px]">
                     <Trash2 className="w-4 h-4 text-red-400" />
                   </Button>
                 </div>
@@ -147,7 +154,7 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
           </div>
         ))}
         {brands.length === 0 && (
-          <p className="text-center py-10 text-gray-400 text-sm">Брендов ещё нет</p>
+          <p className="text-center py-10 text-zinc-400 text-sm">Брендов ещё нет</p>
         )}
       </div>
 
@@ -199,6 +206,13 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
           <Plus className="w-4 h-4 mr-2" /> Добавить бренд
         </Button>
       ) : null}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={open => { if (!open) setPendingDelete(null) }}
+        title={`Удалить бренд «${pendingDelete?.name ?? ''}»?`}
+        description="Техника останется в каталоге, но без привязки к бренду."
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

@@ -173,7 +173,7 @@ export function CatalogCategoryGrid({ categories }: { categories: CategoryCard[]
                   aria-label="Редактировать категории"
                   className="absolute left-2 top-2 z-10 inline-flex items-center justify-center rounded-lg bg-white/90 p-2 shadow-sm transition-opacity hover:bg-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                 >
-                  <Pencil className="h-4 w-4 text-gray-600" />
+                  <Pencil className="h-4 w-4 text-zinc-600" />
                 </Link>
                 <Link href={`/equipment?category=${cat.id}`} className="block">
                   <CategoryCardBody cat={cat} index={index} editing={false} />
@@ -208,7 +208,7 @@ function CategoryCardBody({
           {String(index + 1).padStart(2, '0')}
         </div>
       )}
-      <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gray-50">
+      <div className="relative flex h-32 items-center justify-center overflow-hidden bg-zinc-50">
         {cat.photo_url ? (
           <img
             src={cat.photo_url}
@@ -218,18 +218,18 @@ function CategoryCardBody({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <Boxes className="h-10 w-10 text-gray-200 transition-colors group-hover:text-gray-300" />
+          <Boxes className="h-10 w-10 text-zinc-200 transition-colors group-hover:text-zinc-300" />
         )}
         {!editing && (
-          <span className="absolute right-2 top-2 rounded bg-black/55 px-1.5 py-0.5 font-mono text-[10px] font-medium tabular-nums text-white">
+          <span className="absolute right-2 top-2 rounded bg-black/55 px-1.5 py-0.5 font-mono text-xs font-medium tabular-nums text-white">
             {String(index + 1).padStart(2, '0')}
           </span>
         )}
       </div>
       <div className="p-4">
-        <p className="truncate font-semibold text-gray-900">{cat.name}</p>
+        <p className="truncate font-semibold text-zinc-900">{cat.name}</p>
         <div className="mt-1.5 flex items-center justify-between gap-2">
-          <p className="text-sm text-gray-400">{editing ? 'Позиция в сетке' : 'Открыть категорию'}</p>
+          <p className="text-sm text-zinc-400">{editing ? 'Позиция в сетке' : 'Открыть категорию'}</p>
           {editing && (
             <MoveButtons onMoveUp={onMoveUp} onMoveDown={onMoveDown} />
           )}
@@ -309,7 +309,7 @@ export function CatalogEquipmentGrid({
                   aria-label="Редактировать"
                   className="absolute right-2 top-2 z-10 inline-flex items-center justify-center rounded-lg bg-white/90 p-2 shadow-sm transition-opacity hover:bg-white opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                 >
-                  <Pencil className="h-4 w-4 text-gray-600" />
+                  <Pencil className="h-4 w-4 text-zinc-600" />
                 </Link>
                 <Link href={`/equipment/${item.id}`} className="block">
                   <EquipmentCardBody item={item} index={index} editing={false} />
@@ -349,7 +349,7 @@ function EquipmentCardBody({
           {String(index + 1).padStart(2, '0')}
         </div>
       )}
-      <div className="relative flex h-44 items-center justify-center overflow-hidden bg-gray-50">
+      <div className="relative flex h-44 items-center justify-center overflow-hidden bg-zinc-50">
         {item.photo_url ? (
           <img
             src={item.photo_url}
@@ -359,7 +359,7 @@ function EquipmentCardBody({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <Camera className="h-12 w-12 text-gray-200" />
+          <Camera className="h-12 w-12 text-zinc-200" />
         )}
         {brand?.logo_url && (
           <img
@@ -373,12 +373,12 @@ function EquipmentCardBody({
       </div>
       <div className="p-4">
         {brand && !brand.logo_url && (
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{brand.name}</p>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">{brand.name}</p>
         )}
-        <p className="font-semibold leading-snug text-gray-900">{item.name}</p>
-        {item.specs && <p className="mt-1 line-clamp-1 text-xs text-gray-500">{item.specs}</p>}
+        <p className="font-semibold leading-snug text-zinc-900">{item.name}</p>
+        {item.specs && <p className="mt-1 line-clamp-1 text-xs text-zinc-500">{item.specs}</p>}
         <div className="mt-3 space-y-1.5 border-t pt-3 text-xs">
-          <div className="flex items-center justify-between text-gray-700">
+          <div className="flex items-center justify-between text-zinc-700">
             <span className="inline-flex items-center gap-1">
               <Sun className="h-3.5 w-3.5 text-amber-500" />
               {hasNightShift ? 'День' : 'Ставка'}
@@ -386,14 +386,14 @@ function EquipmentCardBody({
             <span className="font-medium">{formatCurrency(dayRate, item.currency)}</span>
           </div>
           {hasNightShift && (
-            <div className="flex items-center justify-between text-gray-700">
+            <div className="flex items-center justify-between text-zinc-700">
               <span className="inline-flex items-center gap-1">
                 <Moon className="h-3.5 w-3.5 text-indigo-500" />
                 Ночь
               </span>
               <div className="inline-flex items-center gap-2">
                 <span className="font-medium">{formatCurrency(nightRate, item.currency)}</span>
-                {!editing && <ChevronRight className="h-4 w-4 text-gray-300 transition-colors group-hover:text-blue-500" />}
+                {!editing && <ChevronRight className="h-4 w-4 text-zinc-300 transition-colors group-hover:text-blue-500" />}
               </div>
             </div>
           )}

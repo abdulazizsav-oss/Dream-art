@@ -54,10 +54,10 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
       </div>
 
       <div className="space-y-4">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-xs text-gray-500 mb-1">Клиент</p>
+        <div className="bg-zinc-50 rounded-lg p-4">
+          <p className="text-xs text-zinc-500 mb-1">Клиент</p>
           <p className="font-medium">{client?.full_name}</p>
-          {client?.phone && <p className="text-sm text-gray-600">{formatClientPhoneInput(client.phone)}</p>}
+          {client?.phone && <p className="text-sm text-zinc-600">{formatClientPhoneInput(client.phone)}</p>}
         </div>
 
         <div className="bg-blue-50 rounded-lg p-4">
@@ -65,27 +65,27 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
             <UserCheck className="w-3.5 h-3.5" />
             Дополнительный контакт / доверенное лицо
           </p>
-          <p className="font-medium text-gray-900">{trustedPerson.name}</p>
+          <p className="font-medium text-zinc-900">{trustedPerson.name}</p>
           {trustedPerson.relation && (
-            <p className="text-xs text-gray-500 mt-0.5">{trustedPerson.relation}</p>
+            <p className="text-xs text-zinc-500 mt-0.5">{trustedPerson.relation}</p>
           )}
           {trustedPerson.phone && (
-            <p className="text-sm text-gray-600 mt-0.5">{trustedPerson.phone}</p>
+            <p className="text-sm text-zinc-600 mt-0.5">{trustedPerson.phone}</p>
           )}
           {trustedPerson.doc_type && (
-            <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-1">
+            <p className="text-sm text-zinc-600 flex items-center gap-1.5 mt-1">
               <FileText className="w-3.5 h-3.5" />
               {DOCUMENT_TYPE_LABELS[trustedPerson.doc_type] ?? trustedPerson.doc_type}
             </p>
           )}
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-xs text-gray-500 mb-1">Плановый период</p>
+        <div className="bg-zinc-50 rounded-lg p-4">
+          <p className="text-xs text-zinc-500 mb-1">Плановый период</p>
           <p className="font-medium">
             {formatDate(values.start_date)} — {formatDate(values.end_date)}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-zinc-500 mt-1">
             При подтверждении выдача будет записана сейчас, и начнётся аренда. Окончательная сумма — при возврате.
           </p>
         </div>
@@ -106,8 +106,8 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           </div>
         )}
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-xs text-gray-500 mb-2">Техника</p>
+        <div className="bg-zinc-50 rounded-lg p-4">
+          <p className="text-xs text-zinc-500 mb-2">Техника</p>
           <div className="space-y-2">
             {itemsWithDetails.map((item, index) => (
               <div key={`${item.equipment_id}-${index}`} className="flex justify-between gap-3 text-sm">
@@ -115,7 +115,7 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
                   <span className="mt-1 block text-xs text-zinc-500">Комплект: {item.kit_selection?.filter(entry => entry.qty > 0).map(entry => `${entry.name} × ${entry.qty}`).join(', ') || 'не выбран'}</span>
                   <span className="block text-xs text-zinc-500">Состояние: {item.condition_on_issue || 'не указано'}</span>
                 </span>
-                <span className="text-gray-600">
+                <span className="text-zinc-600">
                   {item.manual_subtotal != null
                     ? `Своя цена = ${formatCurrency(item.subtotal, item.equipment?.currency)}`
                     : `${getPricingParts(item)
@@ -129,12 +129,12 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
 
         <div className="border-t pt-3 space-y-1.5">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Аренда</span>
+            <span className="text-zinc-600">Аренда</span>
             <span>{formatCurrency(total)}</span>
           </div>
           {hasDelivery && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Услуги доставки</span>
+              <span className="text-zinc-600">Услуги доставки</span>
               <span>{formatCurrency(deliveryFee)}</span>
             </div>
           )}
@@ -144,12 +144,12 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           </div>
           {(values.deposit_amount ?? 0) > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Депозит</span>
+              <span className="text-zinc-600">Депозит</span>
               <span>{formatCurrency(values.deposit_amount ?? 0)}</span>
             </div>
           )}
           {values.notes && (
-            <p className="text-xs text-gray-400 mt-2">Заметка: {values.notes}</p>
+            <p className="text-xs text-zinc-400 mt-2">Заметка: {values.notes}</p>
           )}
         </div>
       </div>

@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const profile = await getMyProfile()
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-zinc-50">
       <NavigationProgress />
       <Sidebar role={profile?.role ?? 'admin'} userName={profile?.full_name ?? ''} />
       <div className="min-w-0 flex-1">

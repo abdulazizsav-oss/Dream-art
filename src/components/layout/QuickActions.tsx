@@ -28,7 +28,7 @@ export function QuickActions({ userName }: { userName: string }) {
           <div className="hidden min-w-0 sm:block">
             <p className="truncate text-sm font-semibold text-zinc-900">Dream Art <span className="font-normal text-zinc-400">/ {userName || 'Администратор'}</span></p>
             {process.env.NODE_ENV === 'development' ? (
-              <p className="mt-0.5 text-[11px] text-amber-700">Локальная версия · рабочая база</p>
+              <p className="mt-0.5 text-xs text-amber-700">Локальная версия · рабочая база</p>
             ) : (
               <p className="mt-0.5 text-xs text-zinc-500">Рабочее место администратора</p>
             )}

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import imageCompression from 'browser-image-compression'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
 
 interface ImageUploadProps {
@@ -34,11 +35,11 @@ export function ImageUpload({
 
   async function uploadFile(file: File) {
     if (!file.type.startsWith('image/')) {
-      alert('Только изображения (JPG, PNG, WEBP)')
+      toast.error('Подходят только изображения: JPG, PNG или WEBP')
       return
     }
     if (file.size > 15 * 1024 * 1024) {
-      alert('Максимальный размер файла — 15 МБ (до сжатия)')
+      toast.error('Файл больше 15 МБ. Выберите фото поменьше.')
       return
     }
 
@@ -68,7 +69,7 @@ export function ImageUpload({
       onChange(data.publicUrl)
     } catch (err) {
       console.error('Upload error:', err)
-      alert('Ошибка загрузки фото')
+      toast.error('Фото не загрузилось. Проверьте соединение и попробуйте ещё раз.')
     } finally {
       setUploading(false)
     }
@@ -105,9 +106,9 @@ export function ImageUpload({
 
       <div
         className={cn(
-          'relative w-full rounded-xl border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-gray-50',
+          'relative w-full rounded-xl border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-zinc-50',
           aspectClass,
-          dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300',
+          dragOver ? 'border-blue-400 bg-blue-50' : 'border-zinc-200 hover:border-zinc-300',
           uploading && 'pointer-events-none opacity-60',
         )}
         onClick={() => inputRef.current?.click()}
@@ -138,20 +139,20 @@ export function ImageUpload({
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-400">
             {uploading ? (
               <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             ) : (
               <>
-                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <ImageIcon className="w-6 h-6 text-gray-300" />
+                <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6 text-zinc-300" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-zinc-600">
                     <Upload className="w-3.5 h-3.5 inline mr-1" />
                     Нажмите или перетащите
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, WEBP · до 5 МБ</p>
+                  <p className="text-xs text-zinc-400 mt-0.5">JPG, PNG, WEBP · до 5 МБ</p>
                 </div>
               </>
             )}

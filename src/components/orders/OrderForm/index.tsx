@@ -227,7 +227,7 @@ export function OrderForm({ clients: initialClients, equipment, draftOwnerId, in
           </Button>
         </div>
         {step === 1 && !formReady && <p role="status" className="mt-1 text-xs text-zinc-600">{!clientReady ? 'Проверьте дополнительный контакт на первом этапе.' : parsedOrder.error?.issues[0]?.message}</p>}
-        {draftReady && storageKey && (values.client_id || items.length > 0) && !draftNotice && <p className="mt-1 text-[11px] text-zinc-500">Черновик сохраняется в этой вкладке на 12 часов</p>}
+        {draftReady && storageKey && (values.client_id || items.length > 0) && !draftNotice && <p className="mt-1 text-xs text-zinc-500">Черновик сохраняется в этой вкладке на 12 часов</p>}
       </div>
       <Dialog open={confirmOpen} onOpenChange={open => { if (!submitting) setConfirmOpen(open) }}>
         <DialogContent showCloseButton={false} className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">

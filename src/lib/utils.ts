@@ -96,11 +96,11 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 }
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700',
+  draft: 'bg-zinc-100 text-zinc-700',
   active: 'bg-blue-100 text-blue-800',
   returned: 'bg-green-100 text-green-800',
   overdue: 'bg-red-100 text-red-800',
-  cancelled: 'bg-gray-100 text-gray-500',
+  cancelled: 'bg-zinc-100 text-zinc-500',
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {

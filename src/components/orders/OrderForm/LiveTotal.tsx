@@ -46,7 +46,7 @@ export function LiveTotal({
   if (variant === 'compact') {
     return (
       <div className={cn('flex items-center justify-between gap-3 text-sm', className)}>
-        <div className="flex items-center gap-3 text-gray-500">
+        <div className="flex items-center gap-3 text-zinc-500">
           <span className="inline-flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5" />
             {unitsLabel}
@@ -56,7 +56,7 @@ export function LiveTotal({
             {itemsCount}
           </span>
         </div>
-        <span className="font-semibold text-gray-900">
+        <span className="font-semibold text-zinc-900">
           {formatCurrency(grandTotal, currency)}
         </span>
       </div>
@@ -75,7 +75,7 @@ export function LiveTotal({
         Предварительный итог
       </div>
       <div className="flex items-end justify-between gap-3">
-        <div className="space-y-0.5 text-xs text-gray-500">
+        <div className="space-y-0.5 text-xs text-zinc-500">
           <p className="flex items-center gap-1.5">
             <Calendar className="w-3 h-3" />
             {unitsLabel}

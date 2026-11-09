@@ -41,8 +41,8 @@ export default async function EquipmentPage({
         />
         {(categories?.length ?? 0) === 0 ? (
           <div className="bg-white rounded-2xl border p-12 text-center">
-            <Wrench className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Категорий нет</p>
+            <Wrench className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+            <p className="text-zinc-500">Категорий нет</p>
             <Link href="/admin/categories" className="mt-3 inline-block">
               <Button size="sm" variant="outline">Добавить категорию →</Button>
             </Link>
@@ -110,13 +110,13 @@ export default async function EquipmentPage({
         <div className="flex flex-wrap gap-2 mb-5">
           <Link href={`/equipment?category=${catId}`}>
             <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-              !brandId ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+              !brandId ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
             }`}>Все</span>
           </Link>
           {uniqueBrands.map(brand => (
             <Link key={brand.id} href={`/equipment?category=${catId}&brand=${brand.id}`}>
               <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-colors ${
-                brandId === brand.id ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                brandId === brand.id ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400'
               }`}>{brand.name}</span>
             </Link>
           ))}
@@ -125,8 +125,8 @@ export default async function EquipmentPage({
 
       {(equipment?.length ?? 0) === 0 ? (
         <div className="bg-white rounded-2xl border p-12 text-center">
-          <Wrench className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">{brandId ? 'Нет позиций этого бренда' : 'В этой категории нет техники'}</p>
+          <Wrench className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
+          <p className="text-zinc-500">{brandId ? 'Нет позиций этого бренда' : 'В этой категории нет техники'}</p>
         </div>
       ) : (
         <CatalogEquipmentGrid

@@ -487,7 +487,7 @@ export default function CalendarPage() {
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="flex min-h-[44px] min-w-0 flex-1 flex-col items-center justify-center rounded-xl bg-zinc-50 px-3 text-center sm:min-w-[148px]">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Период</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">Период</span>
               <span className="text-sm font-medium tabular-nums text-zinc-700">
                 {formatShortDate(from)} – {formatShortDate(to)}
               </span>
@@ -544,7 +544,7 @@ export default function CalendarPage() {
         </>
       )}
 
-      <div className="flex flex-wrap gap-3 rounded-xl border bg-white px-4 py-3 text-xs text-zinc-600">
+      <div className="flex flex-wrap gap-3 rounded-2xl border bg-white px-4 py-3 text-xs text-zinc-600">
         <Legend color="bg-emerald-200" label="Активная аренда" />
         <Legend color="bg-red-200" label="Просроченная аренда" />
         <Legend color="bg-white ring-2 ring-red-400" label="Конфликт бронирований" />
@@ -671,7 +671,7 @@ function TimelineHeader({ days, today }: { days: string[]; today: string }) {
             )}
           >
             <div className="font-semibold">{date.getUTCDate()}</div>
-            <div className={cn('mt-0.5 text-[10px]', day === today ? 'text-zinc-300' : 'text-zinc-400')}>
+            <div className={cn('mt-0.5 text-xs', day === today ? 'text-zinc-300' : 'text-zinc-400')}>
               {date.toLocaleDateString('ru-RU', { timeZone: 'UTC', weekday: 'short' })}
             </div>
           </div>
@@ -734,13 +734,13 @@ function OrderTimelineRow({
               {order.order_number} · {order.client?.phone ?? 'Без телефона'}
             </p>
           </div>
-          <span className={cn('rounded-full px-2 py-1 text-[10px] font-medium', config.badge)}>
+          <span className={cn('rounded-full px-2 py-1 text-xs font-medium', config.badge)}>
             {config.label}
           </span>
         </div>
         <p className="mt-2 line-clamp-1 text-xs text-zinc-600">{equipmentNames(order)}</p>
         <p className={cn(
-          'mt-1 text-[11px]',
+          'mt-1 text-xs',
           order.actual_start_at ? 'font-medium text-zinc-600' : 'text-zinc-400',
         )}>
           {orderTimeLabel(order)}
@@ -764,7 +764,7 @@ function OrderTimelineRow({
             <p className="truncate text-xs font-semibold">
               {order.order_number} · {order.client?.full_name}
             </p>
-            <p className="mt-1 truncate text-[10px] opacity-75">
+            <p className="mt-1 truncate text-xs opacity-75">
               {shiftLabel(order.items)} · {equipmentNames(order)}
               {order.created_by_name ? ` · ${order.created_by_name}` : ''}
             </p>
@@ -814,7 +814,7 @@ function EquipmentTimelineRow({
         <p className="mt-1 text-xs text-zinc-500">
           {equipment.equipment_categories?.name ?? 'Без категории'} · {equipment.status}
         </p>
-        <p className="mt-2 text-[11px] text-zinc-400">{events.length} событий</p>
+        <p className="mt-2 text-xs text-zinc-400">{events.length} событий</p>
       </Link>
       <div className="relative" style={{ minHeight: rowHeight }}>
         <TimelineBackground days={days} today={today} />
@@ -828,7 +828,7 @@ function EquipmentTimelineRow({
                 key={event.id}
                 href={`/orders/${event.order_id}`}
                 className={cn(
-                  'absolute flex h-8 items-center overflow-hidden rounded-lg border px-2 text-[10px] font-medium shadow-sm',
+                  'absolute flex h-8 items-center overflow-hidden rounded-lg border px-2 text-xs font-medium shadow-sm',
                   config.bar,
                   conflict && 'border-red-600 ring-2 ring-red-300',
                 )}
@@ -860,7 +860,7 @@ function EquipmentTimelineRow({
             <div
               key={`${event.kind}:${event.id}`}
               className={cn(
-                'absolute flex h-8 items-center overflow-hidden rounded-lg border px-2 text-[10px] font-medium shadow-sm',
+                'absolute flex h-8 items-center overflow-hidden rounded-lg border px-2 text-xs font-medium shadow-sm',
                 maintenanceEvent
                   ? 'border-violet-300 bg-violet-100 text-violet-800'
                   : 'border-amber-300 bg-amber-100 text-amber-800',
@@ -952,10 +952,10 @@ function MobileAgenda({
                         <p className="truncate text-sm font-semibold">{order.client?.full_name ?? 'Клиент'}</p>
                         <p className="mt-1 text-xs text-zinc-500">{order.order_number} · {order.client?.phone ?? 'Без телефона'}</p>
                       </div>
-                      <span className={cn('rounded-full px-2 py-1 text-[10px]', config.badge)}>{config.label}</span>
+                      <span className={cn('rounded-full px-2 py-1 text-xs', config.badge)}>{config.label}</span>
                     </div>
                     <p className="mt-2 text-xs text-zinc-600">{equipmentNames(order)}</p>
-                    <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-zinc-400">
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-400">
                       <span className={order.actual_start_at ? 'font-medium text-zinc-600' : undefined}>
                         {orderTimeLabel(order)}
                       </span>

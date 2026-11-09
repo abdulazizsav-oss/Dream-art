@@ -62,8 +62,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="bg-white rounded-2xl border p-4">
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
             <Layers className="w-4 h-4" />
             Категория
           </div>
@@ -72,8 +72,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             <p className="text-xs text-zinc-400 mt-1">{brandData?.name ?? item.brand}</p>
           )}
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="bg-white rounded-2xl border p-4">
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
             <CircleDollarSign className="w-4 h-4" />
             Ставки аренды
           </div>
@@ -97,8 +97,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
             )}
           </div>
         </div>
-        <div className="bg-white rounded-xl border p-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="bg-white rounded-2xl border p-4">
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
             <CalendarDays className="w-4 h-4" />
             Источник
           </div>
@@ -107,17 +107,17 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       </div>
 
       {item.specs && (
-        <div className="bg-white rounded-xl border p-4">
-          <p className="text-xs text-gray-500">Характеристики</p>
+        <div className="bg-white rounded-2xl border p-4">
+          <p className="text-xs text-zinc-500">Характеристики</p>
           <p className="font-medium mt-1 text-zinc-900">{item.specs}</p>
         </div>
       )}
 
       {/* Комплектация */}
       {kitItems.length > 0 && (
-        <div className="bg-white rounded-xl border p-4 space-y-3">
+        <div className="bg-white rounded-2xl border p-4 space-y-3">
           <div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+            <div className="flex items-center gap-2 text-xs text-zinc-500 mb-2">
               <Package className="w-3.5 h-3.5" />
               Комплектация
             </div>
@@ -135,8 +135,8 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
       {/* ROI / Заработано */}
       {showFinancialSummary && utilization && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border p-4">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="bg-white rounded-2xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
               <CircleDollarSign className="w-4 h-4" />
               Заработано
             </div>
@@ -144,19 +144,19 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
               {formatCurrency(utilization.total_revenue ?? 0, item.currency)}
             </p>
           </div>
-          <div className="bg-white rounded-xl border p-4">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="bg-white rounded-2xl border p-4">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
               <TrendingUp className="w-4 h-4" />
               ROI
             </div>
-            <p className={'text-2xl font-bold mt-1 ' + ((utilization.roi_percent ?? 0) >= 100 ? 'text-green-600' : 'text-gray-900')}>
+            <p className={'text-2xl font-bold mt-1 ' + ((utilization.roi_percent ?? 0) >= 100 ? 'text-green-600' : 'text-zinc-900')}>
               {Math.round(utilization.roi_percent ?? 0)}%
             </p>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-white rounded-2xl border p-6">
         <h2 className="font-semibold mb-4">Редактировать</h2>
         {item.currency !== 'UZS' && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -192,7 +192,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
       {/* Maintenance log */}
       {maintenance.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white rounded-2xl border p-6">
           <h2 className="font-semibold mb-4">История ТО</h2>
           <div className="space-y-2">
             {maintenance.map(m => (
@@ -200,13 +200,13 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
                 <div>
                   <p>{m.description ?? 'ТО'}</p>
                   {m.scheduled_date && (
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-zinc-400">
                       Запланировано: {formatDate(m.scheduled_date)}
                       {m.completed_date && ` · Выполнено: ${formatDate(m.completed_date)}`}
                     </p>
                   )}
                 </div>
-                {m.cost && <span className="text-gray-600">{formatCurrency(m.cost)}</span>}
+                {m.cost && <span className="text-zinc-600">{formatCurrency(m.cost)}</span>}
               </div>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
 
       {/* Rental history */}
       {orderItems && orderItems.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white rounded-2xl border p-6">
           <h2 className="font-semibold mb-4">История аренд</h2>
           <div className="space-y-2">
             {orderItems.map(oi => {
@@ -226,11 +226,11 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
                     <Link href={`/orders/${(oi.orders as { id?: string } | null)?.id ?? ''}`} className="text-blue-600 hover:underline">
                       {order?.order_number}
                     </Link>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-zinc-400">
                       {order?.clients?.full_name} · {order?.start_date} — {order?.end_date}
                     </p>
                   </div>
-                  <span className="text-gray-600">{formatCurrency(oi.subtotal)}</span>
+                  <span className="text-zinc-600">{formatCurrency(oi.subtotal)}</span>
                 </div>
               )
             })}

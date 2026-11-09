@@ -18,7 +18,7 @@ interface SidebarProps {
 }
 
 const baseNavItems = [
-  { href: '/dashboard',  label: 'Дашборд',   icon: LayoutDashboard },
+  { href: '/dashboard',  label: 'Главная',   icon: LayoutDashboard },
   { href: '/equipment',  label: 'Техника',    icon: Camera },
   { href: '/clients',    label: 'Клиенты',    icon: Users },
   { href: '/orders',     label: 'Аренда',     icon: ClipboardList },
@@ -55,7 +55,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
         <Link href="/dashboard" aria-label="Dream Art — на главную" className="block rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-900">
           <BrandLogo />
         </Link>
-        <p className="mt-3 text-xs text-gray-400">CRM система</p>
+        <p className="mt-3 text-xs text-zinc-400">CRM система</p>
       </div>
 
       {/* Nav */}
@@ -70,13 +70,13 @@ export function Sidebar({ role, userName }: SidebarProps) {
                 'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[48px]',
                 active
                   ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
               )}
             >
-              <Icon className={cn('w-5 h-5 flex-shrink-0', active ? 'text-blue-600' : 'text-gray-400')} />
+              <Icon className={cn('w-5 h-5 flex-shrink-0', active ? 'text-blue-600' : 'text-zinc-400')} />
               {label}
               {href === '/admin/users' && (
-                <span className="ml-auto text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">
+                <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-semibold">
                   SA
                 </span>
               )}
@@ -87,15 +87,15 @@ export function Sidebar({ role, userName }: SidebarProps) {
 
       {/* User info + logout */}
       <div className="px-3 py-4 border-t space-y-1">
-        <div className="px-4 py-2.5 rounded-xl bg-gray-50">
-          <p className="text-xs font-medium text-gray-700 truncate">{userName || 'Администратор'}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+        <div className="px-4 py-2.5 rounded-xl bg-zinc-50">
+          <p className="text-xs font-medium text-zinc-700 truncate">{userName || 'Администратор'}</p>
+          <p className="text-xs text-zinc-400 mt-0.5">
             {role === 'super_admin' ? 'Главный администратор' : 'Администратор'}
           </p>
         </div>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-gray-500 hover:text-red-600 min-h-[44px] px-4"
+          className="w-full justify-start gap-3 text-zinc-500 hover:text-red-600 min-h-[44px] px-4"
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />

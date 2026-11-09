@@ -129,8 +129,8 @@ export function PayReturnedItemButton({
           <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
             <OperationNotice orderId={orderId} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
             <fieldset disabled={loading || operation.uncertain} className="min-w-0 space-y-4">
-            <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
-              <span className="text-gray-600">Остаток по позиции</span>
+            <div className="rounded-xl border bg-zinc-50 p-3 flex justify-between text-sm">
+              <span className="text-zinc-600">Остаток по позиции</span>
               <span className="font-semibold text-red-600">{formatCurrency(remainingDue, currency)}</span>
             </div>
 

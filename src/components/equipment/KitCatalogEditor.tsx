@@ -55,7 +55,7 @@ export function KitCatalogEditor({ value, onChange, suggestions = [] }: KitCatal
       {value.length > 0 && (
         <div className="space-y-2">
           {/* Заголовки колонок (desktop) */}
-          <div className="hidden sm:grid grid-cols-[1fr_120px_84px_84px_40px] gap-2 px-1 text-[11px] font-medium text-gray-400">
+          <div className="hidden sm:grid grid-cols-[1fr_120px_84px_84px_40px] gap-2 px-1 text-xs font-medium text-zinc-400">
             <span>Компонент</span>
             <span>Цена/смена</span>
             <span>По умолч.</span>
@@ -111,7 +111,7 @@ export function KitCatalogEditor({ value, onChange, suggestions = [] }: KitCatal
                 <Trash2 className="h-4 w-4" />
               </button>
               {row.price > 0 && (
-                <p className="col-span-2 sm:hidden text-[11px] text-blue-600">
+                <p className="col-span-2 sm:hidden text-xs text-blue-600">
                   Платный: {formatCurrency(row.price)} / смена × до {row.max_qty} шт.
                 </p>
               )}
@@ -136,13 +136,13 @@ export function KitCatalogEditor({ value, onChange, suggestions = [] }: KitCatal
 
       {availableSuggestions.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-xs text-gray-400 self-center">Быстрый выбор:</span>
+          <span className="text-xs text-zinc-400 self-center">Быстрый выбор:</span>
           {availableSuggestions.map(s => (
             <button
               key={s}
               type="button"
               onClick={() => add(s)}
-              className="inline-flex items-center gap-1 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2.5 py-0.5 text-xs text-gray-600 transition-colors"
+              className="inline-flex items-center gap-1 rounded-full bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 px-2.5 py-0.5 text-xs text-zinc-600 transition-colors"
             >
               <Plus className="w-3 h-3" />
               {s}

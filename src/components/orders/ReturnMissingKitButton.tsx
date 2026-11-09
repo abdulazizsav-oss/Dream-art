@@ -139,7 +139,7 @@ export function ReturnMissingKitButton({ orderId, items, variant = 'outline', si
               const missingDetails = it.missing ?? it.missing_kit_items.map(kit_name => ({ kit_name, missing_since: '' }))
               return (
                 <div key={it.order_item_id} className="rounded-xl border bg-zinc-50/60 p-3">
-                  <p className="text-sm font-medium text-gray-800 mb-2">{it.equipment_name}</p>
+                  <p className="text-sm font-medium text-zinc-800 mb-2">{it.equipment_name}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {missingDetails.map(missing => {
                       const active = itemSelected.has(missing.kit_name)
@@ -157,7 +157,7 @@ export function ReturnMissingKitButton({ orderId, items, variant = 'outline', si
                         >
                           <span className="block">{active ? '✓ ' : '⚠ '}{missing.kit_name}</span>
                           {missing.missing_since && (
-                            <span className={cn('block text-[10px] font-normal', active ? 'text-emerald-50' : 'text-amber-600')}>
+                            <span className={cn('block text-xs font-normal', active ? 'text-emerald-50' : 'text-amber-600')}>
                               с {formatMissingSinceDateTime(missing.missing_since)} · {formatMissingKitAge(missing.missing_since)}
                             </span>
                           )}

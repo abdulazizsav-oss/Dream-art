@@ -11,7 +11,6 @@ import {
   ChevronRight,
   ClipboardList,
   PackageCheck,
-  Plus,
   Search,
   Truck,
   WalletCards,
@@ -140,20 +139,11 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-5">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <p className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400 sm:block">Аренда техники</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950">Заказы</h1>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-            Текущие аренды, оплаты и история.
-          </p>
-        </div>
-        <Link href="/orders/new" className="hidden shrink-0 sm:inline-flex">
-          <Button className="min-h-[46px] px-4 shadow-sm transition-transform active:scale-[0.98]">
-            <Plus className="mr-2 h-4 w-4" />
-            Новый заказ
-          </Button>
-        </Link>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">Аренда</h1>
+        <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+          Заказы: текущие аренды, возвраты, оплаты и история.
+        </p>
       </header>
 
       <section className={cn('grid overflow-hidden rounded-2xl border bg-white grid-cols-2', showFinancialSummary ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
@@ -414,7 +404,7 @@ function OrderRow({ order }: { order: OrderListItem }) {
               {order.orderNumber}
             </span>
             {order.deliveryFee > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-1 text-[10px] font-medium text-sky-700">
+              <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">
                 <Truck className="h-3 w-3" /> Доставка · {formatCurrency(order.deliveryFee)}
               </span>
             ) : null}
@@ -439,23 +429,23 @@ function OrderRow({ order }: { order: OrderListItem }) {
         </div>
 
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">{period.label}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">{period.label}</p>
           <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-700">{period.value}</p>
           <p className="mt-2 truncate text-xs text-zinc-500" title={order.equipmentNames.join(', ')}>
             <PackageCheck className="mr-1 inline h-3.5 w-3.5 -translate-y-px text-zinc-400" />
             {equipmentSummary(order.equipmentNames)}
           </p>
-          {order.createdBy && <p className="mt-1 truncate text-[11px] text-zinc-400">Оформил: {order.createdBy}</p>}
+          {order.createdBy && <p className="mt-1 truncate text-xs text-zinc-400">Оформил: {order.createdBy}</p>}
         </div>
 
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400">Расчёт</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">Расчёт</p>
           <p className="mt-1 font-semibold tabular-nums text-zinc-900">{formatCurrency(order.effectiveTotal)}</p>
-          <p className="mt-1 text-[11px] tabular-nums text-emerald-700">
+          <p className="mt-1 text-xs tabular-nums text-emerald-700">
             Оплачено: {formatCurrency(order.paidRental)}
           </p>
           {hasDebt && (
-            <p className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold tabular-nums text-amber-700">
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold tabular-nums text-amber-700">
               <WalletCards className="h-3 w-3" />
               Долг: {formatCurrency(order.debt)}
             </p>

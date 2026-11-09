@@ -3,6 +3,7 @@
 import { signedPaymentAmount } from '@/lib/orders/cancellation'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import {
   AlertTriangle,
   Banknote,
@@ -548,6 +549,23 @@ function ExpensesTab({
   to: string
   onChanged: () => void
 }) {
+  const [pendingExpenseId, setPendingExpenseId] = useState<string | null>(null)
+
+  async function deleteExpense() {
+    if (!pendingExpenseId) return
+    try {
+      const response = await fetch(`/api/expenses/${pendingExpenseId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        toast.error('Не удалось удалить расход')
+        return
+      }
+      toast.success('Расход удалён')
+      onChanged()
+    } catch {
+      toast.error('Ответ сервера не получен. Проверьте список расходов перед повторным удалением.')
+    }
+  }
+
   return (
     <div className={cn('grid gap-5', isSuperAdmin && 'xl:grid-cols-[420px_minmax(0,1fr)]')}>
       {isSuperAdmin && <ExpenseForm equipment={equipment} onSaved={onChanged} />}
@@ -579,17 +597,8 @@ function ExpensesTab({
                   {isSuperAdmin && (
                     <button
                       type="button"
-                      onClick={async () => {
-                        if (!window.confirm('Удалить этот расход?')) return
-                        const response = await fetch(`/api/expenses/${expense.id}`, { method: 'DELETE' })
-                        if (!response.ok) {
-                          toast.error('Не удалось удалить расход')
-                          return
-                        }
-                        toast.success('Расход удалён')
-                        onChanged()
-                      }}
-                      className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                      onClick={() => setPendingExpenseId(expense.id)}
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-600"
                       aria-label="Удалить расход"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -602,6 +611,13 @@ function ExpensesTab({
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={!!pendingExpenseId}
+        onOpenChange={open => { if (!open) setPendingExpenseId(null) }}
+        title="Удалить этот расход?"
+        description="Запись исчезнет из списка и из расчёта результата за период."
+        onConfirm={deleteExpense}
+      />
     </div>
   )
 }
@@ -735,7 +751,7 @@ function KpiCard({
         {money ? formatCurrency(value) : new Intl.NumberFormat('ru-RU').format(value)}
       </p>
       {change !== undefined && (
-        <p className={cn('mt-2 text-[11px]', change === null || change >= 0 ? 'text-green-600' : 'text-red-600')}>
+        <p className={cn('mt-2 text-xs', change === null || change >= 0 ? 'text-green-600' : 'text-red-600')}>
           {change === null ? 'Новый доход' : `${change >= 0 ? '+' : ''}${change.toFixed(1)}% к прошлому периоду`}
         </p>
       )}

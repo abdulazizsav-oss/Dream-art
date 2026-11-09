@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-gray-200/80', className)}
+      className={cn('animate-pulse rounded-md bg-zinc-200/80', className)}
       {...props}
     />
   )
@@ -38,7 +38,7 @@ export function ListSkeleton({ rows = 6 }: { rows?: number }) {
         <Skeleton className="h-7 w-40" />
         <Skeleton className="h-10 w-32" />
       </div>
-      <div className="bg-white rounded-xl border divide-y">
+      <div className="bg-white rounded-2xl border divide-y">
         {Array.from({ length: rows }).map((_, i) => (
           <div key={i} className="p-4 flex justify-between items-center">
             <div className="space-y-2 flex-1">

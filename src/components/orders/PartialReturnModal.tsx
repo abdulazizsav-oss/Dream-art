@@ -217,8 +217,8 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
             <OperationNotice orderId={orderId} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
             <fieldset disabled={loading || operation.uncertain} className="min-w-0 space-y-4">
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-xl border bg-gray-50 p-3">
-                <p className="text-xs text-gray-500">Возвращаем сейчас</p>
+              <div className="rounded-xl border bg-zinc-50 p-3">
+                <p className="text-xs text-zinc-500">Возвращаем сейчас</p>
                 <p className="mt-1 font-semibold tabular-nums">{formatCurrency(selectedSubtotal)}</p>
               </div>
               <div className="rounded-xl border bg-emerald-50 p-3">
@@ -245,8 +245,8 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                           onChange={() => toggleItem(it.id)}
                           className="mt-1"
                         />
-                        <span className="flex-1 text-sm font-medium text-gray-800">{it.name}</span>
-                        <span className="text-xs font-semibold tabular-nums text-gray-700">
+                        <span className="flex-1 text-sm font-medium text-zinc-800">{it.name}</span>
+                        <span className="text-xs font-semibold tabular-nums text-zinc-700">
                           {formatCurrency(it.current_subtotal, it.currency)}
                         </span>
                       </label>
@@ -313,7 +313,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                   Не сдано элементов комплекта: {missingTotals}. {items.filter(item => picked.has(item.id)).flatMap(item => item.selected_kit_items.filter(kit => !returnedKit[item.id]?.has(kit)).map(kit => `${item.name}: ${kit}`)).join('; ')}
                 </p>
               )}
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-zinc-500">
                 Аксессуары по умолчанию отмечены как возвращённые. Нажмите на то, чего нет: появится «Не возвращено».
               </p>
             </div>

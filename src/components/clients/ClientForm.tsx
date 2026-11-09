@@ -176,7 +176,7 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
             autoComplete="tel"
           />
           {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
-          <p className="text-[11px] text-blue-700/60">Поддерживаются +998, +7 и номер без кода — маска применится автоматически.</p>
+          <p className="text-xs text-blue-700/60">Поддерживаются +998, +7 и номер без кода — маска применится автоматически.</p>
         </div>
         <PotentialClientDuplicateWarning
           fullName={fullName}
@@ -269,12 +269,12 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
       </section>
 
       {/* ── Документ клиента ── */}
-      <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+      <section className="rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-slate-700">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-200 text-zinc-700">
             <FileText className="w-4 h-4" />
           </span>
-          <h3 className="text-sm font-semibold text-slate-900">Документ клиента</h3>
+          <h3 className="text-sm font-semibold text-zinc-900">Документ клиента</h3>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor={`${fieldId}-client-document`}>Вид документа</Label>

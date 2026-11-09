@@ -83,7 +83,7 @@ export default function LoginPage() {
               placeholder="admin"
               className="min-h-[48px] text-base rounded-xl"
             />
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-xs text-zinc-400">
               Email автоматически сокращается до никнейма (admin@… → admin)
             </p>
           </div>
