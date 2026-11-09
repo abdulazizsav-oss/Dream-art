@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { clientSchema, ClientFormInput, ClientFormValues } from '@/lib/validations/client'
@@ -34,6 +35,7 @@ interface ClientFormProps {
 
 export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: ClientFormProps) {
   const router = useRouter()
+  const fieldId = useId()
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } =
     useForm<ClientFormInput, unknown, ClientFormValues>({
       resolver: zodResolver(clientSchema),
@@ -144,14 +146,14 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           <h3 className="text-sm font-semibold text-blue-900">Основная информация</h3>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="client-full-name">ФИО *</Label>
-          <Input id="client-full-name" {...register('full_name')} placeholder="Иванов Иван Иванович" className="min-h-[52px] text-base md:text-base bg-white" autoComplete="name" />
+          <Label htmlFor={`${fieldId}-client-full-name`}>ФИО *</Label>
+          <Input id={`${fieldId}-client-full-name`} {...register('full_name')} placeholder="Иванов Иван Иванович" className="min-h-[52px] text-base md:text-base bg-white" autoComplete="name" />
           {errors.full_name && <p className="text-xs text-red-500">{errors.full_name.message}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="client-primary-phone">Телефон *</Label>
+          <Label htmlFor={`${fieldId}-client-primary-phone`}>Телефон *</Label>
           <Input
-            id="client-primary-phone"
+            id={`${fieldId}-client-primary-phone`}
             type="tel"
             inputMode="tel"
             {...phoneField}
@@ -192,23 +194,23 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           <h3 className="text-sm font-semibold text-violet-900">Контакты</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>Email</Label>
-          <Input type="email" {...register('email')} placeholder="client@example.com" className="min-h-[52px] text-base md:text-base bg-white" />
+          <Label htmlFor={`${fieldId}-client-email`}>Email</Label>
+          <Input id={`${fieldId}-client-email`} type="email" {...register('email')} placeholder="client@example.com" className="min-h-[52px] text-base md:text-base bg-white" />
           {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Telegram</Label>
-            <Input {...register('telegram_username')} placeholder="@username" className="min-h-[52px] text-base md:text-base bg-white" />
+            <Label htmlFor={`${fieldId}-client-telegram_username`}>Telegram</Label>
+            <Input id={`${fieldId}-client-telegram_username`} {...register('telegram_username')} placeholder="@username" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
           <div className="space-y-1.5">
-            <Label>Instagram</Label>
-            <Input {...register('instagram_username')} placeholder="@username" className="min-h-[52px] text-base md:text-base bg-white" />
+            <Label htmlFor={`${fieldId}-client-instagram_username`}>Instagram</Label>
+            <Input id={`${fieldId}-client-instagram_username`} {...register('instagram_username')} placeholder="@username" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>Facebook</Label>
-          <Input {...register('facebook_username')} placeholder="fb.com/username" className="min-h-[52px] text-base md:text-base bg-white" />
+          <Label htmlFor={`${fieldId}-client-facebook_username`}>Facebook</Label>
+          <Input id={`${fieldId}-client-facebook_username`} {...register('facebook_username')} placeholder="fb.com/username" className="min-h-[52px] text-base md:text-base bg-white" />
         </div>
       </section>
 
@@ -221,12 +223,12 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           <h3 className="text-sm font-semibold text-emerald-900">Адреса</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>Адрес фактический</Label>
-          <Textarea {...register('address_actual')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white text-base md:text-base" />
+          <Label htmlFor={`${fieldId}-client-address_actual`}>Адрес фактический</Label>
+          <Textarea id={`${fieldId}-client-address_actual`} {...register('address_actual')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white text-base md:text-base" />
         </div>
         <div className="space-y-1.5">
-          <Label>Адрес по прописке</Label>
-          <Textarea {...register('address_registered')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white text-base md:text-base" />
+          <Label htmlFor={`${fieldId}-client-address_registered`}>Адрес по прописке</Label>
+          <Textarea id={`${fieldId}-client-address_registered`} {...register('address_registered')} rows={2} placeholder="Город, улица, дом, квартира" className="bg-white text-base md:text-base" />
         </div>
       </section>
 
@@ -239,12 +241,12 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           <h3 className="text-sm font-semibold text-amber-900">Оценка и сегмент</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>Сегмент</Label>
+          <Label htmlFor={`${fieldId}-client-segment`}>Сегмент</Label>
           <Select
             value={segment}
             onValueChange={v => setValue('segment', v as ClientFormValues['segment'])}
           >
-            <SelectTrigger className="min-h-[52px] text-base md:text-base bg-white">
+            <SelectTrigger id={`${fieldId}-client-segment`} className="min-h-[52px] text-base md:text-base bg-white">
               <SelectValue>{CLIENT_SEGMENT_LABELS[segment]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -261,8 +263,8 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>Депозит на хранении</Label>
-          <Input type="number" {...register('deposit_held')} placeholder="0" className="min-h-[52px] text-base md:text-base bg-white" />
+          <Label htmlFor={`${fieldId}-client-deposit_held`}>Депозит на хранении</Label>
+          <Input id={`${fieldId}-client-deposit_held`} type="number" {...register('deposit_held')} placeholder="0" className="min-h-[52px] text-base md:text-base bg-white" />
         </div>
       </section>
 
@@ -275,12 +277,12 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           <h3 className="text-sm font-semibold text-slate-900">Документ клиента</h3>
         </div>
         <div className="space-y-1.5">
-          <Label>Вид документа</Label>
+          <Label htmlFor={`${fieldId}-client-document`}>Вид документа</Label>
           <Select
             value={docType}
             onValueChange={v => setValue('document_type', v as ClientFormValues['document_type'])}
           >
-            <SelectTrigger className="min-h-[52px] text-base md:text-base bg-white">
+            <SelectTrigger id={`${fieldId}-client-document`} className="min-h-[52px] text-base md:text-base bg-white">
               <SelectValue>{DOCUMENT_TYPE_LABELS[docType]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -292,26 +294,26 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Серия</Label>
-            <Input {...register('passport_series')} placeholder="AA" className="min-h-[52px] text-base md:text-base bg-white" />
+            <Label htmlFor={`${fieldId}-client-passport_series`}>Серия</Label>
+            <Input id={`${fieldId}-client-passport_series`} {...register('passport_series')} placeholder="AA" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
           <div className="space-y-1.5">
-            <Label>Номер</Label>
-            <Input {...register('passport_number')} placeholder="1234567" className="min-h-[52px] text-base md:text-base bg-white" />
+            <Label htmlFor={`${fieldId}-client-passport_number`}>Номер</Label>
+            <Input id={`${fieldId}-client-passport_number`} {...register('passport_number')} placeholder="1234567" className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label>Кем выдан</Label>
-          <Input {...register('passport_issued_by')} className="min-h-[52px] text-base md:text-base bg-white" />
+          <Label htmlFor={`${fieldId}-client-passport_issued_by`}>Кем выдан</Label>
+          <Input id={`${fieldId}-client-passport_issued_by`} {...register('passport_issued_by')} className="min-h-[52px] text-base md:text-base bg-white" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Дата выдачи</Label>
-            <Input type="date" {...register('passport_issued_date')} className="min-h-[52px] text-base md:text-base bg-white" />
+            <Label htmlFor={`${fieldId}-client-passport_issued_date`}>Дата выдачи</Label>
+            <Input id={`${fieldId}-client-passport_issued_date`} type="date" {...register('passport_issued_date')} className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
           <div className="space-y-1.5">
-            <Label>Дата рождения</Label>
-            <Input type="date" {...register('birth_date')} className="min-h-[52px] text-base md:text-base bg-white" />
+            <Label htmlFor={`${fieldId}-client-birth_date`}>Дата рождения</Label>
+            <Input id={`${fieldId}-client-birth_date`} type="date" {...register('birth_date')} className="min-h-[52px] text-base md:text-base bg-white" />
           </div>
         </div>
       </section>
@@ -328,20 +330,21 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           Человек, который может забирать технику от имени клиента
         </p>
         <div className="space-y-1.5">
-          <Label>ФИО доверенного лица</Label>
+          <Label htmlFor={`${fieldId}-client-trusted_person_name`}>ФИО доверенного лица</Label>
           <Input
-            {...register('trusted_person_name')}
+            id={`${fieldId}-client-trusted_person_name`} {...register('trusted_person_name')}
             placeholder="Иванов Пётр Иванович"
             className="min-h-[52px] text-base md:text-base bg-white"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Телефон</Label>
+            <Label htmlFor={`${fieldId}-client-trusted-phone`}>Телефон</Label>
             <Input
               type="tel"
               inputMode="tel"
               {...trustedPersonPhoneField}
+              id={`${fieldId}-client-trusted-phone`}
               value={trustedPersonPhone}
               onChange={event => setValue('trusted_person_phone', formatClientPhoneInput(event.target.value), {
                 shouldDirty: true,
@@ -361,9 +364,9 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Кто это?</Label>
+            <Label htmlFor={`${fieldId}-client-trusted_person_relation`}>Кто это?</Label>
             <Input
-              {...register('trusted_person_relation')}
+              id={`${fieldId}-client-trusted_person_relation`} {...register('trusted_person_relation')}
               placeholder="Брат, жена, коллега..."
               className="min-h-[52px] text-base md:text-base bg-white"
             />
@@ -379,7 +382,7 @@ export function ClientForm({ defaultValues, clientId, onSaved, onCancel }: Clien
           </span>
           <h3 className="text-sm font-semibold text-zinc-800">Заметки</h3>
         </div>
-        <Textarea {...register('notes')} rows={3} placeholder="Дополнительная информация..." className="bg-white text-base md:text-base" />
+        <Textarea aria-label="Заметки о клиенте" {...register('notes')} rows={3} placeholder="Дополнительная информация..." className="bg-white text-base md:text-base" />
       </section>
 
       <div className="flex gap-3 pt-2">

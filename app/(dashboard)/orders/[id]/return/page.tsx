@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { formatCurrency, getTashkentDate, getTashkentTime } from '@/lib/utils'
+import { normalizeOrder } from '@/lib/orders/list'
+import { useOrderOperation } from '@/components/orders/useOrderOperation'
+import { OperationNotice } from '@/components/orders/OperationNotice'
 import { buildTashkentDate } from '@/lib/billing'
 
 interface OrderItem {
@@ -16,6 +19,8 @@ interface OrderItem {
   subtotal: number
   daily_rate: number
   days: number
+  returned?: boolean
+  actual_start_at?: string | null
   condition_on_issue: string | null
   selected_kit_items: string[] | null
   equipment: { name: string } | null
@@ -35,13 +40,24 @@ export default function ReturnPage() {
   const [orderStartDate, setOrderStartDate] = useState('')
   const [orderActualStartAt, setOrderActualStartAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const operation = useOrderOperation(id)
+  const submitting = operation.pending
+  const [order, setOrder] = useState<Record<string, unknown> | null>(null)
+  const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    fetch(`/api/orders/${id}`)
-      .then(r => r.json())
+    const controller = new AbortController()
+    setLoading(true)
+    setError('')
+    fetch(`/api/orders/${id}`, { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Не удалось загрузить заказ. Проверьте ссылку и соединение.')
+        return response.json()
+      })
       .then(order => {
-        const oi: OrderItem[] = order.order_items ?? []
+        setOrder(order)
+        const oi: OrderItem[] = (order.order_items ?? []).filter((item: OrderItem) => !item.returned)
         setItems(oi)
         setOrderEndDate(order.end_date ?? '')
         setOrderStartDate(order.start_date ?? '')
@@ -52,13 +68,15 @@ export default function ReturnPage() {
         const initialKit: Record<string, Set<string>> = {}
         oi.forEach((i) => {
           initialReturns[i.id] = 'Хорошее'
-          initialKit[i.id] = new Set<string>()
+          initialKit[i.id] = new Set(i.selected_kit_items ?? [])
         })
         setReturns(initialReturns)
         setReturnedKit(initialKit)
-        setLoading(false)
       })
-  }, [id])
+      .catch(reason => { if (!controller.signal.aborted) setError(reason.message || 'Не удалось загрузить заказ') })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
+  }, [id, reloadKey])
 
   function toggleKit(orderItemId: string, kitItem: string) {
     setReturnedKit(prev => {
@@ -79,15 +97,16 @@ export default function ReturnPage() {
     : orderStartDate
       ? buildTashkentDate(orderStartDate, '09:30')
       : null
-  const recalcTotal = actualReturnAt && startAt
-    ? (() => {
-        const actualDays = Math.max(1, Math.ceil((actualReturnAt.getTime() - startAt.getTime()) / 86400000))
-        return items.reduce((sum, i) => sum + i.daily_rate * actualDays, 0)
-      })()
+  const latestStart = Math.max(startAt?.getTime() ?? 0, ...items.map(item => item.actual_start_at ? Date.parse(item.actual_start_at) : 0))
+  const validReturnTime = Boolean(actualReturnAt && Number.isFinite(actualReturnAt.getTime()) && actualReturnAt.getTime() >= latestStart)
+  const returnPreview = order && actualReturnAt && validReturnTime
+    ? normalizeOrder(order, 0, actualReturnAt)
     : null
+  const recalcTotal = returnPreview?.effectiveTotal ?? null
+  const canReturn = order && ['active', 'overdue'].includes(String(order.status)) && items.length > 0
 
   async function handleSubmit() {
-    setSubmitting(true)
+    if (submitting || operation.uncertain || !canReturn || !validReturnTime) return
     const payload = items.map(i => {
       const original = i.selected_kit_items ?? []
       const returned = Array.from(returnedKit[i.id] ?? new Set<string>())
@@ -104,45 +123,44 @@ export default function ReturnPage() {
     if (actualReturnAt) {
       body.actual_end_at = actualReturnAt.toISOString()
     }
-    const res = await fetch(`/api/orders/${id}/return`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-      toast.error('Ошибка при оформлении возврата')
-    } else {
+    if (await operation.submit(`/api/orders/${id}/return`, body)) {
       toast.success('Возврат оформлен')
       router.push(`/orders/${id}`)
       router.refresh()
     }
-    setSubmitting(false)
   }
 
   if (loading) return <div className="p-8 text-gray-400">Загрузка...</div>
 
+  if (error) return <div role="alert" className="space-y-3 rounded-xl border bg-white p-6"><p>{error}</p><Button onClick={() => setReloadKey(value => value + 1)}>Повторить загрузку</Button></div>
+  if (!canReturn) return <div className="space-y-3 rounded-xl border bg-white p-6"><p>У этого заказа нет техники к возврату.</p><Button variant="outline" onClick={() => router.push(`/orders/${id}`)}>Открыть заказ</Button></div>
+
   return (
     <div className="max-w-xl">
       <PageHeader title="Оформление возврата" />
-      <div className="bg-white rounded-xl border p-6 space-y-4">
+      <OperationNotice orderId={id} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
+      <fieldset disabled={submitting || operation.uncertain} className="min-w-0 bg-white rounded-xl border p-6 space-y-4">
         {/* Actual return date */}
         <div className="pb-4 border-b space-y-2">
           <Label>Фактическое время возврата</Label>
           <div className="grid grid-cols-2 gap-2">
             <Input
+              aria-label="Фактическая дата возврата"
               type="date"
               value={actualReturnDate}
               onChange={e => setActualReturnDate(e.target.value)}
             />
             <Input
+              aria-label="Фактическое время возврата"
               type="time"
               value={actualReturnTime}
               onChange={e => setActualReturnTime(e.target.value)}
             />
           </div>
+          {!validReturnTime && <p role="alert" className="text-sm text-red-700">Укажите время возврата не раньше выдачи всех выбранных позиций.</p>}
           {recalcTotal !== null && (
             <p className="text-xs text-amber-600 font-medium">
-              Ориентировочно по фактическому времени: {recalcTotal.toLocaleString('ru-RU')} сум
+              Итог заказа по правилам смен, включая доставку: {recalcTotal.toLocaleString('ru-RU')} сум
             </p>
           )}
           {orderEndDate && (
@@ -158,14 +176,14 @@ export default function ReturnPage() {
             <div key={item.id} className="border-b pb-4 last:border-0">
               <div className="flex justify-between items-start mb-2">
                 <p className="font-medium text-sm">{item.equipment?.name}</p>
-                <span className="text-xs text-gray-500">{formatCurrency(item.subtotal)}</span>
+                <span className="text-xs text-gray-500">{formatCurrency(returnPreview?.closeItems.find(row => row.id === item.id)?.current_subtotal ?? item.subtotal)}</span>
               </div>
               {item.condition_on_issue && (
                 <p className="text-xs text-gray-400 mb-2">При выдаче: {item.condition_on_issue}</p>
               )}
               <div className="space-y-1">
-                <Label className="text-xs">Состояние при возврате</Label>
-                <Textarea
+                <Label htmlFor={`return-condition-${item.id}`} className="text-xs">Состояние при возврате</Label>
+                <Textarea id={`return-condition-${item.id}`}
                   rows={2}
                   value={returns[item.id] ?? ''}
                   onChange={e => setReturns(r => ({ ...r, [item.id]: e.target.value }))}
@@ -190,20 +208,21 @@ export default function ReturnPage() {
                         <button
                           key={kitItem}
                           type="button"
+                          aria-pressed={isReturned}
                           onClick={() => toggleKit(item.id, kitItem)}
-                          className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                          className={`min-h-11 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                             isReturned
-                              ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                              ? 'border-zinc-200 bg-zinc-50 text-zinc-700'
                               : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600'
                           }`}
                         >
-                          {isReturned ? '✓ ' : ''}{kitItem}
+                          {isReturned ? '✓ Возвращено: ' : 'Не возвращено: '}{kitItem}
                         </button>
                       )
                     })}
                   </div>
                   <p className="mt-2 text-[11px] text-gray-500">
-                    Зачёркнуто — сдали. Залитая цветом кнопка — не сдано.
+                    Проверьте каждый аксессуар. По умолчанию комплект отмечен как возвращённый; отсутствующие элементы отметьте «Не возвращено».
                   </p>
                 </div>
               )}
@@ -212,12 +231,12 @@ export default function ReturnPage() {
         })}
 
         <div className="flex gap-3 pt-2">
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || operation.uncertain || !validReturnTime}>
             {submitting ? 'Оформляем...' : 'Подтвердить возврат'}
           </Button>
           <Button variant="outline" onClick={() => router.back()}>Отмена</Button>
         </div>
-      </div>
+      </fieldset>
     </div>
   )
 }

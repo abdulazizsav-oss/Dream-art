@@ -13,16 +13,17 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   const supabase = await createClient()
   const showFinancialSummary = await isSuperAdmin()
 
-  const { data: item } = await supabase
+  const { data: item, error: recordError } = await supabase
     .from('equipment')
     .select('*, equipment_categories(name, slug), equipment_maintenance(*)')
     .eq('id', id)
-    .single()
+    .maybeSingle()
   const brandId = (item as any)?.brand_id
   const { data: brandData } = brandId
     ? await supabase.from('brands').select('name').eq('id', brandId).single()
     : { data: null }
 
+  if (recordError) throw new Error('Не удалось загрузить запись')
   if (!item) notFound()
   const hasNightShift = supportsNightShift(item as { day_night?: 'day' | 'night' | 'both' | null })
 

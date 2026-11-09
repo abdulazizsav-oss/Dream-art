@@ -278,3 +278,24 @@
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  main > *, .skeleton-shimmer {
+    animation: none !important;
+  }
+  .overflow-auto {
+    scroll-behavior: auto !important;
+  }
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  a:active {
+    scale: 1 !important;
+    transform: none !important;
+  }
+  .card-hover, .transition-smooth, .shadow-border {
+    transition: none !important;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
+}

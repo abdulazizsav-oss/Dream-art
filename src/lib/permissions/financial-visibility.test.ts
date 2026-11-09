@@ -34,6 +34,7 @@ function database(data: Record<string, unknown>, queried: string[]) {
     const query: any = { then: (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve) }
     for (const method of ['select', 'eq', 'in', 'is', 'order', 'limit', 'range']) query[method] = () => query
     query.single = async () => result
+    query.maybeSingle = async () => result
     return query
   } }
 }
@@ -41,6 +42,7 @@ function database(data: Record<string, unknown>, queried: string[]) {
 test('orders hide total debt by default but retain individual order debt and return actions', () => {
   const { OrdersExplorer } = loadModule('src/components/orders/OrdersExplorer.tsx', {
     'next/link': 'a',
+    'next/navigation': { useSearchParams: () => new URLSearchParams() },
     '@/components/ui/button': { Button: 'button' },
     '@/components/orders/CloseOrderButton': { CloseOrderButton: () => createElement('button', null, 'Закрыть заказ') },
     '@/components/orders/ReturnMissingKitButton': { ReturnMissingKitButton: () => null },

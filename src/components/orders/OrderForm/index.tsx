@@ -231,7 +231,7 @@ export function OrderForm({ clients: initialClients, equipment, draftOwnerId, in
       </div>
       <Dialog open={confirmOpen} onOpenChange={open => { if (!submitting) setConfirmOpen(open) }}>
         <DialogContent showCloseButton={false} className="max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] gap-0 overflow-hidden p-0 sm:max-w-2xl">
-          <div className="border-b p-4"><DialogTitle className="text-lg">Проверьте перед выдачей</DialogTitle><DialogDescription className="mt-1">Заказ сохранится только после нажатия «Создать заказ».</DialogDescription></div>
+          <div className="border-b p-4"><DialogTitle className="text-lg">Проверьте перед выдачей</DialogTitle><DialogDescription className="mt-1">Заказ сохранится только после нажатия «Создать и выдать».</DialogDescription></div>
           <div className="max-h-[calc(100dvh-240px)] overflow-y-auto overscroll-contain p-4">
             {parsedOrder.success ? <StepSummary values={parsedOrder.data} clients={allClients} equipment={equipment} trustedPerson={trustedPerson} onBack={() => setConfirmOpen(false)} onSubmit={submit} submitting={submitting} hideNavigation />
               : <p role="status" className="text-sm text-zinc-600">Черновик сохранён. Для расчёта заполните даты и проверьте данные заказа.</p>}
@@ -243,7 +243,7 @@ export function OrderForm({ clients: initialClients, equipment, draftOwnerId, in
           </div>
           <div className="flex gap-3 border-t bg-white p-4">
             <Button variant="outline" className="h-13 text-base" disabled={submitting} onClick={() => setConfirmOpen(false)}>Изменить</Button>
-            <Button className="h-13 flex-1 text-base" disabled={submitting || requestUncertain || !formReady} onClick={submit}>{submitting ? 'Создание…' : 'Создать заказ'}</Button>
+            <Button className="h-13 flex-1 text-base" disabled={submitting || requestUncertain || !formReady} onClick={submit}>{submitting ? 'Создание…' : 'Создать и выдать'}</Button>
           </div>
         </DialogContent>
       </Dialog>

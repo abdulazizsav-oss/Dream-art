@@ -16,7 +16,8 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
     .order('sort_order')
     .order('name')
 
-  const [{ data: clients }, equipmentResult, profile] = await Promise.all([clientsPromise, equipmentPromise, getMyProfile()])
+  const [{ data: clients, error: clientsError }, equipmentResult, profile] = await Promise.all([clientsPromise, equipmentPromise, getMyProfile()])
+  if (clientsError) throw new Error('Не удалось загрузить клиентов')
   if (client_id && !clients?.some(client => client.id === client_id)) notFound()
   let equipment = equipmentResult.data
 
@@ -25,6 +26,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
       .from('equipment')
       .select('*, equipment_categories(*)')
       .order('name')
+    if (fallback.error) throw new Error('Не удалось загрузить технику')
     equipment = fallback.data
   }
 

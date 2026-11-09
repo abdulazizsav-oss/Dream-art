@@ -3,7 +3,7 @@
 import { OrderFormValues } from '@/lib/validations/order'
 import { Client, Equipment, EquipmentCategory } from '@/types/database'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, formatDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
+import { formatCurrency, formatDate, getTashkentDate, DOCUMENT_TYPE_LABELS } from '@/lib/utils'
 import { TrustedPersonData } from './StepClient'
 import { ArrowDownToLine, ArrowUpFromLine, FileText, UserCheck } from 'lucide-react'
 import { LiveTotal } from './LiveTotal'
@@ -81,14 +81,16 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-xs text-gray-500 mb-1">Период</p>
+          <p className="text-xs text-gray-500 mb-1">Плановый период</p>
           <p className="font-medium">
             {formatDate(values.start_date)} — {formatDate(values.end_date)}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            Время выдачи/возврата — фактические, фиксируются автоматически
+            При подтверждении выдача будет записана сейчас, и начнётся аренда. Окончательная сумма — при возврате.
           </p>
         </div>
+
+        {values.start_date > getTashkentDate() && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Вы выбрали будущую дату. Подтверждайте только фактическую выдачу сейчас — это действие не сохраняет предварительную бронь.</p>}
 
         {hasDelivery && (
           <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
@@ -157,7 +159,7 @@ export function StepSummary({ values, clients, equipment, trustedPerson, onBack,
           Назад
         </Button>
         <Button type="button" onClick={onSubmit} disabled={submitting} className="flex-1">
-          {submitting ? 'Создание...' : 'Создать заказ'}
+          {submitting ? 'Создание...' : 'Создать и выдать'}
         </Button>
       </div>}
     </div>

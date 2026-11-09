@@ -20,11 +20,12 @@ export default async function ClientsPage() {
     .select('id, order_number, client_id, status, created_at, updated_at, actual_end_at, actual_return_date, order_items(id, actual_end_at, missing_kit_items, equipment(name))')
     .order('created_at', { ascending: false })
 
-  const [{ data: clients }, { data: missingEvents }, { data: legacyMissingOrders }] = await Promise.all([
+  const [{ data: clients, error: clientsError }, { data: missingEvents, error: missingError }, { data: legacyMissingOrders, error: legacyError }] = await Promise.all([
     clientsPromise,
     missingEventsPromise,
     legacyMissingOrdersPromise,
   ])
+  if (clientsError || legacyError || (missingError && missingError.code !== '42P01' && missingError.code !== 'PGRST205')) throw new Error('Не удалось загрузить клиентов и недосдачу')
   const missingEventRows = mergeMissingKitEvents(
     (missingEvents ?? []) as unknown as MissingKitEventRow[],
     buildLegacyMissingKitEvents((legacyMissingOrders ?? []) as unknown as LegacyMissingKitOrderRow[]),

@@ -192,7 +192,7 @@ export function StepClient({
                   <span className="min-w-0">
                     <span className="block break-words font-medium text-zinc-900">{client.full_name}</span>
                     <span className="mt-0.5 block text-sm text-zinc-500">
-                      {[formatClientPhoneInput(client.phone), client.telegram_username && `@${client.telegram_username}`, CLIENT_SEGMENT_LABELS[client.segment]].filter(Boolean).join(' · ')}
+                      {[formatClientPhoneInput(client.phone), client.telegram_username && `@${client.telegram_username.replace(/^@+/, '')}`, CLIENT_SEGMENT_LABELS[client.segment]].filter(Boolean).join(' · ')}
                     </span>
                   </span>
                   <ChevronRight className="h-5 w-5 shrink-0 text-zinc-400" />

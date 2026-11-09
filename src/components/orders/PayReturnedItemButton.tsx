@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useOrderOperation } from './useOrderOperation'
+import { OperationNotice } from './OperationNotice'
 import { CreditCard, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,7 +42,8 @@ export function PayReturnedItemButton({
 }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const operation = useOrderOperation(orderId)
+  const loading = operation.pending
   const [notes, setNotes] = useState('')
   const [splits, setSplits] = useState<Split[]>([
     { method: 'cash', amount: remainingDue > 0 ? String(Math.round(remainingDue)) : '' },
@@ -69,6 +72,7 @@ export function PayReturnedItemButton({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading || operation.uncertain) return
     if (paidNow <= 0) {
       toast.error('Укажите сумму платежа')
       return
@@ -78,26 +82,15 @@ export function PayReturnedItemButton({
       return
     }
 
-    setLoading(true)
-    try {
+    {
       const paymentSplits = splits
         .map(split => ({ payment_method: split.method, amount: Number(split.amount) }))
         .filter(split => split.amount > 0)
 
-      const res = await fetch(`/api/orders/${orderId}/items/${itemId}/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payment_splits: paymentSplits,
-          notes: notes || null,
-        }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error ?? 'Не удалось принять оплату')
-        return
-      }
+      if (!await operation.submit(`/api/orders/${orderId}/items/${itemId}/payments`, {
+        payment_splits: paymentSplits,
+        notes: notes || null,
+      })) return
 
       toast.success(
         remainingAfterPayment > 0
@@ -106,8 +99,6 @@ export function PayReturnedItemButton({
       )
       setOpen(false)
       router.refresh()
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -126,16 +117,18 @@ export function PayReturnedItemButton({
         Принять оплату
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <Dialog open={open} onOpenChange={value => { if (!loading) setOpen(value) }}>
+        <DialogContent showCloseButton={!loading} className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+          <DialogHeader className="pr-10">
             <DialogTitle>Оплата по позиции</DialogTitle>
             <DialogDescription>
               Запишем оплату именно за «{itemName}», чтобы статус позиции стал понятным.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
+            <OperationNotice orderId={orderId} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
+            <fieldset disabled={loading || operation.uncertain} className="min-w-0 space-y-4">
             <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
               <span className="text-gray-600">Остаток по позиции</span>
               <span className="font-semibold text-red-600">{formatCurrency(remainingDue, currency)}</span>
@@ -151,15 +144,16 @@ export function PayReturnedItemButton({
 
               <div className="space-y-2">
                 {splits.map((split, index) => (
-                  <div key={index} className="flex items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
-                    <div className="flex gap-1">
+                  <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
+                    <div className="flex w-full flex-wrap gap-1 sm:w-auto">
                       {(['cash', 'card', 'transfer'] as PaymentMethod[]).map(method => (
                         <button
                           key={method}
                           type="button"
-                          onClick={() => updateSplit(index, { method })}
+                          aria-pressed={split.method === method}
+                            onClick={() => updateSplit(index, { method })}
                           className={cn(
-                            'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                            'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px]',
                             split.method === method
                               ? 'border-zinc-900 bg-zinc-900 text-white'
                               : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
@@ -170,19 +164,20 @@ export function PayReturnedItemButton({
                       ))}
                     </div>
                     <Input
+                      aria-label={`Сумма: ${PAYMENT_METHOD_LABELS[split.method]}, строка ${index + 1}`}
                       type="number"
                       inputMode="numeric"
                       min={0}
                       value={split.amount}
                       onChange={e => updateSplit(index, { amount: e.target.value })}
                       placeholder="0"
-                      className="flex-1 min-h-[36px]"
+                      className="flex-1 min-h-[44px]"
                     />
                     {splits.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeSplit(index)}
-                        className="rounded-full p-2 text-zinc-400 hover:bg-white hover:text-red-500 transition-colors"
+                        className="min-h-11 min-w-11 rounded-full p-2 text-zinc-400 hover:bg-white hover:text-red-500 transition-colors"
                         aria-label="Удалить способ"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -193,7 +188,7 @@ export function PayReturnedItemButton({
               </div>
 
               {splits.length < 3 && (
-                <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[36px]">
+                <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[44px]">
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   Добавить способ
                 </Button>
@@ -220,8 +215,9 @@ export function PayReturnedItemButton({
             </div>
 
             <div className="space-y-1.5">
-              <Label>Заметка</Label>
+              <Label htmlFor={`notes-PayReturnedItemButton-${orderId}`}>Заметка</Label>
               <Textarea
+              id={`notes-PayReturnedItemButton-${orderId}`}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
@@ -237,6 +233,7 @@ export function PayReturnedItemButton({
                 {loading ? 'Сохраняем...' : 'Принять оплату'}
               </Button>
             </DialogFooter>
+          </fieldset>
           </form>
         </DialogContent>
       </Dialog>

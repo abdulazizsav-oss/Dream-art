@@ -47,19 +47,22 @@ export function RentalOptions({ values, onUpdate }: {
       </div>
       {expandedDates && <div id="rental-date-fields" className="grid grid-cols-2 gap-3 pb-2">
         <div className="min-w-0 space-y-1.5">
-          <Label htmlFor="rental-start">Выдача</Label>
+          <Label htmlFor="rental-start">Плановая выдача</Label>
           <Input id="rental-start" type="date" className="h-12 text-base md:text-base" value={values.start_date ?? ''}
             onInput={e => onUpdate({ start_date: e.currentTarget.value })}
             onChange={e => onUpdate({ start_date: e.target.value })} />
         </div>
         <div className="min-w-0 space-y-1.5">
-          <Label htmlFor="rental-end">Возврат</Label>
+          <Label htmlFor="rental-end">Плановый возврат</Label>
           <Input id="rental-end" type="date" className="h-12 text-base md:text-base" value={values.end_date ?? ''} min={values.start_date}
             aria-invalid={invalidRange} aria-describedby={invalidRange ? 'rental-date-error' : undefined}
             onInput={e => onUpdate({ end_date: e.currentTarget.value })}
             onChange={e => onUpdate({ end_date: e.target.value })} />
         </div>
       </div>}
+      <p role={values.start_date && values.start_date > today ? 'status' : undefined} className={cn('rounded-xl px-3 py-2 text-sm', values.start_date && values.start_date > today ? 'border border-amber-200 bg-amber-50 text-amber-900' : 'bg-zinc-50 text-zinc-600')}>
+        {values.start_date && values.start_date > today ? 'Выбрана будущая дата. ' : ''}Создание заказа фиксирует выдачу и начинает аренду сейчас. Даты задают плановый период; предварительная бронь не создаётся.
+      </p>
       {invalidRange && <p id="rental-date-error" role="alert" className="text-sm text-red-700">Возврат не может быть раньше выдачи.</p>}
       <div className="space-y-2 border-t border-zinc-100 pb-2 pt-3">
         <h3 className="text-sm font-semibold">Доставка через курьера</h3>
@@ -82,7 +85,7 @@ export function RentalOptions({ values, onUpdate }: {
           <span className="text-zinc-500">{[values.deposit_amount ? 'депозит' : '', values.notes ? 'заметка' : ''].filter(Boolean).join(' · ') || 'Необязательно'} <span aria-hidden="true">⌄</span></span>
         </summary>
         <div className="space-y-4 pb-2 pt-2">
-          <p className="text-xs leading-relaxed text-zinc-500">Сумма предварительная. Фактическое время выдачи запишется при создании заказа; окончательный расчёт — при возврате.</p>
+          <p className="text-xs leading-relaxed text-zinc-500">Сумма предварительная. Окончательный расчёт — при возврате. Указанный депозит не заменяет запись фактически полученного платежа.</p>
           <div className="space-y-1.5">
             <Label htmlFor="rental-deposit">Депозит, UZS</Label>
             <Input id="rental-deposit" type="number" min={0} inputMode="decimal" className="h-12 text-base md:text-base"

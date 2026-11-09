@@ -6,6 +6,7 @@ import {
   resolveRentalEndDate,
   type RentalOverdueInput,
 } from '../order-overdue'
+import { normalizeSearchText } from '../search'
 import { clientMatchesSearch } from '../client-duplicates'
 
 export type OrderStatus = 'draft' | 'active' | 'returned' | 'overdue' | 'cancelled'
@@ -62,7 +63,7 @@ export function matchesOrderSearch(order: OrderListItem, query: string) {
   if (!term) return true
   return [
     order.orderNumber, order.createdBy, ...order.equipmentNames, ...order.missingKitItems,
-  ].filter(Boolean).join(' ').toLocaleLowerCase('ru').includes(term.toLocaleLowerCase('ru'))
+  ].filter(Boolean).map(value => normalizeSearchText(value!)).join(' ').includes(normalizeSearchText(term))
     || clientMatchesSearch({ id: order.id, full_name: order.clientName, phone: order.clientPhone }, term)
 }
 

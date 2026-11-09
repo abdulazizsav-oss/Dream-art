@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useOrderOperation } from './useOrderOperation'
+import { OperationNotice } from './OperationNotice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -58,11 +60,13 @@ export function CloseOrderButton({
 }: CloseOrderButtonProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const operation = useOrderOperation(orderId)
+  const loading = operation.pending
 
   const initialAmount = debt > 0 ? String(debt) : ''
   const [splits, setSplits] = useState<Split[]>([{ method: 'cash', amount: initialAmount }])
   const [notes, setNotes] = useState('')
+  const [conditions, setConditions] = useState<Record<string, string>>({})
   const [leaveDebt, setLeaveDebt] = useState(false)
   const [toClient, setToClient] = useState(deliveryToClient)
   const [fromClient, setFromClient] = useState(deliveryFromClient)
@@ -114,6 +118,8 @@ export function CloseOrderButton({
   const unconfirmedCount = closeChecklist.filter(row => !row.confirmed).length
 
   function showDialog() {
+    if (operation.uncertain) { setOpen(true); return }
+    setConditions({})
     const nextReturnedKit: Record<string, Set<string>> = {}
     for (const item of items) nextReturnedKit[item.id] = new Set(item.selected_kit_items)
 
@@ -200,19 +206,18 @@ export function CloseOrderButton({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading || operation.uncertain) return
     if (!allItemsConfirmed) {
       toast.error('Подтвердите возврат каждой позиции заказа')
       return
     }
-    setLoading(true)
-    try {
+    {
       const validSplits = splits
         .map(s => ({ payment_method: s.method, amount: Number(s.amount) }))
         .filter(s => s.amount > 0)
 
       if (paymentIsTooLarge) {
         toast.error('Сумма оплаты больше остатка по заказу')
-        setLoading(false)
         return
       }
 
@@ -224,7 +229,7 @@ export function CloseOrderButton({
         remainingPaidForItems -= paidAmount
         return {
           order_item_id: it.id,
-          condition_on_return: 'Хорошее',
+          condition_on_return: conditions[it.id]?.trim() || 'Хорошее',
           return_photo_urls: [],
           returned_kit_items: returned,
           missing_kit_items: missing,
@@ -232,23 +237,14 @@ export function CloseOrderButton({
         }
       })
 
-      const closeRes = await fetch(`/api/orders/${orderId}/return`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: returnItems,
-          payment_splits: validSplits,
-          payment_notes: notes || null,
-          delivery_to_client: toClient,
-          delivery_from_client: fromClient,
-        }),
+      const confirmed = await operation.submit(`/api/orders/${orderId}/return`, {
+        items: returnItems,
+        payment_splits: validSplits,
+        payment_notes: notes || null,
+        delivery_to_client: toClient,
+        delivery_from_client: fromClient,
       })
-      if (!closeRes.ok) {
-        const err = await closeRes.json().catch(() => ({}))
-        toast.error(err.error ?? 'Ошибка закрытия заказа')
-        setLoading(false)
-        return
-      }
+      if (!confirmed) return
 
       if (missingTotals.total > 0 && remainingDebt > 0) {
         toast.success(
@@ -266,8 +262,6 @@ export function CloseOrderButton({
 
       setOpen(false)
       router.refresh()
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -284,16 +278,18 @@ export function CloseOrderButton({
         <CheckCircle className="w-4 h-4 mr-2" />
         Закрыть заказ
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <Dialog open={open} onOpenChange={value => { if (!loading) setOpen(value) }}>
+      <DialogContent showCloseButton={!loading} className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+          <DialogHeader className="pr-10">
           <DialogTitle>Закрытие заказа</DialogTitle>
           <DialogDescription>
             Отметим, что вернулось из комплекта, выберем оплату или долг и закроем заказ.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
+            <OperationNotice orderId={orderId} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
+            <fieldset disabled={loading || operation.uncertain} className="min-w-0 space-y-4">
           <div className="rounded-xl border bg-gray-50 p-3 flex justify-between text-sm">
             <span className="text-gray-600">Задолженность по заказу</span>
             <span className={debt > 0 ? 'font-semibold text-red-600' : 'font-semibold text-green-700'}>
@@ -310,7 +306,7 @@ export function CloseOrderButton({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-sky-800">Услуги доставки</p>
-                <p className="text-[11px] text-sky-600">Можно добавить забытый выезд перед закрытием.</p>
+                <p className="text-xs text-sky-600">Можно добавить забытый выезд перед закрытием.</p>
               </div>
               <span className="text-sm font-semibold text-sky-900">{formatCurrency(deliveryRemaining)}</span>
             </div>
@@ -331,7 +327,7 @@ export function CloseOrderButton({
               />
             </div>
             {deliveryPaid > 0 && (
-              <p className="text-[11px] text-sky-600">Уже оплачено за доставку: {formatCurrency(deliveryPaid)}</p>
+              <p className="text-xs text-sky-600">Уже оплачено за доставку: {formatCurrency(deliveryPaid)}</p>
             )}
           </div>
 
@@ -366,7 +362,7 @@ export function CloseOrderButton({
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-zinc-900">{item.name}</span>
-                        <span className="mt-0.5 block text-[11px] text-zinc-500">
+                        <span className="mt-0.5 block text-xs text-zinc-500">
                           {item.selected_kit_items.length > 0
                             ? `Комплект: ${item.selected_kit_items.length}`
                             : 'Без дополнительных аксессуаров'}
@@ -377,9 +373,13 @@ export function CloseOrderButton({
                       </span>
                     </label>
 
+                    {confirmed && <details className="mt-2 border-t pt-2">
+                      <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Состояние при возврате: {conditions[item.id] || 'Хорошее'}</summary>
+                      <Input aria-label={`Состояние при возврате: ${item.name}`} value={conditions[item.id] ?? 'Хорошее'} onChange={event => setConditions(current => ({ ...current, [item.id]: event.target.value }))} />
+                    </details>}
                     {confirmed && item.selected_kit_items.length > 0 && (
                       <div className="mt-2 border-t pt-2">
-                        <p className="mb-1.5 text-[11px] text-zinc-500">
+                        <p className="mb-1.5 text-xs text-zinc-500">
                           Нажмите на аксессуар, который не вернули:
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -389,15 +389,16 @@ export function CloseOrderButton({
                               <button
                                 key={kit}
                                 type="button"
+                                aria-pressed={active}
                                 onClick={() => toggleKit(item.id, kit)}
                                 className={cn(
-                                  'min-h-[32px] rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                                  'min-h-[44px] rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
                                   active
-                                    ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                                    ? 'border-zinc-200 bg-zinc-50 text-zinc-700'
                                     : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600',
                                 )}
                               >
-                                {active ? '✓ ' : ''}{kit}
+                                {active ? '✓ Возвращено: ' : 'Не возвращено: '}{kit}
                               </button>
                             )
                           })}
@@ -410,10 +411,10 @@ export function CloseOrderButton({
             </div>
             {missingTotals.total > 0 && (
               <p className="text-xs font-medium text-orange-700">
-                Не возвращено элементов комплекта: {missingTotals.total}
+                Не возвращено элементов комплекта: {missingTotals.total}. {items.filter(item => missingTotals.byItem[item.id]?.length).map(item => `${item.name}: ${missingTotals.byItem[item.id].join(', ')}`).join('; ')}
               </p>
             )}
-            <p className="text-[11px] text-gray-500">
+            <p className="text-xs text-gray-500">
               Заказ закроется только после подтверждения каждой позиции. Аксессуары по умолчанию считаются возвращёнными.
             </p>
           </div>
@@ -429,15 +430,16 @@ export function CloseOrderButton({
 
             <div className="space-y-2">
               {splits.map((split, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
-                  <div className="flex flex-wrap gap-1">
+                <div key={i} className="flex flex-wrap items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
+                  <div className="flex w-full flex-wrap gap-1 sm:w-auto">
                     {(['cash', 'card', 'transfer'] as PaymentMethod[]).map(m => (
                       <button
                         key={m}
                         type="button"
+                        aria-pressed={!leaveDebt && split.method === m}
                         onClick={() => selectPaymentMethod(i, m)}
                         className={cn(
-                          'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                          'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px]',
                           !leaveDebt && split.method === m
                             ? 'border-zinc-900 bg-zinc-900 text-white'
                             : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
@@ -449,9 +451,10 @@ export function CloseOrderButton({
                     {i === 0 && closingDebt > 0 && (
                       <button
                         type="button"
+                        aria-pressed={leaveDebt}
                         onClick={selectDebt}
                         className={cn(
-                          'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                          'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px]',
                           leaveDebt
                             ? 'border-amber-600 bg-amber-600 text-white'
                             : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-400',
@@ -463,20 +466,21 @@ export function CloseOrderButton({
                   </div>
                   {!leaveDebt && (
                     <Input
+                      aria-label={`Сумма: ${PAYMENT_METHOD_LABELS[split.method]}, строка ${i + 1}`}
                       type="number"
                       inputMode="numeric"
                       min={0}
                       value={split.amount}
                       onChange={e => updateSplit(i, { amount: e.target.value })}
                       placeholder="Сумма"
-                      className="flex-1 min-h-[36px] min-w-[120px]"
+                      className="flex-1 min-h-[44px] min-w-[120px]"
                     />
                   )}
                   {!leaveDebt && splits.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeSplit(i)}
-                      className="rounded-full p-2 text-zinc-400 hover:bg-white hover:text-red-500 transition-colors"
+                      className="min-h-11 min-w-11 rounded-full p-2 text-zinc-400 hover:bg-white hover:text-red-500 transition-colors"
                       aria-label="Удалить способ"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -487,7 +491,7 @@ export function CloseOrderButton({
             </div>
 
             {!leaveDebt && splits.length < 3 && (
-              <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[36px]">
+              <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[44px]">
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Добавить способ
               </Button>
@@ -506,7 +510,7 @@ export function CloseOrderButton({
                 <strong>{formatCurrency(Math.max(0, closingDebt))}</strong>.
               </p>
             ) : (
-              <p className="text-[11px] text-gray-500">
+              <p className="text-xs text-gray-500">
                 Полная задолженность: <span className="font-medium">{formatCurrency(Math.max(0, closingDebt))}</span>.
                 Можно вписать меньше — остаток автоматически останется долгом.
               </p>
@@ -519,8 +523,9 @@ export function CloseOrderButton({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Заметка</Label>
+            <Label htmlFor={`notes-CloseOrderButton-${orderId}`}>Заметка</Label>
             <Textarea
+              id={`notes-CloseOrderButton-${orderId}`}
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
@@ -550,7 +555,8 @@ export function CloseOrderButton({
                     : 'Закрыть заказ'}
             </Button>
           </DialogFooter>
-        </form>
+        </fieldset>
+          </form>
       </DialogContent>
       </Dialog>
     </>

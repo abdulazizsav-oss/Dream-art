@@ -75,15 +75,20 @@ export function FinanceDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadata, setMetadata] = useState<FinanceDashboardMetadata>({
     orders: [],
     equipment: [],
     is_super_admin: false,
   })
   const [defaultOrderId, setDefaultOrderId] = useState<string>()
+  const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
-    setDefaultOrderId(new URLSearchParams(window.location.search).get('order') ?? undefined)
+    const orderId = new URLSearchParams(window.location.search).get('order') ?? undefined
+    setDefaultOrderId(orderId)
+    if (orderId && reloadKey === 0) setActiveTab('payments')
+    setMetadataError(null)
     fetch('/api/finance/metadata')
       .then(async response => {
         const payload = await response.json()
@@ -91,8 +96,8 @@ export function FinanceDashboard() {
         return payload as FinanceDashboardMetadata
       })
       .then(setMetadata)
-      .catch(fetchError => setError(fetchError.message))
-  }, [])
+      .catch(fetchError => setMetadataError(fetchError.message))
+  }, [reloadKey])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -142,8 +147,11 @@ export function FinanceDashboard() {
         }}
       />
 
-      {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      {(error || metadataError) && (
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p>{error || metadataError}</p>
+          <Button type="button" variant="outline" className="mt-3" onClick={refresh}>Повторить загрузку</Button>
+        </div>
       )}
 
       {data?.warnings.non_uzs_equipment.length ? (
@@ -159,7 +167,7 @@ export function FinanceDashboard() {
         </div>
       ) : null}
 
-      <Tabs defaultValue="overview" className="gap-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
         <div className="overflow-x-auto pb-1">
           <TabsList className="h-11 min-w-max rounded-xl border bg-white p-1">
             <TabsTrigger value="overview" className="px-3">Обзор</TabsTrigger>

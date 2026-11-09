@@ -168,7 +168,7 @@ export function StepEquipment({
     <div>
       <h2 className="mb-1 text-lg font-semibold">Выберите технику</h2>
       <p className="mb-4 text-sm text-zinc-500">
-        Нажмите на карточку, затем проверьте количество и комплект в корзине.
+        Нажмите на карточку, затем проверьте количество и комплект в корзине. Наличие конкретного экземпляра проверяйте перед выдачей — каталог не контролирует физический остаток.
       </p>
       {blockedCurrencyCount > 0 && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

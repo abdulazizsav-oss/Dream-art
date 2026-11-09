@@ -79,6 +79,7 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
   }
 
   async function onSubmit(data: EquipmentFormValues) {
+    try {
     const payload = data.day_night === 'day'
       ? { ...data, night_rate: data.day_rate }
       : { ...data, night_rate: data.night_rate || data.day_rate }
@@ -90,13 +91,16 @@ export function EquipmentForm({ categories, brands, defaultValues, equipmentId }
       body: JSON.stringify(payload),
     })
     if (!res.ok) {
-      const err = await res.json()
+      const err = await res.json().catch(() => ({}))
       toast.error(err.error ?? 'Ошибка сохранения')
       return
     }
     toast.success(equipmentId ? 'Техника обновлена' : 'Техника добавлена')
     router.push('/equipment')
     router.refresh()
+    } catch {
+      toast.error('Не удалось получить ответ. Данные формы сохранены. Проверьте каталог перед повторным сохранением.')
+    }
   }
 
   return (

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useOrderOperation } from './useOrderOperation'
+import { OperationNotice } from './OperationNotice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,13 +49,15 @@ interface Props {
 export function PartialReturnModal({ orderId, items, variant = 'outline', size = 'default', className }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const operation = useOrderOperation(orderId)
+  const loading = operation.pending
 
   // Какие позиции сдаём (по умолчанию ничего — пользователь выбирает явно)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [paymentIntent, setPaymentIntent] = useState<Record<string, PaymentIntent>>({})
   const [splits, setSplits] = useState<Split[]>([{ method: 'cash', amount: '' }])
   const [notes, setNotes] = useState('')
+  const [conditions, setConditions] = useState<Record<string, string>>({})
 
   // Комплект: по умолчанию весь комплект считается возвращённым —
   // менеджер снимает отметку только с того, что НЕ вернули.
@@ -150,6 +154,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading || operation.uncertain) return
     if (picked.size === 0) {
       toast.error('Выберите хотя бы одну позицию')
       return
@@ -158,8 +163,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
       toast.error('Сумма способов оплаты должна совпадать с оплачиваемыми позициями')
       return
     }
-    setLoading(true)
-    try {
+    {
       const paymentSplits = paidTotal > 0
         ? splits
             .map(split => ({ payment_method: split.method, amount: Number(split.amount) }))
@@ -173,7 +177,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
           const missing = src.selected_kit_items.filter(k => !returned.includes(k))
           return {
             order_item_id: id,
-            condition_on_return: 'Хорошее',
+            condition_on_return: conditions[id]?.trim() || 'Хорошее',
             return_photo_urls: [],
             returned_kit_items: returned,
             missing_kit_items: missing,
@@ -184,24 +188,11 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
         payment_notes: notes || null,
       }
 
-      const res = await fetch(`/api/orders/${orderId}/return`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error ?? 'Не удалось вернуть позиции')
-        return
-      }
-      const data = await res.json()
-      if (data.order_closed) toast.success('Вся техника возвращена — заказ закрыт')
-      else toast.success(`Возвращено позиций: ${data.closed}. Остальные продолжают считаться.`)
+      if (!await operation.submit(`/api/orders/${orderId}/return`, payload)) return
+      toast.success('Возврат записан. Сданные позиции зафиксированы.')
 
       setOpen(false)
       router.refresh()
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -213,16 +204,18 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
         <PackageCheck className="w-4 h-4 mr-2" />
         Вернуть часть техники
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      <Dialog open={open} onOpenChange={value => { if (!loading) setOpen(value) }}>
+        <DialogContent showCloseButton={!loading} className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+          <DialogHeader className="pr-10">
             <DialogTitle>Частичный возврат техники</DialogTitle>
             <DialogDescription>
               Отметьте позиции, которые клиент возвращает сейчас. Сумма по ним зафиксируется от фактического открытия до текущего времени. Остальные продолжат считаться.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
+            <OperationNotice orderId={orderId} message={operation.message} uncertain={operation.uncertain} onChecked={operation.acknowledgeNotSaved} />
+            <fieldset disabled={loading || operation.uncertain} className="min-w-0 space-y-4">
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border bg-gray-50 p-3">
                 <p className="text-xs text-gray-500">Возвращаем сейчас</p>
@@ -236,6 +229,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
 
             <div className="space-y-2">
               <Label>Позиции к сдаче</Label>
+              <p className="text-xs text-zinc-500">«Оплачено» включает остаток позиции в сумму оплаты сейчас. «Не оплачено» оставляет её долгом.</p>
               <div className="space-y-2 rounded-xl border bg-zinc-50/60 p-2">
                 {items.map(it => {
                   const active = picked.has(it.id)
@@ -244,7 +238,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                   const remainingDue = Math.max(0, it.current_subtotal - it.already_paid)
                   return (
                     <div key={it.id} className={cn('rounded-lg border p-2 transition-colors', active ? 'bg-white border-emerald-400' : 'bg-white')}>
-                      <label className="flex items-start gap-2 cursor-pointer">
+                      <label className="flex min-h-11 items-start gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={active}
@@ -257,7 +251,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                         </span>
                       </label>
                       {active && it.already_paid > 0 && (
-                        <p className="mt-1 pl-6 text-[11px] text-zinc-500">
+                        <p className="mt-1 pl-6 text-xs text-zinc-500">
                           Уже оплачено: {formatCurrency(it.already_paid, it.currency)} · остаток: {formatCurrency(remainingDue, it.currency)}
                         </p>
                       )}
@@ -267,9 +261,10 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                             <button
                               key={nextIntent}
                               type="button"
+                              aria-pressed={intent === nextIntent}
                               onClick={() => setItemPaymentIntent(it.id, nextIntent)}
                               className={cn(
-                                'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                                'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px]',
                                 intent === nextIntent
                                   ? nextIntent === 'paid'
                                     ? 'border-emerald-600 bg-emerald-600 text-white'
@@ -282,6 +277,10 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                           ))}
                         </div>
                       )}
+                      {active && <details className="mt-2 border-t pt-2">
+                        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Состояние при возврате: {conditions[it.id] || 'Хорошее'}</summary>
+                        <Input aria-label={`Состояние при возврате: ${it.name}`} value={conditions[it.id] ?? 'Хорошее'} onChange={event => setConditions(current => ({ ...current, [it.id]: event.target.value }))} />
+                      </details>}
                       {active && it.selected_kit_items.length > 0 && (
                         <div className="mt-2 pl-6 flex flex-wrap gap-1.5">
                           {it.selected_kit_items.map(k => {
@@ -290,15 +289,16 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                               <button
                                 key={k}
                                 type="button"
+                                aria-pressed={ok}
                                 onClick={() => toggleKit(it.id, k)}
                                 className={cn(
-                                  'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                                  'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px]',
                                   ok
-                                    ? 'border-zinc-200 bg-zinc-50 text-zinc-400 line-through decoration-2'
+                                    ? 'border-zinc-200 bg-zinc-50 text-zinc-700'
                                     : 'border-orange-500 bg-orange-500 text-white shadow-sm hover:border-orange-600 hover:bg-orange-600',
                                 )}
                               >
-                                {ok ? '✓ ' : ''}{k}
+                                {ok ? '✓ Возвращено: ' : 'Не возвращено: '}{k}
                               </button>
                             )
                           })}
@@ -310,11 +310,11 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
               </div>
               {missingTotals > 0 && (
                 <p className="text-xs font-medium text-orange-700">
-                  Не сдано элементов комплекта: {missingTotals}
+                  Не сдано элементов комплекта: {missingTotals}. {items.filter(item => picked.has(item.id)).flatMap(item => item.selected_kit_items.filter(kit => !returnedKit[item.id]?.has(kit)).map(kit => `${item.name}: ${kit}`)).join('; ')}
                 </p>
               )}
-              <p className="text-[11px] text-gray-500">
-                По умолчанию всё сдано (зачёркнуто). Нажмите на элемент, который НЕ вернули — станет оранжевым.
+              <p className="text-xs text-gray-500">
+                Аксессуары по умолчанию отмечены как возвращённые. Нажмите на то, чего нет: появится «Не возвращено».
               </p>
             </div>
 
@@ -329,15 +329,16 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
 
                 <div className="space-y-2">
                   {splits.map((split, index) => (
-                    <div key={index} className="flex items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
-                      <div className="flex gap-1">
+                    <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl border bg-zinc-50/60 p-2">
+                      <div className="flex w-full flex-wrap gap-1 sm:w-auto">
                         {(['cash', 'card', 'transfer'] as PaymentMethod[]).map(method => (
                           <button
                             key={method}
                             type="button"
+                            aria-pressed={split.method === method}
                             onClick={() => updateSplit(index, { method })}
                             className={cn(
-                              'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors min-h-[32px]',
+                              'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors min-h-[44px]',
                               split.method === method
                                 ? 'border-zinc-900 bg-zinc-900 text-white'
                                 : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
@@ -348,19 +349,20 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                         ))}
                       </div>
                       <Input
-                        type="number"
+                        aria-label={`Сумма: ${PAYMENT_METHOD_LABELS[split.method]}, строка ${index + 1}`}
+                      type="number"
                         inputMode="numeric"
                         min={0}
                         value={split.amount}
                         onChange={e => updateSplit(index, { amount: e.target.value })}
                         placeholder="0"
-                        className="flex-1 min-h-[36px]"
+                        className="flex-1 min-h-[44px]"
                       />
                       {splits.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeSplit(index)}
-                          className="rounded-full p-2 text-zinc-400 hover:bg-white hover:text-red-500 transition-colors"
+                          className="min-h-11 min-w-11 rounded-full p-2 text-zinc-400 hover:bg-white hover:text-red-500 transition-colors"
                           aria-label="Удалить способ"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -371,7 +373,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                 </div>
 
                 {splits.length < 3 && (
-                  <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[36px]">
+                  <Button type="button" variant="outline" size="sm" onClick={addSplit} className="min-h-[44px]">
                     <Plus className="h-3.5 w-3.5 mr-1" />
                     Добавить способ
                   </Button>
@@ -393,8 +395,9 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
             )}
 
             <div className="space-y-1.5">
-              <Label>Заметка к оплате</Label>
+              <Label htmlFor={`notes-PartialReturnModal-${orderId}`}>Заметка к оплате</Label>
               <Textarea
+              id={`notes-PartialReturnModal-${orderId}`}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
@@ -410,6 +413,7 @@ export function PartialReturnModal({ orderId, items, variant = 'outline', size =
                 {loading ? 'Фиксируем...' : `Вернуть ${picked.size} позиц${picked.size === 1 ? 'ию' : picked.size < 5 ? 'ии' : 'ий'}`}
               </Button>
             </DialogFooter>
+          </fieldset>
           </form>
         </DialogContent>
       </Dialog>

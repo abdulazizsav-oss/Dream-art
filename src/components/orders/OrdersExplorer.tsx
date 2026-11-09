@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { readOrderFilters, type OrderFilters } from '@/lib/orders/filters'
 import Link from 'next/link'
 import {
   AlertTriangle,
@@ -77,11 +79,22 @@ function orderPeriod(order: OrderListItem) {
 }
 
 export function OrdersExplorer({ orders, totalCount, showFinancialSummary = false }: Props) {
-  const [queue, setQueue] = useState<QueueFilter>('active')
-  const [query, setQuery] = useState('')
-  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>('all')
-  const [sort, setSort] = useState<SortOrder>('newest')
-  const [page, setPage] = useState(1)
+  const searchParams = useSearchParams()
+  const filters = readOrderFilters(searchParams ?? new URLSearchParams())
+  const { queue, q: query, delivery: deliveryFilter, sort } = filters
+  function updateFilters(patch: Partial<OrderFilters>) {
+    const next = { ...filters, page: 1, ...patch }
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(next)) {
+      if (value === '' || (key === 'page' && value === 1)) params.delete(key)
+      else params.set(key, String(value))
+    }
+    window.history.replaceState(null, '', `/orders?${params.toString()}`)
+  }
+  const setQuery = (q: string) => updateFilters({ q })
+  const setDeliveryFilter = (delivery: DeliveryFilter) => updateFilters({ delivery })
+  const setSort = (sort: SortOrder) => updateFilters({ sort })
+  const setPage = (next: (current: number) => number) => updateFilters({ page: next(page) })
 
   const counts = useMemo(() => ({
     active: orders.filter(order => matchesQueue(order, 'active')).length,
@@ -119,37 +132,23 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
   }, [deliveryFilter, orders, query, queue, sort])
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
+  const page = Math.min(filters.page, totalPages)
   const visibleOrders = filteredOrders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  useEffect(() => {
-    setPage(1)
-  }, [deliveryFilter, query, queue, sort])
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages)
-  }, [page, totalPages])
-
-  function selectQueue(nextQueue: QueueFilter) {
-    setQueue(nextQueue)
-  }
-
-  function resetFilters() {
-    setQuery('')
-    setDeliveryFilter('all')
-    setSort('newest')
-  }
+  function selectQueue(queue: QueueFilter) { updateFilters({ queue }) }
+  function resetFilters() { updateFilters({ q: '', delivery: 'all', sort: 'newest' }) }
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-5">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">Аренда техники</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-zinc-950">Заказы</h1>
+          <p className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400 sm:block">Аренда техники</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950">Заказы</h1>
           <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-            Текущие аренды, оплаты и история — без длинного общего списка.
+            Текущие аренды, оплаты и история.
           </p>
         </div>
-        <Link href="/orders/new" className="shrink-0">
+        <Link href="/orders/new" className="hidden shrink-0 sm:inline-flex">
           <Button className="min-h-[46px] px-4 shadow-sm transition-transform active:scale-[0.98]">
             <Plus className="mr-2 h-4 w-4" />
             Новый заказ
@@ -157,7 +156,7 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
         </Link>
       </header>
 
-      <section className={cn('grid overflow-hidden rounded-2xl border bg-white sm:grid-cols-2', showFinancialSummary ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
+      <section className={cn('grid overflow-hidden rounded-2xl border bg-white grid-cols-2', showFinancialSummary ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
         <MetricButton
           label="В работе"
           value={String(counts.active)}
@@ -185,7 +184,7 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
         <MetricButton
           label="Не возвращено"
           value={String(counts.missing)}
-          caption="Забытый комплект и техника с просрочкой"
+          caption="Просрочка и недосдача"
           tone={counts.missing > 0 ? 'warning' : 'neutral'}
           active={queue === 'missing'}
           onClick={() => selectQueue('missing')}
@@ -208,9 +207,10 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
               <button
                 key={option.value}
                 type="button"
+                aria-pressed={queue === option.value}
                 onClick={() => selectQueue(option.value)}
                 className={cn(
-                  'flex min-h-[38px] shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400',
+                  'flex min-h-[44px] shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400',
                   queue === option.value
                     ? 'bg-zinc-900 text-white'
                     : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900',
@@ -234,13 +234,14 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
             </p>
           )}
 
-          <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_190px_190px]">
-            <label className="relative block md:col-span-2 lg:col-span-1">
+          <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-[minmax(260px,1fr)_190px_190px]">
+            <label className="relative col-span-2 block md:col-span-2 lg:col-span-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
                 type="search"
                 value={query}
                 onChange={event => setQuery(event.target.value)}
+                aria-label={`Поиск в очереди ${QUEUES.find(option => option.value === queue)?.label}`}
                 placeholder="Номер, клиент, телефон или техника"
                 className="min-h-[44px] w-full rounded-xl border bg-zinc-50 pl-10 pr-3 text-sm outline-none transition focus:border-zinc-400 focus:bg-white focus:ring-2 focus:ring-zinc-100"
               />
@@ -248,11 +249,12 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
             <label className="relative">
               <Truck className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <select
+                aria-label="Фильтр доставки"
                 value={deliveryFilter}
                 onChange={event => setDeliveryFilter(event.target.value as DeliveryFilter)}
                 className="min-h-[44px] w-full appearance-none rounded-xl border bg-white pl-10 pr-3 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
               >
-                <option value="all">Все заказы</option>
+                <option value="all">Любая</option>
                 <option value="with">С доставкой</option>
                 <option value="without">Без доставки</option>
               </select>
@@ -260,6 +262,7 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
             <label className="relative">
               <ArrowDownUp className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <select
+                aria-label="Порядок заказов"
                 value={sort}
                 onChange={event => setSort(event.target.value as SortOrder)}
                 className="min-h-[44px] w-full appearance-none rounded-xl border bg-white pl-10 pr-3 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100"
@@ -271,7 +274,12 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
             </label>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-3 text-xs text-zinc-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 text-xs text-zinc-500">
+            <span>Поиск в очереди «{QUEUES.find(option => option.value === queue)?.label}»</span>
+            {queue !== 'all' && <button type="button" className="min-h-11 font-medium text-blue-700 underline" onClick={() => updateFilters({ queue: 'all', delivery: 'all' })}>Искать во всех заказах</button>}
+            {(query || deliveryFilter !== 'all' || sort !== 'newest') && <button type="button" className="min-h-11 underline" onClick={resetFilters}>Сбросить фильтры</button>}
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-zinc-500">
             <span>
               Найдено: <strong className="font-semibold text-zinc-800">{filteredOrders.length}</strong>
             </span>
@@ -288,7 +296,7 @@ export function OrdersExplorer({ orders, totalCount, showFinancialSummary = fals
             ))}
           </div>
         ) : (
-          <EmptyOrders hasFilters={Boolean(query) || deliveryFilter !== 'all'} onReset={resetFilters} />
+          <EmptyOrders hasFilters={Boolean(query) || deliveryFilter !== 'all'} onReset={resetFilters} onSearchAll={queue !== 'all' ? () => updateFilters({ queue: 'all', delivery: 'all' }) : undefined} />
         )}
 
         {filteredOrders.length > PAGE_SIZE && (
@@ -357,8 +365,9 @@ function MetricButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        'group relative min-h-28 border-b px-4 py-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-500 sm:border-r xl:border-b-0',
+        'group relative min-h-24 border-b px-3 py-3 md:min-h-28 md:px-4 md:py-4 text-left transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-500 sm:border-r xl:border-b-0',
         last && 'sm:border-r-0',
         active ? 'bg-zinc-50' : 'hover:bg-zinc-50/70',
       )}
@@ -494,7 +503,7 @@ function OrderRow({ order }: { order: OrderListItem }) {
   )
 }
 
-function EmptyOrders({ hasFilters, onReset }: { hasFilters: boolean; onReset: () => void }) {
+function EmptyOrders({ hasFilters, onReset, onSearchAll }: { hasFilters: boolean; onReset: () => void; onSearchAll?: () => void }) {
   return (
     <div className="px-6 py-16 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100">
@@ -504,6 +513,7 @@ function EmptyOrders({ hasFilters, onReset }: { hasFilters: boolean; onReset: ()
       <p className="mx-auto mt-1 max-w-md text-sm text-zinc-500">
         {hasFilters ? 'Измените запрос или сбросьте дополнительные фильтры.' : 'Выберите другую очередь заказов.'}
       </p>
+      {onSearchAll && <Button type="button" variant="outline" onClick={onSearchAll} className="mt-4 mr-2">Искать во всех заказах</Button>}
       {hasFilters && (
         <Button type="button" variant="outline" size="sm" onClick={onReset} className="mt-4">
           Сбросить фильтры

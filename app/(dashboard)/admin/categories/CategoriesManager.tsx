@@ -39,7 +39,9 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
 
   async function handleSave() {
     if (!name.trim()) { toast.error('Введите название'); return }
+    if (saving) return
     setSaving(true)
+    try {
     const isEdit = !!editingId
     const url = isEdit ? `/api/categories/${editingId}` : '/api/categories'
     const method = isEdit ? 'PUT' : 'POST'
@@ -59,6 +61,11 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
       toast.success('Категория добавлена')
     }
     resetForm(); setSaving(false); router.refresh()
+    } catch {
+      toast.error('Ответ сервера не получен. Проверьте список перед повторным сохранением; введённые данные остались в форме.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {

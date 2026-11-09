@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, FileText, Truck, UserCheck, User } from 'lucide-react'
 import { CloseOrderButton } from '@/components/orders/CloseOrderButton'
 import { PartialReturnModal } from '@/components/orders/PartialReturnModal'
+import { OrderPaymentDialog } from '@/components/orders/OrderPaymentDialog'
 import { PayReturnedItemButton } from '@/components/orders/PayReturnedItemButton'
 import { ReturnMissingKitButton } from '@/components/orders/ReturnMissingKitButton'
 import { AddItemsModal } from '@/components/orders/AddItemsModal'
@@ -35,13 +36,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: order } = await supabase
+  const { data: order, error: recordError } = await supabase
     .from('orders')
     .select('*, clients(*), created_by_profile:user_profiles!orders_created_by_profile_fk(full_name, role), order_items(*, equipment(name, currency, day_rate, night_rate, daily_rate, day_night, kit), order_item_payment_allocations(amount)), payments(*, created_by_profile:user_profiles!payments_created_by_profile_fk(full_name))')
     .eq('id', id)
     .order('paid_at', { referencedTable: 'payments', ascending: false })
-    .single()
+    .maybeSingle()
 
+  if (recordError) throw new Error('Не удалось загрузить запись')
   if (!order) notFound()
 
   const { data: cancellation } = await supabase.from('order_cancellations').select('reason, cancelled_at, original_total').eq('order_id', id).maybeSingle()
@@ -464,7 +466,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="font-medium">{client?.full_name}</p>
           <div className="flex gap-4 mt-1 text-sm text-gray-500">
             {client?.phone && <span>{client.phone}</span>}
-            {client?.telegram_username && <span>@{client.telegram_username}</span>}
+            {client?.telegram_username && <span>@{client.telegram_username.replace(/^@+/, '')}</span>}
           </div>
           {order.deposit_amount > 0 && (
             <p className="text-sm mt-2 text-amber-600">
@@ -648,9 +650,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div className="bg-white rounded-xl border p-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">Платежи</h2>
-          {order.status !== 'cancelled' && <Link href={`/finance?order=${id}`}>
-            <Button size="sm" variant="outline">+ Добавить платёж</Button>
-          </Link>}
+          {order.status !== 'cancelled' && <OrderPaymentDialog order={{ id, order_number: order.order_number, clients: client ? { full_name: client.full_name } : null }} />}
         </div>
         {paymentGroups.length > 0 ? (
           <div className="space-y-2">

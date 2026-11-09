@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Camera, Search, Sun, Moon } from 'lucide-react'
 import type { Equipment, EquipmentCategory } from '@/types/database'
 import { cn, formatCurrency } from '@/lib/utils'
+import { normalizeSearchText } from '@/lib/search'
 import { supportsNightShift } from '@/lib/rental'
 
 export type EquipmentRow = Equipment & {
@@ -14,9 +15,10 @@ interface EquipmentGridProps {
   equipment: EquipmentRow[]
   selectedCounts: Map<string, number>
   onAdd: (item: EquipmentRow) => void
+  scrollWithin?: boolean
 }
 
-export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGridProps) {
+export function EquipmentGrid({ equipment, selectedCounts, onAdd, scrollWithin = true }: EquipmentGridProps) {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
@@ -30,7 +32,7 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
   }, [equipment])
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const term = normalizeSearchText(search)
 
     return equipment.filter(item => {
       if (categoryFilter !== 'all' && item.category_id !== categoryFilter) return false
@@ -44,8 +46,8 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
         item.notes ?? '',
         item.equipment_categories?.name ?? '',
       ]
+        .map(normalizeSearchText)
         .join(' ')
-        .toLowerCase()
         .includes(term)
     })
   }, [categoryFilter, equipment, search])
@@ -65,7 +67,15 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
       </div>
 
       {categories.length > 1 && (
-        <div role="group" aria-label="Категории техники" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="space-y-2">
+          <label className="block xl:hidden">
+            <span className="mb-1 block text-xs font-medium text-zinc-500">Категория</span>
+            <select aria-label="Категория техники" value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} className="min-h-12 w-full rounded-xl border bg-white px-3 text-base">
+              <option value="all">Все категории ({categories.length})</option>
+              {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
+          </label>
+        <div role="group" aria-label="Категории техники" className="hidden flex-wrap gap-2 xl:flex">
           <FilterPill active={categoryFilter === 'all'} onClick={() => setCategoryFilter('all')}>
             Все категории
           </FilterPill>
@@ -79,14 +89,16 @@ export function EquipmentGrid({ equipment, selectedCounts, onAdd }: EquipmentGri
             </FilterPill>
           ))}
         </div>
+        </div>
       )}
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-zinc-50 px-6 py-12 text-center text-sm text-zinc-500">
-          Ничего не найдено
+          <p>Ничего не найдено</p>
+          <button type="button" onClick={() => { setSearch(''); setCategoryFilter('all') }} className="mt-3 min-h-11 rounded-lg border bg-white px-4 font-medium text-zinc-700">Сбросить поиск и категорию</button>
         </div>
       ) : (
-        <div role="region" aria-label="Каталог техники" tabIndex={0} className="max-h-[60dvh] overflow-y-auto overscroll-y-auto rounded-xl pr-1 focus-visible:outline-2 focus-visible:outline-zinc-400 lg:max-h-[calc(100dvh-340px)]">
+        <div role="region" aria-label="Каталог техники" tabIndex={0} className={cn('rounded-xl pr-1 focus-visible:outline-2 focus-visible:outline-zinc-400', scrollWithin && 'lg:max-h-[calc(100dvh-340px)] lg:overflow-y-auto lg:overscroll-y-auto')}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]">
           {filtered.map(item => {
             const count = selectedCounts.get(item.id) ?? 0

@@ -26,7 +26,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const supabase = await createClient()
   const showFinancialSummary = await isSuperAdmin()
 
-  const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
+  const { data: client, error: recordError } = await supabase.from('clients').select('*').eq('id', id).maybeSingle()
+  if (recordError) throw new Error('Не удалось загрузить запись')
   if (!client) notFound()
 
   const ordersPromise = supabase
@@ -49,11 +50,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     .eq('client_id', id)
     .order('created_at', { ascending: false })
 
-  const [{ data: orders }, { data: missingEvents }, { data: legacyMissingOrders }] = await Promise.all([
+  const [{ data: orders, error: ordersError }, { data: missingEvents, error: missingError }, { data: legacyMissingOrders, error: legacyError }] = await Promise.all([
     ordersPromise,
     missingEventsPromise,
     legacyMissingOrdersPromise,
   ])
+  if (ordersError || legacyError || (missingError && missingError.code !== '42P01' && missingError.code !== 'PGRST205')) throw new Error('Не удалось загрузить историю клиента')
   const missingEventRows = mergeMissingKitEvents(
     (missingEvents ?? []) as unknown as MissingKitEventRow[],
     buildLegacyMissingKitEvents((legacyMissingOrders ?? []) as unknown as LegacyMissingKitOrderRow[]),
@@ -169,7 +171,37 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
       )}
 
-      <div className="bg-white rounded-xl border p-6">
+      <nav aria-label="Разделы карточки клиента" className="flex gap-2">
+        <a href="#client-history" className="inline-flex min-h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium">История аренд</a>
+        <a href="#client-data" className="inline-flex min-h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium">Данные клиента</a>
+      </nav>
+      {!orders?.length && <div id="client-history" className="scroll-mt-24 rounded-xl border bg-white p-4"><h2 className="font-semibold">История аренд</h2><p className="mt-2 text-sm text-zinc-500">У клиента пока нет заказов.</p></div>}
+      {orders && orders.length > 0 && (
+        <div id="client-history" className="scroll-mt-24 bg-white rounded-xl border p-4 sm:p-6">
+          <h2 className="font-semibold mb-4">История аренд</h2>
+          <div className="space-y-2">
+            {orders.map(o => (
+              <Link
+                key={o.id}
+                href={`/orders/${o.id}`}
+                className="flex items-center justify-between py-2 border-b last:border-0 hover:bg-gray-50 px-2 rounded"
+              >
+                <div>
+                  <p className="text-sm font-medium text-blue-600">{o.order_number}</p>
+                  <p className="text-xs text-gray-400">{formatDate(o.start_date)} — {formatDate(o.end_date)}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm">{formatCurrency(o.total_amount)}</span>
+                  <span className={cn('text-xs px-2 py-0.5 rounded-full', ORDER_STATUS_COLORS[o.status])}>
+                    {ORDER_STATUS_LABELS[o.status]}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      <div id="client-data" className="scroll-mt-24 bg-white rounded-xl border p-4 sm:p-6">
         <h2 className="font-semibold mb-4">Редактировать</h2>
         <ClientForm
           clientId={id}
@@ -200,31 +232,6 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         />
       </div>
 
-      {orders && orders.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
-          <h2 className="font-semibold mb-4">История аренд</h2>
-          <div className="space-y-2">
-            {orders.map(o => (
-              <Link
-                key={o.id}
-                href={`/orders/${o.id}`}
-                className="flex items-center justify-between py-2 border-b last:border-0 hover:bg-gray-50 px-2 rounded"
-              >
-                <div>
-                  <p className="text-sm font-medium text-blue-600">{o.order_number}</p>
-                  <p className="text-xs text-gray-400">{formatDate(o.start_date)} — {formatDate(o.end_date)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm">{formatCurrency(o.total_amount)}</span>
-                  <span className={cn('text-xs px-2 py-0.5 rounded-full', ORDER_STATUS_COLORS[o.status])}>
-                    {ORDER_STATUS_LABELS[o.status]}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

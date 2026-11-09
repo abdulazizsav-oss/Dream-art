@@ -237,8 +237,9 @@ export function AddItemsModal({
 
           <form onSubmit={handleSubmit} className="min-w-0 space-y-4">
             <fieldset disabled={loading} className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-              <div className="min-w-0 max-h-[50dvh] overflow-y-auto lg:max-h-[65dvh] lg:pr-2">
+              <div className="min-w-0 lg:pr-2">
                 <EquipmentGrid
+                  scrollWithin={false}
                   equipment={orderableEquipment}
                   selectedCounts={selectedCounts}
                   onAdd={addUnit}

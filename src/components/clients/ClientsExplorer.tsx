@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Input } from '@/components/ui/input'
-import { clientMatchesSearch } from '@/lib/client-duplicates'
+import { clientMatchesSearch, formatClientPhoneInput } from '@/lib/client-duplicates'
 import type { Client } from '@/types/database'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -148,10 +148,10 @@ export function ClientsExplorer({ clients, missingEventRows }: { clients: Client
                   </p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
                     {c.phone && (
-                      <span className="text-xs text-gray-500">{c.phone}</span>
+                      <span className="text-xs text-gray-500">{formatClientPhoneInput(c.phone)}</span>
                     )}
                     {c.telegram_username && (
-                      <span className="text-xs text-blue-500">@{c.telegram_username}</span>
+                      <span className="text-xs text-blue-500">@{c.telegram_username.replace(/^@+/, '')}</span>
                     )}
                     <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full text-[11px]">
                       {segment}
@@ -160,8 +160,7 @@ export function ClientsExplorer({ clients, missingEventRows }: { clients: Client
                   {/* Missing fields warning */}
                   {missing.length > 0 && (
                     <div className="flex items-center gap-1 mt-1">
-                      <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                      <span className="text-[11px] text-amber-600">
+                      <span className="text-xs text-zinc-400">
                         Не заполнено: {missing.join(', ')}
                       </span>
                     </div>

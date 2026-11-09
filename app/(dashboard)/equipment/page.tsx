@@ -13,10 +13,11 @@ export default async function EquipmentPage({
   const { category: catId, brand: brandId } = await searchParams
   const supabase = await createClient()
 
-  const [{ data: categories }] = await Promise.all([
+  const [{ data: categories, error: categoriesError }] = await Promise.all([
     supabase.from('equipment_categories').select('*').order('sort_order').order('name'),
   ])
 
+  if (categoriesError) throw new Error('Не удалось загрузить категории')
   if (!catId) {
     return (
       <div>
@@ -60,7 +61,7 @@ export default async function EquipmentPage({
 
   const currentCat = (categories ?? []).find(c => c.id === catId)
 
-  const { data: brandsInCat } = await supabase
+  const { data: brandsInCat, error: brandsError } = await supabase
     .from('equipment')
     .select('brand_id, brands(id, name)')
     .eq('category_id', catId)
@@ -83,7 +84,8 @@ export default async function EquipmentPage({
     .order('name')
 
   if (brandId) query = query.eq('brand_id', brandId)
-  const { data: equipment } = await query
+  const { data: equipment, error: equipmentError } = await query
+  if (brandsError || equipmentError) throw new Error('Не удалось загрузить технику')
 
   return (
     <div>

@@ -1,8 +1,10 @@
 'use client'
 
+import { normalizeSearchText } from '@/lib/search'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import {
   AlertTriangle,
   CalendarSearch,
@@ -232,7 +234,6 @@ function statusMatches(status: string) {
 }
 
 export default function CalendarPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const today = getTashkentDate()
   const initialDays = Math.min(62, Math.max(1, Number(searchParams.get('days')) || 14))
@@ -256,13 +257,13 @@ export default function CalendarPage() {
   const days = useMemo(() => dateRange(from, daysVisible), [daysVisible, from])
 
   const replaceUrl = useCallback((patch: Record<string, string | number | null>) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(window.location.search)
     for (const [key, value] of Object.entries(patch)) {
-      if (value === null || value === '' || value === 'all') params.delete(key)
+      if (value === null || value === '') params.delete(key)
       else params.set(key, String(value))
     }
-    router.replace(`/calendar?${params.toString()}`, { scroll: false })
-  }, [router, searchParams])
+    window.history.replaceState(null, '', `/calendar?${params.toString()}`)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -319,7 +320,7 @@ export default function CalendarPage() {
   ])
 
   const filteredOrders = useMemo(() => {
-    const term = search.trim().toLowerCase()
+    const term = normalizeSearchText(search)
     if (!term) return data?.orders ?? []
     return (data?.orders ?? []).filter(order => [
       order.order_number,
@@ -327,7 +328,7 @@ export default function CalendarPage() {
       order.client?.phone,
       order.created_by_name,
       equipmentNames(order),
-    ].filter(Boolean).join(' ').toLowerCase().includes(term))
+    ].filter(Boolean).map(value => normalizeSearchText(value!)).join(' ').includes(term))
   }, [data?.orders, search])
 
   const visibleOrderIds = useMemo(
@@ -391,7 +392,8 @@ export default function CalendarPage() {
       />
 
       <div className="rounded-2xl border bg-white p-3 md:p-4">
-        <div className="mb-3 flex flex-wrap gap-2">
+        <p className="mb-3 text-sm font-medium md:hidden">Список по дням</p>
+        <div className="mb-3 hidden flex-wrap gap-2 md:flex">
           <SegmentButton active={view === 'orders'} onClick={() => updateFilter('view', 'orders')}>
             По заказам
           </SegmentButton>
@@ -418,6 +420,7 @@ export default function CalendarPage() {
           <div className="relative md:col-span-2 xl:col-span-2">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
+              aria-label="Поиск в календаре"
               value={search}
               onChange={event => {
                 setSearch(event.target.value)
@@ -427,19 +430,19 @@ export default function CalendarPage() {
               className="min-h-[44px] w-full rounded-xl border bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"
             />
           </div>
-          <FilterSelect value={equipmentId} onChange={value => updateFilter('equipment_id', value)}>
+          <FilterSelect label="Техника" value={equipmentId} onChange={value => updateFilter('equipment_id', value)}>
             <option value="">Вся техника</option>
             {(data?.filters.equipment ?? []).map(item => (
               <option key={item.id} value={item.id}>{item.name}</option>
             ))}
           </FilterSelect>
-          <FilterSelect value={categoryId} onChange={value => updateFilter('category_id', value)}>
+          <FilterSelect label="Категория" value={categoryId} onChange={value => updateFilter('category_id', value)}>
             <option value="">Все категории</option>
             {(data?.filters.categories ?? []).map(item => (
               <option key={item.id} value={item.id}>{item.name}</option>
             ))}
           </FilterSelect>
-          <FilterSelect value={adminId} onChange={value => updateFilter('admin_id', value)}>
+          <FilterSelect label="Администратор" value={adminId} onChange={value => updateFilter('admin_id', value)}>
             <option value="">Все администраторы</option>
             {(data?.filters.admins ?? []).map(item => (
               <option key={item.id} value={item.id}>{item.full_name}</option>
@@ -456,7 +459,7 @@ export default function CalendarPage() {
               onChange={event => {
                 if (event.target.value) changeFrom(event.target.value)
               }}
-              className="min-h-[42px] rounded-xl border px-3 text-sm"
+              className="min-h-[44px] rounded-xl border px-3 text-sm"
             />
           </label>
           <div className="flex flex-wrap gap-2">
@@ -466,6 +469,11 @@ export default function CalendarPage() {
               </SegmentButton>
             ))}
           </div>
+          <Button type="button" variant="outline" onClick={() => changeFrom(today)}>Сегодня</Button>
+          <Button type="button" variant="ghost" onClick={() => {
+            setStatus('active'); setEquipmentId(''); setCategoryId(''); setAdminId(''); setSearch('')
+            replaceUrl({ status: 'active', equipment_id: null, category_id: null, admin_id: null, q: null })
+          }}>Сбросить фильтры</Button>
           <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
             <Button
               type="button"
@@ -501,7 +509,8 @@ export default function CalendarPage() {
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-          {error}
+          <p role="alert">{error}</p>
+          <Button type="button" variant="outline" className="mt-3" onClick={() => setNearestRequest(value => value + 1)}>Повторить загрузку</Button>
         </div>
       )}
 
@@ -1023,6 +1032,7 @@ function SegmentButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         'min-h-[40px] rounded-xl border px-3 text-xs font-medium transition-colors',
         active
@@ -1062,8 +1072,9 @@ function StatusButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        'min-h-[36px] rounded-full border px-3 text-xs font-medium transition-colors',
+        'min-h-[44px] rounded-full border px-3 text-xs font-medium transition-colors',
         active ? activeClass : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400',
       )}
     >
@@ -1073,16 +1084,19 @@ function StatusButton({
 }
 
 function FilterSelect({
+  label,
   value,
   onChange,
   children,
 }: {
+  label: string
   value: string
   onChange: (value: string) => void
   children: React.ReactNode
 }) {
   return (
     <select
+      aria-label={label}
       value={value}
       onChange={event => onChange(event.target.value)}
       className="min-h-[44px] rounded-xl border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-zinc-200"

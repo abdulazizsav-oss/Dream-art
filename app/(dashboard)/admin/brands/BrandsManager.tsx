@@ -38,7 +38,9 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
 
   async function handleSave() {
     if (!name.trim()) { toast.error('Введите название'); return }
+    if (saving) return
     setSaving(true)
+    try {
     const isEdit = !!editingId
     const url = isEdit ? `/api/brands/${editingId}` : '/api/brands'
     const method = isEdit ? 'PUT' : 'POST'
@@ -60,6 +62,11 @@ export function BrandsManager({ initialBrands }: { initialBrands: Brand[] }) {
     resetForm()
     setSaving(false)
     router.refresh()
+    } catch {
+      toast.error('Ответ сервера не получен. Проверьте список перед повторным сохранением; введённые данные остались в форме.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {
